@@ -1,0 +1,13 @@
+# dotnet core
+bin/
+obj/
+project.lock.json
+
+# node
+node_modules/
+typings/
+npm-debug.log
+
+# IDE
+.idea/
+.vs/
