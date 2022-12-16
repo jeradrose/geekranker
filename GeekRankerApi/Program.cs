@@ -5,7 +5,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddSqliteCache(options => {
-    options.CachePath = @"C:\Users\jader\Documents\GeekRanker\data\cache.db";
+    options.CachePath = @"C:\Users\jader\Documents\git\geekranker\data\cache.db";
 });
 
 builder.Services.AddCors(options => {

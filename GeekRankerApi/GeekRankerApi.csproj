@@ -12,11 +12,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EditorConfigFiles Remove="C:\Users\jader\Documents\GeekRanker\GeekRankerApi\.editorconfig" />
+    <EditorConfigFiles Remove="C:\Users\jader\Documents\git\geekranker\GeekRankerApi\.editorconfig" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="C:\Users\jader\Documents\GeekRanker\GeekRankerApi\.editorconfig" />
+    <None Include="C:\Users\jader\Documents\git\geekranker\GeekRankerApi\.editorconfig" />
   </ItemGroup>
 
   <ItemGroup>
