@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { CollectionGame } from './models';
 import "typeface-open-sans";
-import { ArrowDownward, AddCircleOutline, RemoveCircleOutline, ExpandLessOutlined, ExpandMoreOutlined, ExpandMoreRounded, ExpandLess, ExpandMore } from '@mui/icons-material';
-import { TextField, Button, Tooltip, Switch, FormControl, FormControlLabel } from '@mui/material';
+import { ArrowDownward, AddCircleOutline, RemoveCircleOutline, ExpandLess, ExpandMore } from '@mui/icons-material';
+import { TextField, Button, Tooltip, Switch, FormControlLabel } from '@mui/material';
 
 import styled, { createGlobalStyle } from "styled-components"
 import useEnhancedEffect from '@mui/material/utils/useEnhancedEffect';
@@ -288,10 +288,14 @@ function App() {
   }
 
   const getApiData = async () => {
+    console.log(process.env.NODE_ENV);
+
     setLoadingGames(true);
     try {
       const response = await fetch(
-        "https://192.168.1.6:7032/BoardGame/GetRankings",
+        // "https://localhost:7032/BoardGame/GetRankings",
+        // "https://geekranker.azurewebsites.net/BoardGame/GetRankings",
+        "/BoardGame/GetRankings",
         {
           method: 'post',
           body: JSON.stringify(getUsernames()),
@@ -360,7 +364,7 @@ function App() {
   };
 
   const gameUserRating = (username: string, game: CollectionGame): number => {
-    const filteredPlayerRating = game.playerRatings.filter(r => r.username == username);
+    const filteredPlayerRating = game.playerRatings.filter(r => r.username === username);
 
     return (filteredPlayerRating.length === 1 && filteredPlayerRating[0].rating) || game.avgPlayerRating - 10;
   }

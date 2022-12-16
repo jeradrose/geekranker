@@ -26,7 +26,6 @@ public class BoardGameController : ControllerBase {
         return await _bggApi.GetCollectionAsync(username);
     }
 
-    [EnableCors]
     [HttpPost("GetRankings")]
     public async Task<List<CollectionGame>> GetRankings([FromBody]string[] usernames) {
         usernames = usernames.Where(un => !string.IsNullOrEmpty(un)).Distinct().ToArray();
