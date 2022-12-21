@@ -13,3 +13,5 @@ npm-debug.log
 .vs/
 
 Screenshot*
+build
+publish
