@@ -471,7 +471,7 @@ function App() {
               </>
             }
           </Filters>
-          <Logo src="/Logo.png" alt="logo" />
+          <Logo src="/logo.png" alt="logo" />
         </MainBar>
         <HeaderContainer>
           <HeaderRow>
