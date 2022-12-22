@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Rewrite;
 using NeoSmart.Caching.Sqlite;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,7 +14,7 @@ builder.Services.AddCors(options => {
         "SubdomainCorsPolicy",
         builder => builder
             .SetIsOriginAllowedToAllowWildcardSubdomains()
-            .WithOrigins("https://*.geekranker.com")
+            .WithOrigins("https://*.geekranker.com", "https://geekranker.com")
             .AllowAnyMethod()
             .AllowCredentials()
             .AllowAnyHeader()
@@ -36,7 +37,10 @@ if (app.Environment.IsDevelopment()) {
 
 app.UseDeveloperExceptionPage();
 
-app.UseHttpsRedirection();
+app.UseRewriter(new RewriteOptions()
+    .AddRedirectToNonWwwPermanent()
+    .AddRedirectToHttpsPermanent()
+);
 
 app.UseCors("SubdomainCorsPolicy");
 
