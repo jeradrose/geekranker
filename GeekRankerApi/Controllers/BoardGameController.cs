@@ -1,7 +1,6 @@
 using BggApi;
 using BggApi.Models;
 using GeekRankerApi.Models;
-using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GeekRankerApi.Controllers;
