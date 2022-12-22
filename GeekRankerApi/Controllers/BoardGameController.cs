@@ -46,7 +46,7 @@ public class BoardGameController : ControllerBase {
         var collectionSet = games
             .Select(g => new CollectionGame {
                 GameId = g.ObjectId,
-                Name = g.Names.SingleOrDefault(n => n.Type == NameType.Primary).Value,
+                Name = g.Names.Single(n => n.Type == NameType.Primary).Value,
                 ImageUrl = g.ThumbnailUrl,
                 GeekRating = g.Statistics.Single().Ratings.Single().BayesAverage.Value,
                 AvgPlayerRating = g.Statistics.Single().Ratings.Single().Average.Value,

@@ -9,13 +9,13 @@ public class BoardGame {
     public int ObjectId { get; set; }
 
     [XmlElement("thumbnail")]
-    public string? ThumbnailUrl { get; set; }
+    public string ThumbnailUrl { get; set; }
 
     [XmlElement("name")]
-    public List<Name>? Names { get; set; }
+    public List<Name> Names { get; set; }
 
     [XmlElement("link")]
-    public List<Link>? Links { get; set; }
+    public List<Link> Links { get; set; }
 
     [XmlElement("minplayers")]
     public IntValueAttribute MinPlayers { get; set; }
