@@ -25,7 +25,7 @@ public class PlayerCountStats {
     public double BestPercent => TotalVotes > 0 ? (double)BestVotes / TotalVotes : 0;
     public double RecommendedPercent => TotalVotes > 0 ? (double)RecommendedVotes / TotalVotes : 0;
     public double NotRecommendedPercent => TotalVotes > 0 ? (double)NotRecommendedVotes / TotalVotes : 0;
-    public double Score => (BestPercent + (RecommendedPercent * (2.0/ 3))) * 10.0;
+    public double Score => (BestPercent + (RecommendedPercent * (3.0/ 4))) * 10.0;
     public int Rank { get; set; }
 }
 
