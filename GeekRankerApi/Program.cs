@@ -8,6 +8,18 @@ builder.Services.AddSqliteCache(options => {
     options.CachePath = @"C:\Users\jader\Documents\git\geekranker\data\cache.db";
 });
 
+builder.Services.AddCors(options => {
+    options.AddPolicy(
+        "SubdomainCorsPolicy",
+        builder => builder
+            .SetIsOriginAllowedToAllowWildcardSubdomains()
+            .WithOrigins("https://*.geekranker.com")
+            .AllowAnyMethod()
+            .AllowCredentials()
+            .AllowAnyHeader()
+    );
+});
+
 builder.Services.AddControllers();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -25,6 +37,8 @@ if (app.Environment.IsDevelopment()) {
 app.UseDeveloperExceptionPage();
 
 app.UseHttpsRedirection();
+
+app.UseCors("SubdomainCorsPolicy");
 
 app.UseAuthorization();
 
