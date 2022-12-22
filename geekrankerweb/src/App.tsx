@@ -287,15 +287,16 @@ function App() {
     return playerCountStats[0].score * (userRatings.reduce((a, b) => a + b) / userRatings.length) / 10;
   }
 
+  const getApiUrl = (url: string): string =>
+    (process.env.NODE_ENV === "production" ? "https://api.geekranker.com" : "") + url;
+
   const getApiData = async () => {
-    console.log(process.env.NODE_ENV);
+    console.log(getApiUrl("/BoardGame/GetRankings"));
 
     setLoadingGames(true);
     try {
       const response = await fetch(
-        // "https://localhost:7032/BoardGame/GetRankings",
-        // "https://geekranker.azurewebsites.net/BoardGame/GetRankings",
-        "/BoardGame/GetRankings",
+        getApiUrl("/BoardGame/GetRankings"),
         {
           method: 'post',
           body: JSON.stringify(getUsernames()),
