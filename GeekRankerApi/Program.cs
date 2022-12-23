@@ -39,8 +39,9 @@ app.UseDeveloperExceptionPage();
 
 app.UseRewriter(new RewriteOptions()
     .AddRedirectToNonWwwPermanent()
-    .AddRedirectToHttpsPermanent()
 );
+
+app.UseHttpsRedirection();
 
 app.UseCors("SubdomainCorsPolicy");
 
