@@ -146,7 +146,8 @@ const ImageAndNameHeader = styled.a`
   flex-direction: row;
   justify-content: left;
   align-items: center;
-  flex: 1 0 225px;
+  flex: 1 1 400px;
+  min-width: 200px;
   text-decoration: none;
   cursor: pointer;
 `;
@@ -179,7 +180,8 @@ const Number = styled(RowCell)`
 */
 
 const ImageAndName = styled(ImageAndNameHeader)`
-  flex: 1 0 225px;
+  flex: 1 1 400px;
+  min-width: 200px;
   color: inherit;
   :hover {
     //color: #0475BB;
@@ -188,6 +190,9 @@ const ImageAndName = styled(ImageAndNameHeader)`
 
 const GameName = styled(RowCell)`
   margin-left: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 const PlayTime = styled.div`
