@@ -53,10 +53,10 @@ public class BoardGameController : ControllerBase {
                 AvgWeight = g.Statistics.Single().Ratings.Single().AverageWeight.Value,
                 MinPlayTime = g.MinPlayTime.Value,
                 MaxPlayTime = g.MaxPlayTime.Value,
-                PlayerRatings = collections
+                UserRatings = collections
                     .Select(c => {
                         double.TryParse(c.Value.FirstOrDefault(cg => cg.Id == g.ObjectId)?.Stats.Rating.Value, out var rating);
-                        return new PlayerRating {
+                        return new UserRating {
                             Username = c.Key,
                             Rating = rating == 0 ? null : rating,
                         };
@@ -90,7 +90,7 @@ public class BoardGameController : ControllerBase {
             g.GeekRatingRank = geekRatingRanks[g.GameId];
             g.AvgPlayerRatingRank = avgPlayerRatingRanks[g.GameId];
             g.AvgWeightRank = avgWeightRanks[g.GameId];
-        });
+       });
 
         var playerCounts = collectionSet.SelectMany(g => g.PlayerCountStats.Select(s => s.PlayerCount)).Distinct().ToList();
 
@@ -109,13 +109,13 @@ public class BoardGameController : ControllerBase {
 
         usernames.ToList().ForEach(username => {
             var userRanks = collectionSet
-                .Where(g => g.PlayerRatings.Any(r => r.Username == username && r.Rating.HasValue))
-                .OrderByDescending(g => g.PlayerRatings.Single(r => r.Username == username).Rating)
+                .Where(g => g.UserRatings.Any(r => r.Username == username && r.Rating.HasValue))
+                .OrderByDescending(g => g.UserRatings.Single(r => r.Username == username).Rating)
                 .ToRankDictionary();
 
             collectionSet.ForEach(g => {
                 if (userRanks.ContainsKey(g.GameId)) {
-                    g.PlayerRatings.Single(r => r.Username == username).Rank = userRanks[g.GameId];
+                    g.UserRatings.Single(r => r.Username == username).Rank = userRanks[g.GameId];
                 }
             });
         });

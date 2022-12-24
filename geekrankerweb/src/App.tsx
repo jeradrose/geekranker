@@ -283,7 +283,7 @@ function App() {
     }
 
     const userRatings = getUsernames().map(u => {
-      const ratings = game.playerRatings.filter(r => r.username === u);
+      const ratings = game.userRatings.filter(r => r.username === u);
       return (ratings.length === 1 && ratings[0].rating) || game.avgPlayerRating;
     })
 
@@ -370,7 +370,7 @@ function App() {
   };
 
   const gameUserRating = (username: string, game: CollectionGame): number => {
-    const filteredPlayerRating = game.playerRatings.filter(r => r.username === username);
+    const filteredPlayerRating = game.userRatings.filter(r => r.username === username);
 
     return (filteredPlayerRating.length === 1 && filteredPlayerRating[0].rating) || game.avgPlayerRating - 10;
   }
@@ -407,7 +407,7 @@ function App() {
   }
 
   const userRatingBar = (username: string, game: CollectionGame) => {
-    const ratings = game.playerRatings.filter(r => r.username === username);
+    const ratings = game.userRatings.filter(r => r.username === username);
 
     if (ratings.length === 1 && ratings[0].rating && ratings[0].rank) {
       return bar(ratings[0].rating, 10, ratings[0].rank)

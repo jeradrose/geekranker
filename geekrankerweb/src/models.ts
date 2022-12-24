@@ -3,7 +3,7 @@ export interface CollectionGame {
     name: string;
     imageUrl: string;
     playerCountStats: PlayerCountStats[];
-    playerRatings: PlayerRating[];
+    userRatings: UserRating[];
     avgWeight: number;
     avgPlayerRating: number;
     geekRating: number;
@@ -27,7 +27,7 @@ export interface PlayerCountStats {
     rank: number;
 }
 
-export interface PlayerRating {
+export interface UserRating {
     username: string;
     rating: number | null;
     rank: number | null;
