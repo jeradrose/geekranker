@@ -321,7 +321,7 @@ type RankedScores = Record<number, RankedScore>;
 function App() {
   const [allGames, setAllGames] = useState<CollectionGame[]>([]);
   const [usernamesString, setUsernamesString] = useState<string>("");
-  const [sort, setSort] = useState<SortOptions>("name");
+  const [sort, setSort] = useState<SortOptions>("grscore");
   const [playerCount, setPlayerCount] = useState<number>(2);
   const [loadingGames, setLoadingGames] = useState<boolean>(false);
   const [showGeekRating, setShowGeekRating] = useState<boolean>(false);
