@@ -40,15 +40,21 @@ const MainBar = styled.div`
 const Filters = styled.div`
   display: flex;
   flex-direction: column;
+  flex-grow: 1;
 `;
 
 const FiltersInnerRow = styled.div`
   display: flex;
   align-items: center;
+  @media (max-width: 600px) {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 `
 
 const FiltersContainer = styled(FiltersInnerRow)`
-  margin: 10px 0;
+  margin: 0 0 10px 0;
+  width: 100%;
 `;
 
 const FiltersHeader = styled(FiltersInnerRow)`
@@ -57,16 +63,16 @@ const FiltersHeader = styled(FiltersInnerRow)`
 `;
 
 const PlayerFilter = styled.div`
+  width: 100%;
   display: flex;
-  max-width: 575px;
   justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
 `;
 
-// const Input = styled.input`
 const Input = styled(TextField)`
-  width: 400px;
+  box-sizing: border-box;
+  width: 100%;
   background-color: #fff;
 `;
 
@@ -75,9 +81,10 @@ const FilterButton = styled(Button)`
 `;
 
 const Logo = styled.img`
+  max-width: 100%;
   width: 400px;
   object-fit: contain;
-  padding-bottom: 15px;
+  padding: 5px 0;
 `;
 
 const PlayerCountFilter = styled.div`
@@ -126,29 +133,70 @@ const HeaderRow = styled(RowBase)`
   color: #fff;
   padding: 0 15px;
   margin: 10px 0 0 0;
+
+  @media (max-width: 600px) {
+    display: none;
+  }
 `;
 
 const Row = styled(RowBase)`
-  // background-color: #f4f4f4;
+  @media (min-width: 601px) {
+    margin: 2px 0;
+    padding: 5px 15px;
   background-color: #fcfcfc;
-  margin: 2px 0;
   :hover {
-    // background-color: #e0e0e0;
     background-color: #f4f4f4;
+    }
   }
-  padding: 5px 15px;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    height: auto;
+  }
+`;
+
+const CellContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin: 1px 0;
+  flex-grow: 1;
+  min-width: 200px;
+
+  @media (max-width: 600px) {
+    padding: 5px 3px;
+    background-color: #fcfcfc;
+  }
+  @media (min-width: 601px) {
+    flex-basis: 200px;
+  }
+`;
+
+const GrScoreContainer = styled(CellContainer)`
+  @media (max-width: 600px) {
+    font-weight: bold;
+  }
+`
+
+const CellLabel = styled.div`
+  @media (min-width: 601px) {
+    display: none;
+  }
 `;
 
 const ImageAndNameHeader = styled.a`
+  box-sizing: border-box;
   align-self: center;
   display: flex;
   flex-direction: row;
   justify-content: left;
   align-items: center;
-  flex: 1 1 400px;
+  flex-grow: 1;
   min-width: 200px;
   text-decoration: none;
   cursor: pointer;
+  @media (min-width: 601px) {
+    flex-basis: 200px;
+  }
 `;
 
 const ThumbnailContainer = styled.div`
@@ -160,31 +208,26 @@ const ThumbnailContainer = styled.div`
   align-items: center;
 `;
 
-const Thumbnail = styled.img`
-  max-width: 30px;
-  max-height: 30px;
-`;
-
 const RowCell = styled.div`
   align-self: center;
 `;
 
-/*
-const Number = styled(RowCell)`
-  width: 40px;
-  min-width: 40px;
-  text-align: center;
-  padding-right: 15px;
-`
-*/
-
 const ImageAndName = styled(ImageAndNameHeader)`
-  flex: 1 1 400px;
-  min-width: 200px;
   color: inherit;
-  :hover {
-    //color: #0475BB;
+
+  @media (max-width: 600px) {
+    align-self: flex-start;
+    background-color: #348CE9;
+    font-weight: bold;
+    color: #fff;
+    padding: 5px;
+    width: 100%;
   }
+`;
+
+const Thumbnail = styled.img`
+  max-width: 30px;
+  max-height: 30px;
 `;
 
 const GameName = styled(RowCell)`
@@ -196,9 +239,17 @@ const GameName = styled(RowCell)`
 
 const PlayTime = styled.div`
   display: flex;
-  flex: 1 0 150px;
   align-items: center;
+  @media (max-width: 600px) {
+    align-self: center;
+    width: 200px;
+  }
+  @media (min-width: 601px) {
+    flex-grow: 1;
+    flex-basis: 200px;
+    min-width: 200px;
   justify-content: center;
+  }
 `;
 
 const PlayTimeHeader = styled(PlayTime)`
@@ -209,14 +260,23 @@ const BarHeader = styled(RowCell)`
   display: flex;
   align-items: center;
   justify-content: left;
-  flex: 1 0 175px;
   cursor: pointer;
+  flex-grow: 1;
+  flex-basis: 200px;
+  min-width: 200px;
 `;
 
 const BarContainer = styled(RowCell)`
   height: 20px;
   display: flex;
-  flex: 1 0 175px;
+  @media (max-width: 600px) {
+    width: 200px;
+  }
+  @media (min-width: 601px) {
+    flex-grow: 1;
+    flex-basis: 200px;
+    min-width: 200px;
+  }
 `;
 
 const BarContainerFaded = styled(BarContainer)`
@@ -491,7 +551,7 @@ function App() {
               GAME{sortArrow("name")}
             </ImageAndNameHeader>
             <PlayTimeHeader onClick={() => setSort("playtime")}>
-              <ArrowDownward style={{ opacity: 0 }} />PLAY TIME{sortArrow("playtime")}
+              <ArrowDownward style={{ opacity: 0 }} />TIME{sortArrow("playtime")}
             </PlayTimeHeader>
             {showPlayerRating && barHeader("player-rating", "PLAYER RATING")}
             {showGeekRating && barHeader("geek-rating", "GEEK RATING")}
@@ -514,22 +574,73 @@ function App() {
                   {g.name}
                 </GameName>
               </ImageAndName>
+
+              <CellContainer>
+                <CellLabel>
+                  Play Time
+                </CellLabel>
               <PlayTime>
                 {g.minPlayTime}
                 {g.minPlayTime !== g.maxPlayTime && (
                   <>  - {g.maxPlayTime}</>
                 )}
               </PlayTime>
+              </CellContainer>
+
               {showPlayerRating &&
-                bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)
+                <CellContainer>
+                  <CellLabel>
+                    Player Rating
+                  </CellLabel>
+                  {bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}
+                </CellContainer>
               }
+
               {showGeekRating &&
-                bar(g.geekRating, 10, g.geekRatingRank)
+                <CellContainer>
+                  <CellLabel>
+                    Geek Rating
+                  </CellLabel>
+                  {bar(g.geekRating, 10, g.geekRatingRank)}
+                </CellContainer>
               }
+
+              <CellContainer>
+                <CellLabel>
+                  Weight
+                </CellLabel>
               {bar(g.avgWeight, 5, g.avgWeightRank)}
+              </CellContainer>
+
+              <CellContainer>
+                <CellLabel>
+                  {playerCount}-Player
+                </CellLabel>
               {playerCountBar(playerCount, g)}
-              {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => userRatingBar(u, g)) : userRatingBar("", g)}
+              </CellContainer>
+
+              {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u =>
+                <CellContainer>
+                  <CellLabel>
+                    {u}
+                  </CellLabel>
+                  {userRatingBar(u, g)}
+                </CellContainer>
+              ) :
+                <CellContainer>
+                  <CellLabel>
+                    User Rating
+                  </CellLabel>
+                  userRatingBar("", g)
+                </CellContainer>
+              }
+
+              <GrScoreContainer>
+                <CellLabel>
+                  GR Score
+                </CellLabel>
               {bar(grScores[g.gameId].score ?? 0, 10, grScores[g.gameId].rank ?? 0)}
+              </GrScoreContainer>
             </Row>
           );
         })}
