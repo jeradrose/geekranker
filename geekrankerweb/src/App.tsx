@@ -631,7 +631,7 @@ function App() {
                   <CellLabel>
                     User Rating
                   </CellLabel>
-                  userRatingBar("", g)
+                  {userRatingBar("", g)}
                 </CellContainer>
               }
 
