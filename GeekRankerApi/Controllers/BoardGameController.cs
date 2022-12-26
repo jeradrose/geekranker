@@ -39,7 +39,7 @@ public class BoardGameController : ControllerBase {
             collections.Add(username, await _bggApi.GetCollectionAsync(username));
         }
 
-        var gameIds = collections.SelectMany(s => s.Value.Where(g => g.Status.Own).Select(g => g.Id)).Distinct().ToArray();
+        var gameIds = collections.SelectMany(s => s.Value.Select(g => g.Id)).Distinct().ToArray();
 
         var games = await _bggApi.GetBoardGamesAsync(gameIds);
 
@@ -53,12 +53,15 @@ public class BoardGameController : ControllerBase {
                 AvgWeight = g.Statistics.Single().Ratings.Single().AverageWeight.Value,
                 MinPlayTime = g.MinPlayTime.Value,
                 MaxPlayTime = g.MaxPlayTime.Value,
-                UserRatings = collections
+                UserStats = collections
                     .Select(c => {
-                        double.TryParse(c.Value.FirstOrDefault(cg => cg.Id == g.ObjectId)?.Stats.Rating.Value, out var rating);
-                        return new UserRating {
+                        var collectionGame = c.Value.FirstOrDefault(cg => cg.Id == g.ObjectId);
+                        double.TryParse(collectionGame?.Stats.Rating.Value, out var rating);
+                        return new UserStats {
                             Username = c.Key,
                             Rating = rating == 0 ? null : rating,
+                            IsOwned = collectionGame?.Status.Own ?? false,
+                            IsWishlisted = collectionGame?.Status.Wishlist ?? false,
                         };
                     })
                     .ToList(),
@@ -109,13 +112,13 @@ public class BoardGameController : ControllerBase {
 
         usernames.ToList().ForEach(username => {
             var userRanks = collectionSet
-                .Where(g => g.UserRatings.Any(r => r.Username == username && r.Rating.HasValue))
-                .OrderByDescending(g => g.UserRatings.Single(r => r.Username == username).Rating)
+                .Where(g => g.UserStats.Any(r => r.Username == username && r.Rating.HasValue))
+                .OrderByDescending(g => g.UserStats.Single(r => r.Username == username).Rating)
                 .ToRankDictionary();
 
             collectionSet.ForEach(g => {
                 if (userRanks.ContainsKey(g.GameId)) {
-                    g.UserRatings.Single(r => r.Username == username).Rank = userRanks[g.GameId];
+                    g.UserStats.Single(r => r.Username == username).Rank = userRanks[g.GameId];
                 }
             });
         });

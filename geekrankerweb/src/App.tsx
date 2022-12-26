@@ -5,7 +5,6 @@ import { ArrowDownward, AddCircleOutline, RemoveCircleOutline, ExpandLess, Expan
 import { TextField, Button, Tooltip, Switch, FormControlLabel } from '@mui/material';
 
 import styled, { createGlobalStyle } from "styled-components"
-import useEnhancedEffect from '@mui/material/utils/useEnhancedEffect';
 
 import { createTheme, ThemeProvider } from '@mui/material';
 
@@ -252,28 +251,25 @@ const BarRank = styled.span`
 
 type SortOptions = "name" | "geek-rating" | "player-rating" | "weight" | "player-count" | "playtime" | "grscore" | any;
 
-interface GrScore {
-  gameId: number;
+type RankedScore = {
   score: number;
   rank: number;
 }
 
+type RankedScores = Record<number, RankedScore>;
+
 function App() {
-  const [games, setGames] = useState<CollectionGame[]>([]);
-  const [usernames, setUsernames] = useState<string>("");
+  const [allGames, setAllGames] = useState<CollectionGame[]>([]);
+  const [usernamesString, setUsernamesString] = useState<string>("");
   const [sort, setSort] = useState<SortOptions>("name");
   const [playerCount, setPlayerCount] = useState<number>(2);
-  const [grScores, setGrScores] = useState<GrScore[]>([]);
   const [loadingGames, setLoadingGames] = useState<boolean>(false);
   const [showGeekRating, setShowGeekRating] = useState<boolean>(false);
   const [showPlayerRating, setShowPlayerRating] = useState<boolean>(false);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState<boolean>(false);
+  const [includeOwned, setIncludeOwned] = useState<boolean>(true);
   const [includeWishlist, setIncludeWishlist] = useState<boolean>(false);
-
-
-  useEnhancedEffect(() => resetGrScores(), [playerCount, games]);
-
-  const getUsernames = () => usernames.split(/[^a-zA-Z0-9_]/).filter(u => u.length);
+  const [showIndividualUserRatings, setShowIndividualUserRatings] = useState<boolean>(false);
 
   const getGrScore = (game: CollectionGame): number => {
     const playerCountStats = game.playerCountStats.filter(s => s.playerCount === playerCount);
@@ -282,8 +278,8 @@ function App() {
       return 0;
     }
 
-    const userRatings = getUsernames().map(u => {
-      const ratings = game.userRatings.filter(r => r.username === u);
+    const userRatings = usernames.map(u => {
+      const ratings = game.userStats.filter(r => r.username === u);
       return (ratings.length === 1 && ratings[0].rating) || game.avgPlayerRating;
     })
 
@@ -296,15 +292,13 @@ function App() {
     (process.env.NODE_ENV === "production" ? "https://api.geekranker.com" : "") + url;
 
   const getApiData = async () => {
-    console.log(getApiUrl("/BoardGame/GetRankings"));
-
     setLoadingGames(true);
     try {
       const response = await fetch(
         getApiUrl("/BoardGame/GetRankings"),
         {
           method: 'post',
-          body: JSON.stringify(getUsernames()),
+          body: JSON.stringify(usernames),
           headers: {
             'Content-type': 'application/json'
           }
@@ -312,8 +306,7 @@ function App() {
       );
 
       if (response.ok) {
-        const json = await response.json();
-        setGames(json);
+        setAllGames(await response.json());
       }
     } catch (ex) {
       console.log(ex);
@@ -322,19 +315,20 @@ function App() {
     }
   };
 
-  const resetGrScores = () => {
-    const grScores = games.map(g => {
-      return {
-        gameId: g.gameId,
-        score: getGrScore(g),
+  const getScores = (scoreGetter: (game: CollectionGame) => number): RankedScores => {
+    const scores: RankedScores = {};
+
+    filteredGames.map(g => {
+      scores[g.gameId] = {
+        score: scoreGetter(g),
         rank: 1,
-      }
+      };
     });
 
-    const sorted = grScores.sort((a, b) => b.score - a.score);
-    grScores.map(s => s.rank = sorted.indexOf(s) + 1);
+    const sorted = Object.entries(scores).sort(([, a], [, b]) => b.score - a.score).map(([gameId,]) => gameId);
+    Object.entries(scores).map(s => scores[parseInt(s[0])].rank = sorted.indexOf(s[0]) + 1);
 
-    setGrScores(grScores);
+    return scores;
   }
 
   const innerBar = (value: number, maxValue: number, rank: number) =>
@@ -358,7 +352,7 @@ function App() {
         </BarContainer>;
 
   const gamesSortedByPlayerCount = (playerCount: number): CollectionGame[] => {
-    return games.sort((a, b) => {
+    return filteredGames.sort((a, b) => {
       const filteredA = a.playerCountStats.filter(g => g.playerCount === playerCount);
       const filteredB = b.playerCountStats.filter(g => g.playerCount === playerCount);
 
@@ -369,27 +363,17 @@ function App() {
     });
   };
 
-  const gameUserRating = (username: string, game: CollectionGame): number => {
-    const filteredPlayerRating = game.userRatings.filter(r => r.username === username);
+  const gameUserRating = (username: string, game: CollectionGame, unratedLast: boolean): number => {
+    const filteredPlayerRating = game.userStats.filter(r => r.username === username);
 
-    return (filteredPlayerRating.length === 1 && filteredPlayerRating[0].rating) || game.avgPlayerRating - 10;
+    return (filteredPlayerRating.length === 1 && filteredPlayerRating[0].rating) || game.avgPlayerRating - (unratedLast ? 10 : 0);
   }
 
-  const gamesSortedByUserRatings = (username: string): CollectionGame[] => {
-    console.log(username);
-    return games.sort((a, b) => gameUserRating(username, b) - gameUserRating(username, a))
-  }
+  const gamesSortedByUserRatings = (username: string): CollectionGame[] =>
+    filteredGames.sort((a, b) => gameUserRating(username, b, true) - gameUserRating(username, a, true));
 
-  const sortedGames =
-    (sort === 'name') ? games.sort((a, b) => a.name.localeCompare(b.name)) :
-      (sort === 'geek-rating') ? games.sort((a, b) => b.geekRating - a.geekRating) :
-        (sort === 'player-rating') ? games.sort((a, b) => b.avgPlayerRating - a.avgPlayerRating) :
-          (sort === 'weight') ? games.sort((a, b) => b.avgWeight - a.avgWeight) :
-            (sort === 'player-count') ? gamesSortedByPlayerCount(playerCount) :
-              (sort === 'playtime') ? games.sort((a, b) => b.maxPlayTime - a.maxPlayTime) :
-                (sort === 'grscore') ? games.sort((a, b) => grScores.filter(s => s.gameId === b.gameId)[0].score - grScores.filter(s => s.gameId === a.gameId)[0].score) :
-                  getUsernames().map(u => `user-${u}`).filter(s => s === sort).length === 1 ? gamesSortedByUserRatings(sort.substring(5)) :
-                    games;
+  const getAvgUserRatings = (game: CollectionGame): number =>
+    usernames.map(u => gameUserRating(u, game, false)).reduce((a, b) => a + b) / usernames.length;
 
   const sortArrow = (thisSort: SortOptions) =>
     <ArrowDownward style={{ 'color': sort === thisSort ? '#fff' : '#0475BB', 'paddingLeft': 2 }} />;
@@ -407,7 +391,11 @@ function App() {
   }
 
   const userRatingBar = (username: string, game: CollectionGame) => {
-    const ratings = game.userRatings.filter(r => r.username === username);
+    if (!username) {
+      return bar(avgUserRatings[game.gameId].score, 10, avgUserRatings[game.gameId].rank);
+    }
+
+    const ratings = game.userStats.filter(r => r.username === username);
 
     if (ratings.length === 1 && ratings[0].rating && ratings[0].rank) {
       return bar(ratings[0].rating, 10, ratings[0].rank)
@@ -423,16 +411,33 @@ function App() {
     }
   }
 
-  const toggle = (value: boolean, setter: (value: React.SetStateAction<boolean>) => void, label: string) =>
+  const toggle = (value: boolean, setter: (value: React.SetStateAction<boolean>) => void, label: string, disabled?: boolean) =>
     <FormControlLabel
       style={{ userSelect: 'none', font: 'inherit' }}
       control={
         <Switch
           checked={value}
+          disabled={disabled}
           onChange={() => setter(!value)} />
       }
       label={label} />
 
+  const usernames = usernamesString.split(/[^a-zA-Z0-9_]/).filter(u => u.length);
+  const filteredGames = allGames.filter(g => g.userStats.filter(us => (includeOwned && us.isOwned) || (includeWishlist && us.isWishlisted)).length > 0);
+
+  const grScores = getScores(g => getGrScore(g));
+  const avgUserRatings = getScores(g => getAvgUserRatings(g));
+
+  const sortedGames =
+    (sort === 'name') ? filteredGames.sort((a, b) => a.name.localeCompare(b.name)) :
+      (sort === 'geek-rating') ? filteredGames.sort((a, b) => b.geekRating - a.geekRating) :
+        (sort === 'player-rating') ? filteredGames.sort((a, b) => b.avgPlayerRating - a.avgPlayerRating) :
+          (sort === 'weight') ? filteredGames.sort((a, b) => b.avgWeight - a.avgWeight) :
+            (sort === 'player-count') ? gamesSortedByPlayerCount(playerCount) :
+              (sort === 'playtime') ? filteredGames.sort((a, b) => b.maxPlayTime - a.maxPlayTime) :
+                (sort === 'grscore') ? filteredGames.sort((a, b) => grScores[b.gameId].score - grScores[a.gameId].score) :
+                  usernames.map(u => `user-${u}`).filter(s => s === sort).length === 1 ? gamesSortedByUserRatings(sort.substring(5)) :
+                    filteredGames;
 
   return (
     <>
@@ -442,7 +447,7 @@ function App() {
           <Filters>
             <FiltersContainer>
               <PlayerFilter>
-                <Input size='small' value={usernames} inputProps={{ autoCapitalize: "none" }} onKeyDown={e => usernameFilterKeyPress(e.keyCode)} onChange={e => setUsernames(e.target.value)} placeholder="BGG Username(s)" />
+                <Input size='small' value={usernamesString} inputProps={{ autoCapitalize: "none" }} onKeyDown={e => usernameFilterKeyPress(e.keyCode)} onChange={e => setUsernamesString(e.target.value)} placeholder="BGG Username(s)" />
                 <FilterButton size='small' variant='contained' onClick={() => getApiData()} disabled={loadingGames}>{loadingGames ? "Loading Games..." : "Load Games"}</FilterButton>
               </PlayerFilter>
             </FiltersContainer>
@@ -466,11 +471,13 @@ function App() {
                 <FiltersInnerRow>
                   {toggle(showPlayerRating, setShowPlayerRating, "Player Rating")}
                   {toggle(showGeekRating, setShowGeekRating, "Geek Rating")}
+                  {toggle(showIndividualUserRatings, setShowIndividualUserRatings, "Individual Users Ratings", usernames.length < 2)}
                 </FiltersInnerRow>
                 <FiltersHeader>
                   Filters
                 </FiltersHeader>
                 <FiltersInnerRow>
+                  {toggle(includeOwned, setIncludeOwned, "Owned Games")}
                   {toggle(includeWishlist, setIncludeWishlist, "Wishlisted Games")}
                 </FiltersInnerRow>
               </>
@@ -490,13 +497,11 @@ function App() {
             {showGeekRating && barHeader("geek-rating", "GEEK RATING")}
             {barHeader("weight", "WEIGHT")}
             {barHeader("player-count", `${playerCount}-PLAYER`)}
-            {getUsernames().map(u => barHeader(`user-${u}`, u.toUpperCase()))}
+            {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeader(`user-${u}`, u.toUpperCase())) : barHeader(`users`, "Users")}
             {barHeader("grscore", "GR SCORE")}
           </HeaderRow>
         </HeaderContainer>
         {sortedGames.map(g => {
-          const grScore = grScores.filter(s => s.gameId === g.gameId)[0];
-
           // console.log(`g.name: ${g.name}, grScore?.score: ${grScore?.score}, grScore?.score ?? 0: ${grScore?.score ?? 0}`)
 
           return (
@@ -523,8 +528,8 @@ function App() {
               }
               {bar(g.avgWeight, 5, g.avgWeightRank)}
               {playerCountBar(playerCount, g)}
-              {getUsernames().map(u => userRatingBar(u, g))}
-              {bar(grScore?.score ?? 0, 10, grScore?.rank ?? 0)}
+              {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => userRatingBar(u, g)) : userRatingBar("", g)}
+              {bar(grScores[g.gameId].score ?? 0, 10, grScores[g.gameId].rank ?? 0)}
             </Row>
           );
         })}

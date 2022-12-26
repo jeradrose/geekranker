@@ -5,7 +5,7 @@ public class CollectionGame {
     public string Name { get; set; }
     public string ImageUrl { get; set; }
     public List<PlayerCountStats> PlayerCountStats { get; set; }
-    public List<UserRating> UserRatings { get; set; }
+    public List<UserStats> UserStats { get; set; }
     public double AvgWeight { get; set; }
     public double AvgPlayerRating { get; set; }
     public double GeekRating { get; set; }
@@ -29,8 +29,10 @@ public class PlayerCountStats {
     public int Rank { get; set; }
 }
 
-public class UserRating {
+public class UserStats {
     public string Username { get; set; }
     public double? Rating { get; set; }
     public int Rank { get; set; }
+    public bool IsOwned { get; set; }
+    public bool IsWishlisted { get; set; }
 }
