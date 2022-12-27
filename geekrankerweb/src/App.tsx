@@ -375,8 +375,6 @@ function App() {
     let numerator = playerCountStats[0].score * avgUserRating
     let denominator = 10;
 
-    console.log(`1 - numerator: ${numerator} / denominator: ${denominator} = ${numerator / denominator}`);
-
     if (includeIdealWeight) {
       numerator = numerator * (idealWeight - Math.abs(game.avgWeight - idealWeight));
       denominator = denominator * idealWeight;
@@ -635,8 +633,6 @@ function App() {
           </HeaderRow>
         </HeaderContainer>
         {sortedGames.map(g => {
-          // console.log(`g.name: ${g.name}, grScore?.score: ${grScore?.score}, grScore?.score ?? 0: ${grScore?.score ?? 0}`)
-
           return (
             <Row key={`game-${g.gameId}`}>
               <ImageAndName href={`https://www.boardgamegeek.com/boardgame/${g.gameId}`} target="_balnk">
