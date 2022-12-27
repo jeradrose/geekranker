@@ -80,7 +80,7 @@ const SliderContainer = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 410px;
+  width: 320px;
   gap: 5px;
 `;
 
@@ -609,7 +609,7 @@ function App() {
                 <FiltersInnerRow>
                   <SliderContainer>
                     <SliderLabel>
-                      {toggle(includeIdealWeight, setIncludeIdealWeight, "Score ideal weight")}
+                      {toggle(includeIdealWeight, setIncludeIdealWeight, "Ideal weight")}
                     </SliderLabel>
                     <SliderValue style={{ color: (includeIdealWeight ? "" : "#000"), opacity: (includeIdealWeight ? 1 : .38) }}>{idealWeight}</SliderValue>
                     <StyledSlider disabled={!includeIdealWeight} valueLabelDisplay="auto" min={1} max={5} step={0.5} value={idealWeight} onChange={(_, value) => setIdealWeight(Number(value))} />
@@ -618,7 +618,7 @@ function App() {
                 <FiltersInnerRow>
                   <SliderContainer>
                     <SliderLabel>
-                      {toggle(includeIdealTime, setIncludeIdealTime, "Score ideal time")}
+                      {toggle(includeIdealTime, setIncludeIdealTime, "Ideal time")}
                     </SliderLabel>
                     <SliderValue style={{ color: (includeIdealTime ? "" : "#000"), opacity: (includeIdealTime ? 1 : .38) }}>{idealTime}</SliderValue>
                     <StyledSlider disabled={!includeIdealTime} valueLabelDisplay="auto" min={30} max={240} step={30} value={idealTime} onChange={(_, value) => setIdealTime(Number(value))} />
@@ -626,11 +626,10 @@ function App() {
                 </FiltersInnerRow>
                 <FiltersInnerRow>
                   <FallBackContainer>
-                    Fall back to:
+                    Fallback rating:
                     <RadioGroup value={fallBackTo} onChange={handleFallBackToChange} row>
-                      <FormControlLabel value="player-rating" control={<Radio />} label="Player Rating" />
-                      <FormControlLabel value="geek-rating" control={<Radio />} label="Geek Rating" />
-
+                      <FormControlLabel value="player-rating" control={<Radio />} label="Player" />
+                      <FormControlLabel value="geek-rating" control={<Radio />} label="Geek" />
                     </RadioGroup>
                     <Tooltip title="When a user rating isn't set, use this instead."><FallBackInfo /></Tooltip>
                   </FallBackContainer>
