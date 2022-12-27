@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CollectionGame } from './models';
 import "typeface-open-sans";
 import { ArrowDownward, AddCircleOutline, RemoveCircleOutline, ExpandLess, ExpandMore } from '@mui/icons-material';
-import { TextField, Button, Tooltip, Switch, FormControlLabel } from '@mui/material';
+import { TextField, Button, Tooltip, Switch, FormControlLabel, Slider } from '@mui/material';
 
 import styled, { createGlobalStyle } from "styled-components"
 
@@ -76,6 +76,30 @@ const Input = styled(TextField)`
   background-color: #fff;
 `;
 
+const SliderContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 410px;
+  gap: 5px;
+`;
+
+const SliderLabel = styled.div`
+  flex-basis: 50%;
+  justify-items: center;
+`;
+
+const StyledSlider = styled(Slider)`
+  flex-basis: 40%;
+`;
+
+const SliderValue = styled.div`
+  text-align: center;
+  flex-basis: 5%;
+  font-weight: bold;
+  color: #348CE9;
+`;
+
 const FilterButton = styled(Button)`
   width: 160px;
 `;
@@ -143,9 +167,9 @@ const Row = styled(RowBase)`
   @media (min-width: 601px) {
     margin: 2px 0;
     padding: 5px 15px;
-  background-color: #fcfcfc;
-  :hover {
-    background-color: #f4f4f4;
+    background-color: #fcfcfc;
+    :hover {
+      background-color: #f4f4f4;
     }
   }
 
@@ -248,7 +272,7 @@ const PlayTime = styled.div`
     flex-grow: 1;
     flex-basis: 200px;
     min-width: 200px;
-  justify-content: center;
+    justify-content: center;
   }
 `;
 
@@ -332,6 +356,10 @@ function App() {
   const [includeWishlist, setIncludeWishlist] = useState<boolean>(false);
   const [showIndividualUserRatings, setShowIndividualUserRatings] = useState<boolean>(false);
   const [fallBackToGeekRating, setFallBackToGeekRating] = useState<boolean>(false);
+  const [includeIdealTime, setIncludeIdealTime] = useState<boolean>(false);
+  const [idealTime, setIdealTime] = useState<number>(60);
+  const [includeIdealWeight, setIncludeIdealWeight] = useState<boolean>(false);
+  const [idealWeight, setIdealWeight] = useState<number>(3);
 
   const getGrScore = (game: CollectionGame): number => {
     const playerCountStats = game.playerCountStats.filter(s => s.playerCount === playerCount);
@@ -342,37 +370,54 @@ function App() {
 
     const userRatings = usernames.map(username => gameUserRating(username, game, false)[0]);
 
-    return playerCountStats[0].score * (userRatings.reduce((a, b) => a + b) / userRatings.length) / 10;
+    const avgUserRating = (userRatings.reduce((a, b) => a + b) / userRatings.length);
+
+    let numerator = playerCountStats[0].score * avgUserRating
+    let denominator = 10;
+
+    console.log(`1 - numerator: ${numerator} / denominator: ${denominator} = ${numerator / denominator}`);
+
+    if (includeIdealWeight) {
+      numerator = numerator * (idealWeight - Math.abs(game.avgWeight - idealWeight));
+      denominator = denominator * idealWeight;
+    }
+
+    if (includeIdealTime) {
+      numerator = numerator * Math.max(idealTime - Math.abs(game.maxPlayTime - idealTime), 0);
+      denominator = denominator * idealTime;
+    }
+
+    return numerator / denominator;
   }
 
   const getApiUrl = (url: string): string =>
     (process.env.NODE_ENV === "production" ? "https://api.geekranker.com" : "") + url;
 
   useEffect(() => {
-  const getApiData = async () => {
-    setLoadingGames(true);
+    const getApiData = async () => {
+      setLoadingGames(true);
 
-    try {
-      const response = await fetch(
-        getApiUrl("/BoardGame/GetRankings"),
-        {
-          method: 'post',
-          body: JSON.stringify(usernames),
-          headers: {
-            'Content-type': 'application/json'
+      try {
+        const response = await fetch(
+          getApiUrl("/BoardGame/GetRankings"),
+          {
+            method: 'post',
+            body: JSON.stringify(usernames),
+            headers: {
+              'Content-type': 'application/json'
+            }
           }
-        }
-      );
+        );
 
-      if (response.ok) {
-        setAllGames(await response.json());
+        if (response.ok) {
+          setAllGames(await response.json());
+        }
+      } catch (ex) {
+        console.log(ex);
+      } finally {
+        setLoadingGames(false);
       }
-    } catch (ex) {
-      console.log(ex);
-    } finally {
-      setLoadingGames(false);
-    }
-  };
+    };
 
     getApiData();
   }, [usernames]);
@@ -550,6 +595,24 @@ function App() {
                 <FiltersInnerRow>
                   {toggle(fallBackToGeekRating, setFallBackToGeekRating, "Fall back to Geek Rating")}
                 </FiltersInnerRow>
+                <FiltersInnerRow>
+                  <SliderContainer>
+                    <SliderLabel>
+                      {toggle(includeIdealWeight, setIncludeIdealWeight, "Score ideal weight")}
+                    </SliderLabel>
+                    <SliderValue style={{ color: (includeIdealWeight ? "" : "#000"), opacity: (includeIdealWeight ? 1 : .38) }}>{idealWeight}</SliderValue>
+                    <StyledSlider disabled={!includeIdealWeight} valueLabelDisplay="auto" min={1} max={5} step={0.5} value={idealWeight} onChange={(_, value) => setIdealWeight(Number(value))} />
+                  </SliderContainer>
+                </FiltersInnerRow>
+                <FiltersInnerRow>
+                  <SliderContainer>
+                    <SliderLabel>
+                      {toggle(includeIdealTime, setIncludeIdealTime, "Score ideal time")}
+                    </SliderLabel>
+                    <SliderValue style={{ color: (includeIdealTime ? "" : "#000"), opacity: (includeIdealTime ? 1 : .38) }}>{idealTime}</SliderValue>
+                    <StyledSlider disabled={!includeIdealTime} valueLabelDisplay="auto" min={30} max={240} step={30} value={idealTime} onChange={(_, value) => setIdealTime(Number(value))} />
+                  </SliderContainer>
+                </FiltersInnerRow>
               </>
             }
           </Filters>
@@ -589,12 +652,12 @@ function App() {
                 <CellLabel>
                   Play Time
                 </CellLabel>
-              <PlayTime>
-                {g.minPlayTime}
-                {g.minPlayTime !== g.maxPlayTime && (
-                  <>  - {g.maxPlayTime}</>
-                )}
-              </PlayTime>
+                <PlayTime>
+                  {g.minPlayTime}
+                  {g.minPlayTime !== g.maxPlayTime && (
+                    <>  - {g.maxPlayTime}</>
+                  )}
+                </PlayTime>
               </CellContainer>
 
               {showPlayerRating &&
@@ -619,14 +682,14 @@ function App() {
                 <CellLabel>
                   Weight
                 </CellLabel>
-              {bar(g.avgWeight, 5, g.avgWeightRank)}
+                {bar(g.avgWeight, 5, g.avgWeightRank)}
               </CellContainer>
 
               <CellContainer>
                 <CellLabel>
                   {playerCount}-Player
                 </CellLabel>
-              {playerCountBar(playerCount, g)}
+                {playerCountBar(playerCount, g)}
               </CellContainer>
 
               {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u =>
@@ -649,7 +712,7 @@ function App() {
                 <CellLabel>
                   GR Score
                 </CellLabel>
-              {bar(grScores[g.gameId].score ?? 0, 10, grScores[g.gameId].rank ?? 0)}
+                {bar(grScores[g.gameId].score ?? 0, 10, grScores[g.gameId].rank ?? 0)}
               </GrScoreContainer>
             </Row>
           );
