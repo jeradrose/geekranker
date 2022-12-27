@@ -206,7 +206,7 @@ const CellContainer = styled.div`
   }
 `;
 
-const GrScoreContainer = styled(CellContainer)`
+const GrIndexContainer = styled(CellContainer)`
   @media (max-width: 600px) {
     font-weight: bold;
   }
@@ -344,7 +344,7 @@ const BarRank = styled.span`
   padding-left: 6px;
 `;
 
-type SortOptions = "name" | "geek-rating" | "player-rating" | "weight" | "player-count" | "playtime" | "grscore" | any;
+type SortOptions = "name" | "geek-rating" | "player-rating" | "weight" | "player-count" | "playtime" | "grindex" | any;
 
 type RankedScore = {
   score: number;
@@ -359,7 +359,7 @@ function App() {
   const [allGames, setAllGames] = useState<CollectionGame[]>([]);
   const [usernamesString, setUsernamesString] = useState<string>("");
   const [usernames, setUsernames] = useState<string[]>([]);
-  const [sort, setSort] = useState<SortOptions>("grscore");
+  const [sort, setSort] = useState<SortOptions>("grindex");
   const [playerCount, setPlayerCount] = useState<number>(2);
   const [loadingGames, setLoadingGames] = useState<boolean>(false);
   const [showGeekRating, setShowGeekRating] = useState<boolean>(false);
@@ -374,7 +374,7 @@ function App() {
   const [includeIdealWeight, setIncludeIdealWeight] = useState<boolean>(false);
   const [idealWeight, setIdealWeight] = useState<number>(3);
 
-  const getGrScore = (game: CollectionGame): number => {
+  const getGrIndex = (game: CollectionGame): number => {
     const playerCountStats = game.playerCountStats.filter(s => s.playerCount === playerCount);
 
     if (playerCountStats.length !== 1) {
@@ -548,7 +548,7 @@ function App() {
 
   const filteredGames = allGames.filter(g => g.userStats.filter(us => (includeOwned && us.isOwned) || (includeWishlist && us.isWishlisted)).length > 0);
 
-  const grScores = getScores(g => getGrScore(g));
+  const grIndexes = getScores(g => getGrIndex(g));
   const avgUserRatings = getScores(g => getAvgUserRatings(g));
 
   const sortedGames =
@@ -558,7 +558,7 @@ function App() {
           (sort === 'weight') ? filteredGames.sort((a, b) => b.avgWeight - a.avgWeight) :
             (sort === 'player-count') ? gamesSortedByPlayerCount(playerCount) :
               (sort === 'playtime') ? filteredGames.sort((a, b) => b.maxPlayTime - a.maxPlayTime) :
-                (sort === 'grscore') ? filteredGames.sort((a, b) => grScores[b.gameId].score - grScores[a.gameId].score) :
+                (sort === 'grindex') ? filteredGames.sort((a, b) => grIndexes[b.gameId].score - grIndexes[a.gameId].score) :
                   usernames.map(u => `user-${u}`).filter(s => s === sort).length === 1 ? gamesSortedByUserRatings(sort.substring(5)) :
                     filteredGames;
 
@@ -653,7 +653,7 @@ function App() {
             {barHeader("weight", "WEIGHT")}
             {barHeader("player-count", `${playerCount}-PLAYER`)}
             {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeader(`user-${u}`, u.toUpperCase())) : barHeader(`users`, "Users")}
-            {barHeader("grscore", "GR SCORE")}
+            {barHeader("grindex", "GR INDEX")}
           </HeaderRow>
         </HeaderContainer>
         {sortedGames.map(g => {
@@ -728,12 +728,12 @@ function App() {
                 </CellContainer>
               }
 
-              <GrScoreContainer>
+              <GrIndexContainer>
                 <CellLabel>
-                  GR Score
+                  GR Index
                 </CellLabel>
-                {bar(grScores[g.gameId].score ?? 0, 10, grScores[g.gameId].rank ?? 0)}
-              </GrScoreContainer>
+                {bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}
+              </GrIndexContainer>
             </Row>
           );
         })}
