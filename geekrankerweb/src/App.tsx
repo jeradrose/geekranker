@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CollectionGame } from './models';
 import "typeface-open-sans";
 import { ArrowDownward, AddCircleOutline, RemoveCircleOutline, ExpandLess, ExpandMore } from '@mui/icons-material';
@@ -321,6 +321,7 @@ type RankedScores = Record<number, RankedScore>;
 function App() {
   const [allGames, setAllGames] = useState<CollectionGame[]>([]);
   const [usernamesString, setUsernamesString] = useState<string>("");
+  const [usernames, setUsernames] = useState<string[]>([]);
   const [sort, setSort] = useState<SortOptions>("grscore");
   const [playerCount, setPlayerCount] = useState<number>(2);
   const [loadingGames, setLoadingGames] = useState<boolean>(false);
@@ -330,6 +331,7 @@ function App() {
   const [includeOwned, setIncludeOwned] = useState<boolean>(true);
   const [includeWishlist, setIncludeWishlist] = useState<boolean>(false);
   const [showIndividualUserRatings, setShowIndividualUserRatings] = useState<boolean>(false);
+  const [fallBackToGeekRating, setFallBackToGeekRating] = useState<boolean>(false);
 
   const getGrScore = (game: CollectionGame): number => {
     const playerCountStats = game.playerCountStats.filter(s => s.playerCount === playerCount);
@@ -338,12 +340,7 @@ function App() {
       return 0;
     }
 
-    const userRatings = usernames.map(u => {
-      const ratings = game.userStats.filter(r => r.username === u);
-      return (ratings.length === 1 && ratings[0].rating) || game.avgPlayerRating;
-    })
-
-    // console.log(`game.name: ${game.name}, playerCountStats[0].score: ${playerCountStats[0].score}, userRatings.reduce((a, b) => a + b) / userRatings.length: ${userRatings.reduce((a, b) => a + b) / userRatings.length}`);
+    const userRatings = usernames.map(username => gameUserRating(username, game, false)[0]);
 
     return playerCountStats[0].score * (userRatings.reduce((a, b) => a + b) / userRatings.length) / 10;
   }
@@ -351,8 +348,10 @@ function App() {
   const getApiUrl = (url: string): string =>
     (process.env.NODE_ENV === "production" ? "https://api.geekranker.com" : "") + url;
 
+  useEffect(() => {
   const getApiData = async () => {
     setLoadingGames(true);
+
     try {
       const response = await fetch(
         getApiUrl("/BoardGame/GetRankings"),
@@ -373,6 +372,13 @@ function App() {
     } finally {
       setLoadingGames(false);
     }
+  };
+
+    getApiData();
+  }, [usernames]);
+
+  const lockInUsernames = () => {
+    setUsernames(usernamesString.split(/[^a-zA-Z0-9_]/).filter(u => u.length));
   };
 
   const getScores = (scoreGetter: (game: CollectionGame) => number): RankedScores => {
@@ -423,17 +429,19 @@ function App() {
     });
   };
 
-  const gameUserRating = (username: string, game: CollectionGame, unratedLast: boolean): number => {
+  const gameUserRating = (username: string, game: CollectionGame, unratedLast: boolean): [number, boolean] => {
     const filteredPlayerRating = game.userStats.filter(r => r.username === username);
 
-    return (filteredPlayerRating.length === 1 && filteredPlayerRating[0].rating) || game.avgPlayerRating - (unratedLast ? 10 : 0);
+    const hasUserRating = filteredPlayerRating.length === 1;
+
+    return [(hasUserRating && filteredPlayerRating[0].rating) || (fallBackToGeekRating ? game.geekRating : game.avgPlayerRating) - (unratedLast ? 10 : 0), hasUserRating];
   }
 
   const gamesSortedByUserRatings = (username: string): CollectionGame[] =>
-    filteredGames.sort((a, b) => gameUserRating(username, b, true) - gameUserRating(username, a, true));
+    filteredGames.sort((a, b) => gameUserRating(username, b, true)[0] - gameUserRating(username, a, true)[0]);
 
   const getAvgUserRatings = (game: CollectionGame): number =>
-    usernames.map(u => gameUserRating(u, game, false)).reduce((a, b) => a + b) / usernames.length;
+    usernames.map(u => gameUserRating(u, game, false)[0]).reduce((a, b) => a + b) / usernames.length;
 
   const sortArrow = (thisSort: SortOptions) =>
     <ArrowDownward style={{ 'color': sort === thisSort ? '#fff' : '#0475BB', 'paddingLeft': 2 }} />;
@@ -455,19 +463,16 @@ function App() {
       return bar(avgUserRatings[game.gameId].score, 10, avgUserRatings[game.gameId].rank);
     }
 
+    const [rating, hasUserRating] = gameUserRating(username, game, false);
     const ratings = game.userStats.filter(r => r.username === username);
 
-    if (ratings.length === 1 && ratings[0].rating && ratings[0].rank) {
-      return bar(ratings[0].rating, 10, ratings[0].rank)
-    }
-
-    return bar(game.avgPlayerRating, 10, 0);
+    return bar(rating, 10, hasUserRating ? ratings[0].rank ?? 0 : 0);
   }
 
   const usernameFilterKeyPress = (keyCode: number) => {
     if (keyCode ===
       13) {
-      getApiData();
+      lockInUsernames();
     }
   }
 
@@ -482,7 +487,6 @@ function App() {
       }
       label={label} />
 
-  const usernames = usernamesString.split(/[^a-zA-Z0-9_]/).filter(u => u.length);
   const filteredGames = allGames.filter(g => g.userStats.filter(us => (includeOwned && us.isOwned) || (includeWishlist && us.isWishlisted)).length > 0);
 
   const grScores = getScores(g => getGrScore(g));
@@ -508,7 +512,7 @@ function App() {
             <FiltersContainer>
               <PlayerFilter>
                 <Input size='small' value={usernamesString} inputProps={{ autoCapitalize: "none" }} onKeyDown={e => usernameFilterKeyPress(e.keyCode)} onChange={e => setUsernamesString(e.target.value)} placeholder="BGG Username(s)" />
-                <FilterButton size='small' variant='contained' onClick={() => getApiData()} disabled={loadingGames}>{loadingGames ? "Loading Games..." : "Load Games"}</FilterButton>
+                <FilterButton size='small' variant='contained' onClick={() => lockInUsernames()} disabled={loadingGames}>{loadingGames ? "Loading Games..." : "Load Games"}</FilterButton>
               </PlayerFilter>
             </FiltersContainer>
             <FiltersContainer>
@@ -539,6 +543,12 @@ function App() {
                 <FiltersInnerRow>
                   {toggle(includeOwned, setIncludeOwned, "Owned Games")}
                   {toggle(includeWishlist, setIncludeWishlist, "Wishlisted Games")}
+                </FiltersInnerRow>
+                <FiltersHeader>
+                  Scoring
+                </FiltersHeader>
+                <FiltersInnerRow>
+                  {toggle(fallBackToGeekRating, setFallBackToGeekRating, "Fall back to Geek Rating")}
                 </FiltersInnerRow>
               </>
             }
