@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { CollectionGame } from './models';
 import "typeface-open-sans";
-import { ArrowDownward, AddCircleOutline, RemoveCircleOutline, ExpandLess, ExpandMore } from '@mui/icons-material';
-import { TextField, Button, Tooltip, Switch, FormControlLabel, Slider } from '@mui/material';
+import { ArrowDownward, AddCircleOutline, RemoveCircleOutline, ExpandLess, ExpandMore, Info } from '@mui/icons-material';
+import { TextField, Button, Tooltip, Switch, FormControlLabel, Slider, RadioGroup, Radio } from '@mui/material';
 
 import styled, { createGlobalStyle } from "styled-components"
 
@@ -98,6 +98,17 @@ const SliderValue = styled.div`
   flex-basis: 5%;
   font-weight: bold;
   color: #348CE9;
+`;
+
+const FallBackContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+const FallBackInfo = styled(Info)`
+ size: 14px;
+ color: #348CE9;
 `;
 
 const FilterButton = styled(Button)`
@@ -342,6 +353,8 @@ type RankedScore = {
 
 type RankedScores = Record<number, RankedScore>;
 
+type FallBackTo = "player-rating" | "geek-rating";
+
 function App() {
   const [allGames, setAllGames] = useState<CollectionGame[]>([]);
   const [usernamesString, setUsernamesString] = useState<string>("");
@@ -355,7 +368,7 @@ function App() {
   const [includeOwned, setIncludeOwned] = useState<boolean>(true);
   const [includeWishlist, setIncludeWishlist] = useState<boolean>(false);
   const [showIndividualUserRatings, setShowIndividualUserRatings] = useState<boolean>(false);
-  const [fallBackToGeekRating, setFallBackToGeekRating] = useState<boolean>(false);
+  const [fallBackTo, setFallBackTo] = useState<FallBackTo>("player-rating");
   const [includeIdealTime, setIncludeIdealTime] = useState<boolean>(false);
   const [idealTime, setIdealTime] = useState<number>(60);
   const [includeIdealWeight, setIncludeIdealWeight] = useState<boolean>(false);
@@ -477,7 +490,7 @@ function App() {
 
     const hasUserRating = filteredPlayerRating.length === 1;
 
-    return [(hasUserRating && filteredPlayerRating[0].rating) || (fallBackToGeekRating ? game.geekRating : game.avgPlayerRating) - (unratedLast ? 10 : 0), hasUserRating];
+    return [(hasUserRating && filteredPlayerRating[0].rating) || (fallBackTo === "geek-rating" ? game.geekRating : game.avgPlayerRating) - (unratedLast ? 10 : 0), hasUserRating];
   }
 
   const gamesSortedByUserRatings = (username: string): CollectionGame[] =>
@@ -529,6 +542,9 @@ function App() {
           onChange={() => setter(!value)} />
       }
       label={label} />
+
+  const handleFallBackToChange = (event: React.ChangeEvent<HTMLInputElement>) =>
+    setFallBackTo((event.target as HTMLInputElement).value as FallBackTo);
 
   const filteredGames = allGames.filter(g => g.userStats.filter(us => (includeOwned && us.isOwned) || (includeWishlist && us.isWishlisted)).length > 0);
 
@@ -591,9 +607,6 @@ function App() {
                   Scoring
                 </FiltersHeader>
                 <FiltersInnerRow>
-                  {toggle(fallBackToGeekRating, setFallBackToGeekRating, "Fall back to Geek Rating")}
-                </FiltersInnerRow>
-                <FiltersInnerRow>
                   <SliderContainer>
                     <SliderLabel>
                       {toggle(includeIdealWeight, setIncludeIdealWeight, "Score ideal weight")}
@@ -610,6 +623,17 @@ function App() {
                     <SliderValue style={{ color: (includeIdealTime ? "" : "#000"), opacity: (includeIdealTime ? 1 : .38) }}>{idealTime}</SliderValue>
                     <StyledSlider disabled={!includeIdealTime} valueLabelDisplay="auto" min={30} max={240} step={30} value={idealTime} onChange={(_, value) => setIdealTime(Number(value))} />
                   </SliderContainer>
+                </FiltersInnerRow>
+                <FiltersInnerRow>
+                  <FallBackContainer>
+                    Fall back to:
+                    <RadioGroup value={fallBackTo} onChange={handleFallBackToChange} row>
+                      <FormControlLabel value="player-rating" control={<Radio />} label="Player Rating" />
+                      <FormControlLabel value="geek-rating" control={<Radio />} label="Geek Rating" />
+
+                    </RadioGroup>
+                    <Tooltip title="When a user rating isn't set, use this instead."><FallBackInfo /></Tooltip>
+                  </FallBackContainer>
                 </FiltersInnerRow>
               </>
             }
