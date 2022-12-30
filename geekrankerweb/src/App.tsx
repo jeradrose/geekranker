@@ -11,7 +11,6 @@ import { createTheme, ThemeProvider } from '@mui/material';
 const theme = createTheme({
   typography: {
     fontFamily: 'Open Sans',
-    // fontSize: 13,
     fontWeightRegular: 600,
   },
 });
@@ -46,10 +45,7 @@ const Filters = styled.div`
 const FiltersInnerRow = styled.div`
   display: flex;
   align-items: center;
-  @media (max-width: 600px) {
-    align-items: flex-start;
-    flex-direction: column;
-  }
+  flex-wrap: wrap;
 `
 
 const FiltersContainer = styled(FiltersInnerRow)`
@@ -168,54 +164,40 @@ const HeaderRow = styled(RowBase)`
   color: #fff;
   padding: 0 15px;
   margin: 10px 0 0 0;
+`;
 
-  @media (max-width: 600px) {
-    display: none;
+const GameHorizontally = styled(RowBase)`
+  margin: 2px 0;
+  padding: 5px 15px;
+  background-color: #fcfcfc;
+  :hover {
+    background-color: #f4f4f4;
   }
 `;
 
-const Row = styled(RowBase)`
-  @media (min-width: 601px) {
-    margin: 2px 0;
-    padding: 5px 15px;
-    background-color: #fcfcfc;
-    :hover {
-      background-color: #f4f4f4;
-    }
-  }
-
-  @media (max-width: 600px) {
-    flex-direction: column;
-    height: auto;
-  }
+const GameVertically = styled.div`
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  flex-direction: column;
 `;
 
-const CellContainer = styled.div`
+const CellBase = styled.div`
   display: flex;
   justify-content: space-between;
   margin: 1px 0;
   flex-grow: 1;
   min-width: 200px;
-
-  @media (max-width: 600px) {
-    padding: 5px 3px;
-    background-color: #fcfcfc;
-  }
-  @media (min-width: 601px) {
-    flex-basis: 200px;
-  }
 `;
 
-const GrIndexContainer = styled(CellContainer)`
-  @media (max-width: 600px) {
-    font-weight: bold;
-  }
-`
+const HorizontalCell = styled(CellBase)`
+  flex-basis: 200px;
+`;
 
-const CellLabel = styled.div`
-  @media (min-width: 601px) {
-    display: none;
-  }
+const VerticalCell = styled(CellBase)`
+  padding: 5px 3px;
+  background-color: #fcfcfc;
 `;
 
 const ImageAndNameHeader = styled.a`
@@ -226,12 +208,10 @@ const ImageAndNameHeader = styled.a`
   justify-content: left;
   align-items: center;
   flex-grow: 1;
+  width: 200px;
   min-width: 200px;
   text-decoration: none;
   cursor: pointer;
-  @media (min-width: 601px) {
-    flex-basis: 200px;
-  }
 `;
 
 const ThumbnailContainer = styled.div`
@@ -247,17 +227,18 @@ const RowCell = styled.div`
   align-self: center;
 `;
 
-const ImageAndName = styled(ImageAndNameHeader)`
+const ImageAndNameHorizontal = styled(ImageAndNameHeader)`
   color: inherit;
+`;
 
-  @media (max-width: 600px) {
-    align-self: flex-start;
-    background-color: #348CE9;
-    font-weight: bold;
-    color: #fff;
-    padding: 5px;
-    width: 100%;
-  }
+const ImageAndNameVertical = styled(ImageAndNameHeader)`
+  color: inherit;
+  align-self: flex-start;
+  background-color: #348CE9;
+  font-weight: bold;
+  color: #fff;
+  padding: 5px;
+  width: 100%;
 `;
 
 const Thumbnail = styled.img`
@@ -275,19 +256,20 @@ const GameName = styled(RowCell)`
 const PlayTime = styled.div`
   display: flex;
   align-items: center;
-  @media (max-width: 600px) {
-    align-self: center;
-    width: 200px;
-  }
-  @media (min-width: 601px) {
-    flex-grow: 1;
-    flex-basis: 200px;
-    min-width: 200px;
-    justify-content: center;
-  }
+  width: 200px;
+  min-width: 200px;
 `;
 
-const PlayTimeHeader = styled(PlayTime)`
+const PlayTimeHorizontal = styled(PlayTime)`
+  flex-grow: 1;
+  justify-content: center;
+`;
+
+const PlayTimeVertical = styled(PlayTime)`
+  align-self: center;
+`;
+
+const PlayTimeHeader = styled(PlayTimeHorizontal)`
   cursor: pointer;
 `
 
@@ -301,20 +283,27 @@ const BarHeader = styled(RowCell)`
   min-width: 200px;
 `;
 
-const BarContainer = styled(RowCell)`
+const BarContainerBase = styled(RowCell)`
   height: 20px;
   display: flex;
-  @media (max-width: 600px) {
-    width: 200px;
-  }
-  @media (min-width: 601px) {
-    flex-grow: 1;
-    flex-basis: 200px;
-    min-width: 200px;
-  }
 `;
 
-const BarContainerFaded = styled(BarContainer)`
+const BarContainerHorizontal = styled(BarContainerBase)`
+  flex-grow: 1;
+  flex-basis: 200px;
+  min-width: 200px;
+`;
+
+const BarContainerVertical = styled(BarContainerBase)`
+  width: 200px;
+`;
+
+const BarContainerFadedHorizontal = styled(BarContainerHorizontal)`
+  opacity: 50%;
+  filter: grayscale();
+`;
+
+const BarContainerFadedVertical = styled(BarContainerVertical)`
   opacity: 50%;
   filter: grayscale();
 `;
@@ -356,6 +345,7 @@ type RankedScores = Record<number, RankedScore>;
 type FallBackTo = "player-rating" | "geek-rating";
 
 function App() {
+  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const [allGames, setAllGames] = useState<CollectionGame[]>([]);
   const [usernamesString, setUsernamesString] = useState<string>("");
   const [usernames, setUsernames] = useState<string[]>([]);
@@ -373,6 +363,15 @@ function App() {
   const [idealTime, setIdealTime] = useState<number>(60);
   const [includeIdealWeight, setIncludeIdealWeight] = useState<boolean>(false);
   const [idealWeight, setIdealWeight] = useState<number>(3);
+
+  const updateMedia = () => {
+    setScreenWidth(window.innerWidth);
+  };
+
+  useEffect(() => {
+    window.addEventListener("resize", updateMedia);
+    return () => window.removeEventListener("resize", updateMedia);
+  });
 
   const getGrIndex = (game: CollectionGame): number => {
     const playerCountStats = game.playerCountStats.filter(s => s.playerCount === playerCount);
@@ -462,16 +461,26 @@ function App() {
     </>;
 
   const bar = (value: number, maxValue: number, rank: number) =>
-    value === 0 ? <BarContainer /> :
+    value === 0 ? displayMode === "horizontal" ? <BarContainerHorizontal /> : <BarContainerVertical /> :
       rank === 0 ?
         <Tooltip title={rank === 0 && "Not rated; Falling back to avg. player rating"}>
-          <BarContainerFaded>
-            {innerBar(value, maxValue, rank)}
-          </BarContainerFaded>
+          {displayMode === "horizontal" ?
+            <BarContainerFadedHorizontal>
+              {innerBar(value, maxValue, rank)}
+            </BarContainerFadedHorizontal> :
+            <BarContainerFadedVertical>
+              {innerBar(value, maxValue, rank)}
+            </BarContainerFadedVertical>
+          }
         </Tooltip> :
-        <BarContainer>
-          {innerBar(value, maxValue, rank)}
-        </BarContainer>;
+        (displayMode === "horizontal" ?
+          <BarContainerHorizontal>
+            {innerBar(value, maxValue, rank)}
+          </BarContainerHorizontal> :
+          <BarContainerVertical>
+            {innerBar(value, maxValue, rank)}
+          </BarContainerVertical>
+        )
 
   const gamesSortedByPlayerCount = (playerCount: number): CollectionGame[] => {
     return filteredGames.sort((a, b) => {
@@ -510,7 +519,7 @@ function App() {
     if (filteredStats.length === 1) {
       return bar(filteredStats[0].score, 10, filteredStats[0].rank);
     } else {
-      return <BarContainer />;
+      return displayMode === "horizontal" ? <BarContainerHorizontal /> : <BarContainerVertical />;
     }
   }
 
@@ -561,6 +570,22 @@ function App() {
                 (sort === 'grindex') ? filteredGames.sort((a, b) => grIndexes[b.gameId].score - grIndexes[a.gameId].score) :
                   usernames.map(u => `user-${u}`).filter(s => s === sort).length === 1 ? gamesSortedByUserRatings(sort.substring(5)) :
                     filteredGames;
+
+  const getColumnWidth = (width: number, isShown: boolean) =>
+    width * (isShown ? 1 : 0);
+
+  const columnWidths =
+    getColumnWidth(200, true) // name
+    + getColumnWidth(200, true) // time
+    + getColumnWidth(200, showPlayerRating) // player rating
+    + getColumnWidth(200, showGeekRating) // geek rating
+    + getColumnWidth(200, true) // weight
+    + getColumnWidth(200, true) // player count rating
+    + getColumnWidth((showIndividualUserRatings ? usernames.length : 1) * 200, true) // user rating(s)
+    + getColumnWidth(200, true) // GR index
+    ;
+
+  const displayMode: "horizontal" | "vertical" = columnWidths + 35 > screenWidth ? "vertical" : "horizontal";
 
   return (
     <>
@@ -639,101 +664,137 @@ function App() {
           </Filters>
           <Logo src="/logo.png" alt="logo" />
         </MainBar>
-        <HeaderContainer>
-          <HeaderRow>
-            <ImageAndNameHeader onClick={() => setSort("name")}>
-              GAME{sortArrow("name")}
-            </ImageAndNameHeader>
-            <PlayTimeHeader onClick={() => setSort("playtime")}>
-              <ArrowDownward style={{ opacity: 0 }} />TIME{sortArrow("playtime")}
-            </PlayTimeHeader>
-            {showPlayerRating && barHeader("player-rating", "PLAYER RATING")}
-            {showGeekRating && barHeader("geek-rating", "GEEK RATING")}
-            {barHeader("weight", "WEIGHT")}
-            {barHeader("player-count", `${playerCount}-PLAYER`)}
-            {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeader(`user-${u}`, u.toUpperCase())) : barHeader(`users`, "Users")}
-            {barHeader("grindex", "GR INDEX")}
-          </HeaderRow>
-        </HeaderContainer>
+        {displayMode === "horizontal" &&
+          <HeaderContainer>
+            <HeaderRow>
+              <ImageAndNameHeader onClick={() => setSort("name")}>
+                GAME{sortArrow("name")}
+              </ImageAndNameHeader>
+              <PlayTimeHeader onClick={() => setSort("playtime")}>
+                <ArrowDownward style={{ opacity: 0 }} />TIME{sortArrow("playtime")}
+              </PlayTimeHeader>
+              {showPlayerRating && barHeader("player-rating", "PLAYER RATING")}
+              {showGeekRating && barHeader("geek-rating", "GEEK RATING")}
+              {barHeader("weight", "WEIGHT")}
+              {barHeader("player-count", `${playerCount}-PLAYER`)}
+              {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeader(`user-${u}`, u.toUpperCase())) : barHeader(`users`, "Users")}
+              {barHeader("grindex", "GR INDEX")}
+            </HeaderRow>
+          </HeaderContainer>
+        }
         {sortedGames.map(g => {
           return (
-            <Row key={`game-${g.gameId}`}>
-              <ImageAndName href={`https://www.boardgamegeek.com/boardgame/${g.gameId}`} target="_balnk">
-                <ThumbnailContainer>
-                  <Thumbnail src={g.imageUrl} />
-                </ThumbnailContainer>
-                <GameName>
-                  {g.name}
-                </GameName>
-              </ImageAndName>
+            displayMode === "horizontal" ?
+              <GameHorizontally key={`game-${g.gameId}`}>
+                <ImageAndNameHorizontal href={`https://www.boardgamegeek.com/boardgame/${g.gameId}`} target="_balnk">
+                  <ThumbnailContainer>
+                    <Thumbnail src={g.imageUrl} />
+                  </ThumbnailContainer>
+                  <GameName>{g.name}</GameName>
+                </ImageAndNameHorizontal>
 
-              <CellContainer>
-                <CellLabel>
+                <HorizontalCell>
+                  <PlayTimeHorizontal>
+                    {g.minPlayTime}
+                    {g.minPlayTime !== g.maxPlayTime && (
+                      <>  - {g.maxPlayTime}</>
+                    )}
+                  </PlayTimeHorizontal>
+                </HorizontalCell>
+
+                {showPlayerRating &&
+                  <HorizontalCell>
+                    {bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}
+                  </HorizontalCell>
+                }
+
+                {showGeekRating &&
+                  <HorizontalCell>
+                    {bar(g.geekRating, 10, g.geekRatingRank)}
+                  </HorizontalCell>
+                }
+
+                <HorizontalCell>
+                  {bar(g.avgWeight, 5, g.avgWeightRank)}
+                </HorizontalCell>
+
+                <HorizontalCell>
+                  {playerCountBar(playerCount, g)}
+                </HorizontalCell>
+
+                {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u =>
+                  <HorizontalCell>
+                    {userRatingBar(u, g)}
+                  </HorizontalCell>
+                ) :
+                  <HorizontalCell>
+                    {userRatingBar("", g)}
+                  </HorizontalCell>
+                }
+
+                <HorizontalCell>
+                  {bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}
+                </HorizontalCell>
+              </GameHorizontally> :
+              <GameVertically>
+                <ImageAndNameVertical href={`https://www.boardgamegeek.com/boardgame/${g.gameId}`} target="_balnk">
+                  <ThumbnailContainer>
+                    <Thumbnail src={g.imageUrl} />
+                  </ThumbnailContainer>
+                  <GameName>{g.name}</GameName>
+                </ImageAndNameVertical>
+
+                <VerticalCell>
                   Play Time
-                </CellLabel>
-                <PlayTime>
-                  {g.minPlayTime}
-                  {g.minPlayTime !== g.maxPlayTime && (
-                    <>  - {g.maxPlayTime}</>
-                  )}
-                </PlayTime>
-              </CellContainer>
+                  <PlayTimeVertical>
+                    {g.minPlayTime}
+                    {g.minPlayTime !== g.maxPlayTime && (
+                      <>  - {g.maxPlayTime}</>
+                    )}
+                  </PlayTimeVertical>
+                </VerticalCell>
 
-              {showPlayerRating &&
-                <CellContainer>
-                  <CellLabel>
+                {showPlayerRating &&
+                  <VerticalCell>
                     Player Rating
-                  </CellLabel>
-                  {bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}
-                </CellContainer>
-              }
+                    {bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}
+                  </VerticalCell>
+                }
 
-              {showGeekRating &&
-                <CellContainer>
-                  <CellLabel>
+                {showGeekRating &&
+                  <VerticalCell>
                     Geek Rating
-                  </CellLabel>
-                  {bar(g.geekRating, 10, g.geekRatingRank)}
-                </CellContainer>
-              }
+                    {bar(g.geekRating, 10, g.geekRatingRank)}
+                  </VerticalCell>
+                }
 
-              <CellContainer>
-                <CellLabel>
+                <VerticalCell>
                   Weight
-                </CellLabel>
-                {bar(g.avgWeight, 5, g.avgWeightRank)}
-              </CellContainer>
+                  {bar(g.avgWeight, 5, g.avgWeightRank)}
+                </VerticalCell>
 
-              <CellContainer>
-                <CellLabel>
+                <VerticalCell>
                   {playerCount}-Player
-                </CellLabel>
-                {playerCountBar(playerCount, g)}
-              </CellContainer>
+                  {playerCountBar(playerCount, g)}
+                </VerticalCell>
 
-              {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u =>
-                <CellContainer>
-                  <CellLabel>
+                {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u =>
+                  <VerticalCell>
                     {u}
-                  </CellLabel>
-                  {userRatingBar(u, g)}
-                </CellContainer>
-              ) :
-                <CellContainer>
-                  <CellLabel>
+                    {userRatingBar(u, g)}
+                  </VerticalCell>
+                ) :
+                  <VerticalCell>
                     User Rating
-                  </CellLabel>
-                  {userRatingBar("", g)}
-                </CellContainer>
-              }
+                    {userRatingBar("", g)}
+                  </VerticalCell>
+                }
 
-              <GrIndexContainer>
-                <CellLabel>
+                <VerticalCell style={{ fontWeight: "bold" }}>
                   GR Index
-                </CellLabel>
-                {bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}
-              </GrIndexContainer>
-            </Row>
+                  {bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}
+                </VerticalCell>
+              </GameVertically>
           );
         })}
       </ThemeProvider>
