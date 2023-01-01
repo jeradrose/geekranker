@@ -43,13 +43,13 @@ public class BggClient {
         var xml = cache.GetString(cacheKey);
 
         if (string.IsNullOrEmpty(xml)) {
-            const int maxRetries = 4;
+            const int maxRetries = 10;
 
             async Task<string> apiCallAsync() {
                 try {
                     return await _client.GetStringAsync($"https://boardgamegeek.com/xmlapi2/collection?username={username}&stats=1&excludesubtype=boardgameexpansion");
                 } catch (Exception ex) {
-                    throw new BggException(ex.Message);
+                    throw new BggException($"Exception calling BGG API after {maxRetries} attempts: {ex.Message}");
                 }
             }
 
@@ -61,7 +61,7 @@ public class BggClient {
                     throw new BggException("Too many attempts.");
                 }
                 tries++;
-                Thread.Sleep(2000);
+                Thread.Sleep(1000 * tries); // Add another second delay for each retry
                 xml = await apiCallAsync();
             }
 
