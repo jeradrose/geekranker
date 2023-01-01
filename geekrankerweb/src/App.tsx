@@ -24,16 +24,22 @@ const GlobalStyle = createGlobalStyle`
     margin: 0;
     padding: 0;
     background-color: #eee;
+    display: inline-flex;
   }
 `;
 
-const MainBar = styled.div`
-  display: flex;
+const PageHeader = styled.div`
+  display: inline-flex;
   justify-content: space-between;
+  box-sizing: border-box;
   align-items: flex-end;
   padding: 15px 15px 0 15px;
   flex-wrap: wrap-reverse;
   gap: 10px;
+  position: sticky;
+  left: 0;
+  flex-grow: 1;
+  width: calc(100vw - 17px);
 `;
 
 const Filters = styled.div`
@@ -97,7 +103,7 @@ const SliderValue = styled.div`
 `;
 
 const FallBackContainer = styled.div`
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
 `;
@@ -119,7 +125,7 @@ const Logo = styled.img`
 `;
 
 const PlayerCountFilter = styled.div`
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: space-between;
   width: 120px;
@@ -143,7 +149,8 @@ const AdvancedOptionsButton = styled.div`
   user-select: none;
 `;
 
-const HeaderContainer = styled.div`
+const GamesHeader = styled.div`
+  display: inline-block;
   position: sticky;
   top: 0;
   background-color: #fcfcfc;
@@ -151,11 +158,11 @@ const HeaderContainer = styled.div`
 `;
 
 const RowBase = styled.div`
-  display: flex;
+  display: inline-flex;
   justify-content: space-between;
-  width: 100%;
   height: 40px;
   box-sizing: border-box;
+  min-width: calc(100vw - 17px);
 `;
 
 const HeaderRow = styled(RowBase)`
@@ -163,7 +170,6 @@ const HeaderRow = styled(RowBase)`
   font-weight: bold;
   color: #fff;
   padding: 0 15px;
-  margin: 10px 0 0 0;
 `;
 
 const GameHorizontally = styled(RowBase)`
@@ -176,7 +182,7 @@ const GameHorizontally = styled(RowBase)`
 `;
 
 const GameVertically = styled.div`
-  display: flex;
+  display: inline-flex;
   justify-content: space-between;
   width: 100%;
   box-sizing: border-box;
@@ -184,7 +190,7 @@ const GameVertically = styled.div`
 `;
 
 const CellBase = styled.div`
-  display: flex;
+  display: inline-flex;
   justify-content: space-between;
   margin: 1px 0;
   flex-grow: 1;
@@ -203,7 +209,7 @@ const VerticalCell = styled(CellBase)`
 const ImageAndNameHeader = styled.a`
   box-sizing: border-box;
   align-self: center;
-  display: flex;
+  display: inline-flex;
   flex-direction: row;
   justify-content: left;
   align-items: center;
@@ -218,7 +224,7 @@ const ThumbnailContainer = styled.div`
   width: 30px;
   min-width: 30px;
   height: 30px;
-  display: flex;
+  display: inline-flex;
   justify-content: center;
   align-items: center;
 `;
@@ -254,7 +260,7 @@ const GameName = styled(RowCell)`
 `;
 
 const PlayTime = styled.div`
-  display: flex;
+  display: inline-flex;
   align-items: center;
   width: 200px;
   min-width: 200px;
@@ -274,7 +280,7 @@ const PlayTimeHeader = styled(PlayTimeHorizontal)`
 `
 
 const BarHeader = styled(RowCell)`
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: left;
   cursor: pointer;
@@ -317,7 +323,7 @@ const Bar = styled.div`
   width: 150px;
   height: 20px;
   z-index: 0;
-  display: flex;
+  display: inline-flex;
   background-color: #F25D07;
 `;
 
@@ -363,6 +369,8 @@ function App() {
   const [idealTime, setIdealTime] = useState<number>(60);
   const [includeIdealWeight, setIncludeIdealWeight] = useState<boolean>(false);
   const [idealWeight, setIdealWeight] = useState<number>(3);
+  const [preventHorizontalScroll,
+    setPreventHorizontalScroll] = useState<boolean>(false);
 
   const updateMedia = () => {
     setScreenWidth(window.innerWidth);
@@ -585,13 +593,13 @@ function App() {
     + getColumnWidth(200, true) // GR index
     ;
 
-  const displayMode: "horizontal" | "vertical" = columnWidths + 35 > screenWidth ? "vertical" : "horizontal";
+  const displayMode: "horizontal" | "vertical" = columnWidths + 35 > screenWidth && preventHorizontalScroll ? "vertical" : "horizontal";
 
   return (
     <>
       <GlobalStyle />
       <ThemeProvider theme={theme}>
-        <MainBar>
+        <PageHeader>
           <Filters>
             <FiltersContainer>
               <PlayerFilter>
@@ -659,13 +667,19 @@ function App() {
                     <Tooltip title="When a user rating isn't set, use this instead."><FallBackInfo /></Tooltip>
                   </FallBackContainer>
                 </FiltersInnerRow>
+                <FiltersHeader>
+                  UI Options
+                </FiltersHeader>
+                <FiltersInnerRow>
+                  {toggle(preventHorizontalScroll, setPreventHorizontalScroll, "Prevent Horizontal Scrolling")}
+                </FiltersInnerRow>
               </>
             }
           </Filters>
           <Logo src="/logo.png" alt="logo" />
-        </MainBar>
+        </PageHeader>
         {displayMode === "horizontal" &&
-          <HeaderContainer>
+          <GamesHeader>
             <HeaderRow>
               <ImageAndNameHeader onClick={() => setSort("name")}>
                 GAME{sortArrow("name")}
@@ -680,7 +694,7 @@ function App() {
               {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeader(`user-${u}`, u.toUpperCase())) : barHeader(`users`, "Users")}
               {barHeader("grindex", "GR INDEX")}
             </HeaderRow>
-          </HeaderContainer>
+          </GamesHeader>
         }
         {sortedGames.map(g => {
           return (
