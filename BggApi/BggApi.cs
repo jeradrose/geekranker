@@ -12,12 +12,16 @@ public class BggClient {
         var cache = new SqliteCache(new SqliteCacheOptions());
         var gameIdList = string.Join(',', gameIds.Distinct().Order());
         var cacheKey = $"{nameof(GetBoardGamesAsync)}-{gameIdList}";
+        var cacheDateKey = $"{cacheKey}-date";
 
         var xml = cache.GetString(cacheKey);
+        var dateString = cache.GetString(cacheDateKey);
 
-        if (string.IsNullOrEmpty(xml)) {
+        if (string.IsNullOrEmpty(xml) || string.IsNullOrEmpty(dateString)) {
             xml = await _client.GetStringAsync($"https://boardgamegeek.com/xmlapi2/thing?id={gameIdList}&stats=1");
-            cache.SetString(cacheKey, xml);
+            dateString = DateTime.UtcNow.ToString();
+            cache.SetString(cacheKey, xml, new DistributedCacheEntryOptions { });
+            cache.SetString(cacheDateKey, dateString);
         }
 
         var serializer = new XmlSerializer(
@@ -29,6 +33,8 @@ public class BggClient {
 
         var boardGames = (List<BoardGame>?)serializer.Deserialize(sr);
 
+        boardGames?.ForEach(g => g.CacheDate = DateTime.Parse(dateString));
+
         if (boardGames == null) {
             return new List<BoardGame>();
         }
@@ -39,10 +45,12 @@ public class BggClient {
     public async Task<List<CollectionItem>> GetCollectionAsync(string username) {
         var cache = new SqliteCache(new SqliteCacheOptions());
         var cacheKey = $"{nameof(GetCollectionAsync)}-{username}";
+        var cacheDateKey = $"{cacheKey}-date";
 
         var xml = cache.GetString(cacheKey);
+        var dateString = cache.GetString(cacheDateKey);
 
-        if (string.IsNullOrEmpty(xml)) {
+        if (string.IsNullOrEmpty(xml) || string.IsNullOrEmpty(dateString)) {
             const int maxRetries = 10;
 
             async Task<string> apiCallAsync() {
@@ -69,7 +77,10 @@ public class BggClient {
                 return new List<CollectionItem>();
             }
 
+            dateString = DateTime.UtcNow.ToString();
+
             cache.SetString(cacheKey, xml);
+            cache.SetString(cacheDateKey, dateString);
         }
 
         var serializer = new XmlSerializer(
@@ -80,6 +91,8 @@ public class BggClient {
         using var sr = new StringReader(xml);
 
         var collection = (List<CollectionItem>?)serializer.Deserialize(sr);
+
+        collection?.ForEach(g => g.CacheDate = DateTime.Parse(dateString));
 
         if (collection == null) {
             return new List<CollectionItem>();

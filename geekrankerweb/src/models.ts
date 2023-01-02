@@ -12,6 +12,7 @@ export interface CollectionGame {
   geekRatingRank: number;
   minPlayTime: number;
   maxPlayTime: number;
+  cacheDate: Date;
 }
 
 export interface PlayerCountStats {
@@ -33,4 +34,5 @@ export interface UserStats {
   rank: number | null;
   isOwned: boolean;
   isWishlisted: boolean;
+  cacheDate: Date | null;
 }

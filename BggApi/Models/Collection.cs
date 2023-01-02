@@ -25,6 +25,8 @@ public class CollectionItem {
 
     [XmlElement("stats")]
     public Stats Stats { get; set; }
+
+    public DateTime CacheDate { get; set; }
 }
 
 public class Status {

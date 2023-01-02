@@ -53,6 +53,7 @@ public class BoardGameController : ControllerBase {
                 AvgWeight = g.Statistics.Single().Ratings.Single().AverageWeight.Value,
                 MinPlayTime = g.MinPlayTime.Value,
                 MaxPlayTime = g.MaxPlayTime.Value,
+                CacheDate = g.CacheDate,
                 UserStats = collections
                     .Select(c => {
                         var collectionGame = c.Value.FirstOrDefault(cg => cg.Id == g.ObjectId);
@@ -62,6 +63,7 @@ public class BoardGameController : ControllerBase {
                             Rating = rating == 0 ? null : rating,
                             IsOwned = collectionGame?.Status.Own ?? false,
                             IsWishlisted = collectionGame?.Status.Wishlist ?? false,
+                            CacheDate = collectionGame?.CacheDate,
                         };
                     })
                     .ToList(),

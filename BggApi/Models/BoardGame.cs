@@ -43,6 +43,8 @@ public class BoardGame {
 
     [XmlElement("statistics")]
     public List<Statistics> Statistics { get; set; }
+    
+    public DateTime CacheDate { get; set; }
 }
 
 public class Name : StringValueAttribute {

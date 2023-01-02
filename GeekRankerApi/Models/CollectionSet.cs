@@ -14,6 +14,7 @@ public class CollectionGame {
     public int GeekRatingRank { get; set; }
     public int MinPlayTime { get; set; }
     public int MaxPlayTime { get; set; }
+    public DateTime CacheDate { get; set; }
 }
 
 public class PlayerCountStats {
@@ -35,4 +36,5 @@ public class UserStats {
     public int Rank { get; set; }
     public bool IsOwned { get; set; }
     public bool IsWishlisted { get; set; }
+    public DateTime? CacheDate { get; set; }
 }
