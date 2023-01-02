@@ -39,7 +39,6 @@ const PageHeader = styled.div`
   position: sticky;
   left: 0;
   flex-grow: 1;
-  width: calc(100vw - 17px);
 `;
 
 const Filters = styled.div`
@@ -162,7 +161,6 @@ const RowBase = styled.div`
   justify-content: space-between;
   height: 40px;
   box-sizing: border-box;
-  min-width: calc(100vw - 17px);
 `;
 
 const HeaderRow = styled(RowBase)`
@@ -184,7 +182,6 @@ const GameHorizontally = styled(RowBase)`
 const GameVertically = styled.div`
   display: inline-flex;
   justify-content: space-between;
-  width: 100%;
   box-sizing: border-box;
   flex-direction: column;
 `;
@@ -373,10 +370,11 @@ function App() {
     setPreventHorizontalScroll] = useState<boolean>(false);
 
   const updateMedia = () => {
-    setScreenWidth(window.innerWidth);
+    setScreenWidth(document.documentElement.clientWidth || document.body.clientWidth);
   };
 
   useEffect(() => {
+    updateMedia();
     window.addEventListener("resize", updateMedia);
     return () => window.removeEventListener("resize", updateMedia);
   });
@@ -599,7 +597,7 @@ function App() {
     <>
       <GlobalStyle />
       <ThemeProvider theme={theme}>
-        <PageHeader>
+        <PageHeader style={{ width: screenWidth }}>
           <Filters>
             <FiltersContainer>
               <PlayerFilter>
@@ -621,6 +619,9 @@ function App() {
             </FiltersContainer>
             {showAdvancedOptions &&
               <>
+                <FiltersHeader>
+                  {screenWidth}
+                </FiltersHeader>
                 <FiltersHeader>
                   Columns
                 </FiltersHeader>
@@ -680,7 +681,7 @@ function App() {
         </PageHeader>
         {displayMode === "horizontal" &&
           <GamesHeader>
-            <HeaderRow>
+            <HeaderRow style={{ minWidth: screenWidth }}>
               <ImageAndNameHeader onClick={() => setSort("name")}>
                 GAME{sortArrow("name")}
               </ImageAndNameHeader>
@@ -699,7 +700,7 @@ function App() {
         {sortedGames.map(g => {
           return (
             displayMode === "horizontal" ?
-              <GameHorizontally key={`game-${g.gameId}`}>
+              <GameHorizontally key={`game-${g.gameId}`} style={{ minWidth: screenWidth }}>
                 <ImageAndNameHorizontal href={`https://www.boardgamegeek.com/boardgame/${g.gameId}`} target="_balnk">
                   <ThumbnailContainer>
                     <Thumbnail src={g.imageUrl} />
@@ -750,7 +751,7 @@ function App() {
                   {bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}
                 </HorizontalCell>
               </GameHorizontally> :
-              <GameVertically>
+              <GameVertically style={{ width: screenWidth }}>
                 <ImageAndNameVertical href={`https://www.boardgamegeek.com/boardgame/${g.gameId}`} target="_balnk">
                   <ThumbnailContainer>
                     <Thumbnail src={g.imageUrl} />
