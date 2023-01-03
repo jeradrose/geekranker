@@ -575,6 +575,12 @@ function App() {
       }
       label={label} />
 
+  const verticalCell = (label: string, component: React.ReactNode) =>
+    <VerticalCell>
+      <VerticalLabel>{label}</VerticalLabel>
+      {component}
+    </VerticalCell>
+
   const handleFallBackToChange = (event: React.ChangeEvent<HTMLInputElement>) =>
     setFallBackTo((event.target as HTMLInputElement).value as FallBackTo);
 
@@ -720,43 +726,18 @@ function App() {
                   <GameName>{g.name}</GameName>
                 </ImageAndNameHorizontal>
 
-                <HorizontalCell>
-                  {timeBar(g.minPlayTime, g.maxPlayTime)}
-                </HorizontalCell>
-
-                {showPlayerRating &&
-                  <HorizontalCell>
-                    {bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}
-                  </HorizontalCell>
-                }
-
-                {showGeekRating &&
-                  <HorizontalCell>
-                    {bar(g.geekRating, 10, g.geekRatingRank)}
-                  </HorizontalCell>
-                }
-
-                <HorizontalCell>
-                  {bar(g.avgWeight, 5, g.avgWeightRank)}
-                </HorizontalCell>
-
-                <HorizontalCell>
-                  {playerCountBar(playerCount, g)}
-                </HorizontalCell>
-
+                <HorizontalCell>{timeBar(g.minPlayTime, g.maxPlayTime)}</HorizontalCell>
+                {showPlayerRating && <HorizontalCell>{bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}</HorizontalCell>}
+                {showGeekRating && <HorizontalCell>{bar(g.geekRating, 10, g.geekRatingRank)}</HorizontalCell>}
+                <HorizontalCell>{bar(g.avgWeight, 5, g.avgWeightRank)}</HorizontalCell>
+                <HorizontalCell>{playerCountBar(playerCount, g)}</HorizontalCell>
                 {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u =>
-                  <HorizontalCell>
-                    {userRatingBar(u, g)}
-                  </HorizontalCell>
+                  <HorizontalCell>{userRatingBar(u, g)}</HorizontalCell>
                 ) :
-                  <HorizontalCell>
-                    {userRatingBar("", g)}
-                  </HorizontalCell>
+                  <HorizontalCell>{userRatingBar("", g)}</HorizontalCell>
                 }
 
-                <HorizontalCell>
-                  {bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}
-                </HorizontalCell>
+                <HorizontalCell>{bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}</HorizontalCell>
               </GameHorizontally> :
               <GameVertically style={{ width: screenWidth }}>
                 <ImageAndNameVertical href={`https://www.boardgamegeek.com/boardgame/${g.gameId}`} target="_balnk">
@@ -766,51 +747,16 @@ function App() {
                   <GameName>{g.name}</GameName>
                 </ImageAndNameVertical>
 
-                <VerticalCell>
-                  <VerticalLabel>Play Time</VerticalLabel>
-                  {timeBar(g.minPlayTime, g.maxPlayTime)}
-                </VerticalCell>
-
-                {showPlayerRating &&
-                  <VerticalCell>
-                    <VerticalLabel>Player Rating</VerticalLabel>
-                    {bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}
-                  </VerticalCell>
+                {verticalCell("Play Time", timeBar(g.minPlayTime, g.maxPlayTime))}
+                {showPlayerRating && verticalCell("Player Rating", bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank))}
+                {showGeekRating && verticalCell("Geek Rating", bar(g.geekRating, 10, g.geekRatingRank))}
+                {verticalCell("Weight", bar(g.avgWeight, 5, g.avgWeightRank))}
+                {verticalCell(`${playerCount}-Player`, bar(g.avgWeight, 5, g.avgWeightRank))}
+                {showIndividualUserRatings || usernames.length < 2 ?
+                  usernames.map(u => verticalCell(u, userRatingBar(u, g))) :
+                  verticalCell("User Rating", userRatingBar("", g))
                 }
-
-                {showGeekRating &&
-                  <VerticalCell>
-                    <VerticalLabel>Geek Rating</VerticalLabel>
-                    {bar(g.geekRating, 10, g.geekRatingRank)}
-                  </VerticalCell>
-                }
-
-                <VerticalCell>
-                  <VerticalLabel>Weight</VerticalLabel>
-                  {bar(g.avgWeight, 5, g.avgWeightRank)}
-                </VerticalCell>
-
-                <VerticalCell>
-                  <VerticalLabel>{playerCount}-Player</VerticalLabel>
-                  {playerCountBar(playerCount, g)}
-                </VerticalCell>
-
-                {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u =>
-                  <VerticalCell>
-                    <VerticalLabel>{u}</VerticalLabel>
-                    {userRatingBar(u, g)}
-                  </VerticalCell>
-                ) :
-                  <VerticalCell>
-                    <VerticalLabel>User Rating</VerticalLabel>
-                    {userRatingBar("", g)}
-                  </VerticalCell>
-                }
-
-                <VerticalCell style={{ fontWeight: "bold" }}>
-                  <VerticalLabel>GR Index</VerticalLabel>
-                  {bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}
-                </VerticalCell>
+                {verticalCell("GR Index", bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0))}
               </GameVertically>
           );
         })}
