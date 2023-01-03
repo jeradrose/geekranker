@@ -215,6 +215,7 @@ const ImageAndNameHeader = styled.a`
   min-width: 200px;
   text-decoration: none;
   cursor: pointer;
+  padding-right: 5px;
 `;
 
 const ThumbnailContainer = styled.div`
@@ -255,26 +256,6 @@ const GameName = styled(RowCell)`
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
-
-const PlayTime = styled.div`
-  display: inline-flex;
-  align-items: center;
-  width: 200px;
-  min-width: 200px;
-`;
-
-const PlayTimeHorizontal = styled(PlayTime)`
-  flex-grow: 1;
-  justify-content: center;
-`;
-
-const PlayTimeVertical = styled(PlayTime)`
-  align-self: center;
-`;
-
-const PlayTimeHeader = styled(PlayTimeHorizontal)`
-  cursor: pointer;
-`
 
 const BarHeader = styled(RowCell)`
   display: inline-flex;
@@ -322,6 +303,15 @@ const Bar = styled.div`
   z-index: 0;
   display: inline-flex;
   background-color: #F25D07;
+`;
+
+const BarPlus = styled.div`
+  width: 0; 
+  height: 0; 
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  
+  border-left: 10px solid #F25D07;
 `;
 
 const BarText = styled.div`
@@ -460,7 +450,7 @@ function App() {
 
   const innerBar = (value: number, maxValue: number, rank: number) =>
     <>
-      <BarMask style={{ 'width': (value * (100 / maxValue)).toString() + 'px' }}>
+      <BarMask style={{ width: (value * (100 / maxValue)) }}>
         <Bar style={{ opacity: (value / maxValue) }} />
       </BarMask>
       <BarText>{value.toFixed(2)}{rank > 0 && <BarRank>#{rank}</BarRank>}</BarText>
@@ -487,6 +477,30 @@ function App() {
             {innerBar(value, maxValue, rank)}
           </BarContainerVertical>
         )
+
+  const timeBarMax = 240;
+  const innerTimeBar = (min: number, max: number) =>
+    <>
+      <Bar style={{ opacity: (Math.min(min, timeBarMax) / timeBarMax), width: (Math.min(min, timeBarMax) * (100 / timeBarMax)) }} />
+      <Bar style={{ opacity: (Math.min(max, timeBarMax) / timeBarMax), width: (Math.min(max - min, Math.max(timeBarMax - min, 0)) * (100 / timeBarMax)) }} />
+      {max > timeBarMax && <BarPlus />}
+      <BarText>
+        {min}
+        {min !== max && (
+          <> - {max}</>
+        )}
+      </BarText>
+    </>;
+
+  const timeBar = (min: number, max: number) =>
+  (displayMode === "horizontal" ?
+    <BarContainerHorizontal>
+      {innerTimeBar(min, max)}
+    </BarContainerHorizontal> :
+    <BarContainerVertical>
+      {innerTimeBar(min, max)}
+    </BarContainerVertical>
+  )
 
   const gamesSortedByPlayerCount = (playerCount: number): CollectionGame[] => {
     return filteredGames.sort((a, b) => {
@@ -685,9 +699,7 @@ function App() {
               <ImageAndNameHeader onClick={() => setSort("name")}>
                 GAME{sortArrow("name")}
               </ImageAndNameHeader>
-              <PlayTimeHeader onClick={() => setSort("playtime")}>
-                <ArrowDownward style={{ opacity: 0 }} />TIME{sortArrow("playtime")}
-              </PlayTimeHeader>
+              {barHeader("playtime", "TIME")}
               {showPlayerRating && barHeader("player-rating", "PLAYER RATING")}
               {showGeekRating && barHeader("geek-rating", "GEEK RATING")}
               {barHeader("weight", "WEIGHT")}
@@ -709,12 +721,7 @@ function App() {
                 </ImageAndNameHorizontal>
 
                 <HorizontalCell>
-                  <PlayTimeHorizontal>
-                    {g.minPlayTime}
-                    {g.minPlayTime !== g.maxPlayTime && (
-                      <>  - {g.maxPlayTime}</>
-                    )}
-                  </PlayTimeHorizontal>
+                  {timeBar(g.minPlayTime, g.maxPlayTime)}
                 </HorizontalCell>
 
                 {showPlayerRating &&
@@ -761,12 +768,7 @@ function App() {
 
                 <VerticalCell>
                   Play Time
-                  <PlayTimeVertical>
-                    {g.minPlayTime}
-                    {g.minPlayTime !== g.maxPlayTime && (
-                      <>  - {g.maxPlayTime}</>
-                    )}
-                  </PlayTimeVertical>
+                  {timeBar(g.minPlayTime, g.maxPlayTime)}
                 </VerticalCell>
 
                 {showPlayerRating &&
