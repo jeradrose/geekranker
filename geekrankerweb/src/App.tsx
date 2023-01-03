@@ -181,26 +181,29 @@ const GameHorizontally = styled(RowBase)`
 
 const GameVertically = styled.div`
   display: inline-flex;
-  justify-content: space-between;
   box-sizing: border-box;
   flex-direction: column;
 `;
 
 const CellBase = styled.div`
   display: inline-flex;
-  justify-content: space-between;
   margin: 1px 0;
   flex-grow: 1;
   min-width: 200px;
 `;
 
 const HorizontalCell = styled(CellBase)`
+  justify-content: space-between;
   flex-basis: 200px;
 `;
 
 const VerticalCell = styled(CellBase)`
   padding: 5px 3px;
   background-color: #fcfcfc;
+`;
+
+const VerticalLabel = styled.div`
+  width: 100px;
 `;
 
 const ImageAndNameHeader = styled.a`
@@ -764,48 +767,48 @@ function App() {
                 </ImageAndNameVertical>
 
                 <VerticalCell>
-                  Play Time
+                  <VerticalLabel>Play Time</VerticalLabel>
                   {timeBar(g.minPlayTime, g.maxPlayTime)}
                 </VerticalCell>
 
                 {showPlayerRating &&
                   <VerticalCell>
-                    Player Rating
+                    <VerticalLabel>Player Rating</VerticalLabel>
                     {bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}
                   </VerticalCell>
                 }
 
                 {showGeekRating &&
                   <VerticalCell>
-                    Geek Rating
+                    <VerticalLabel>Geek Rating</VerticalLabel>
                     {bar(g.geekRating, 10, g.geekRatingRank)}
                   </VerticalCell>
                 }
 
                 <VerticalCell>
-                  Weight
+                  <VerticalLabel>Weight</VerticalLabel>
                   {bar(g.avgWeight, 5, g.avgWeightRank)}
                 </VerticalCell>
 
                 <VerticalCell>
-                  {playerCount}-Player
+                  <VerticalLabel>{playerCount}-Player</VerticalLabel>
                   {playerCountBar(playerCount, g)}
                 </VerticalCell>
 
                 {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u =>
                   <VerticalCell>
-                    {u}
+                    <VerticalLabel>{u}</VerticalLabel>
                     {userRatingBar(u, g)}
                   </VerticalCell>
                 ) :
                   <VerticalCell>
-                    User Rating
+                    <VerticalLabel>User Rating</VerticalLabel>
                     {userRatingBar("", g)}
                   </VerticalCell>
                 }
 
                 <VerticalCell style={{ fontWeight: "bold" }}>
-                  GR Index
+                  <VerticalLabel>GR Index</VerticalLabel>
                   {bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}
                 </VerticalCell>
               </GameVertically>
