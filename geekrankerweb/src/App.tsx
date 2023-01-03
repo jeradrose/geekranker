@@ -295,11 +295,6 @@ const BarContainerFadedVertical = styled(BarContainerVertical)`
   filter: grayscale();
 `;
 
-const BarMask = styled.div`
-  overflow: hidden;
-  height: 20px;
-`;
-
 const Bar = styled.div`
   width: 150px;
   height: 20px;
@@ -451,33 +446,40 @@ function App() {
     return scores;
   }
 
-  const innerBar = (value: number, maxValue: number, rank: number) =>
+  const innerBar = (value: number, maxValue: number, rank: number, idealValue?: number | false) =>
+    value > 0 &&
     <>
-      <BarMask style={{ width: (value * (100 / maxValue)) }}>
-        <Bar style={{ opacity: (value / maxValue) }} />
-      </BarMask>
+      {idealValue &&
+        <>
+          <Bar style={{ width: (Math.min(value, idealValue) * (100 / maxValue)), opacity: (value / maxValue) }} />
+          <Bar style={{ width: (Math.abs(idealValue - value) * (100 / maxValue)), opacity: (value / maxValue), backgroundColor: idealValue < value ? "#f00" : "#aaa" }} />
+        </>
+      }
+      {!idealValue &&
+        <Bar style={{ width: (value * (100 / maxValue)), opacity: (value / maxValue) }} />
+      }
       <BarText>{value.toFixed(2)}{rank > 0 && <BarRank>#{rank}</BarRank>}</BarText>
-    </>;
+    </>
 
-  const bar = (value: number, maxValue: number, rank: number) =>
+  const bar = (value: number, maxValue: number, rank: number, idealValue?: number | false) =>
     value === 0 ? displayMode === "horizontal" ? <BarContainerHorizontal /> : <BarContainerVertical /> :
       rank === 0 ?
         <Tooltip title={rank === 0 && "Not rated; Falling back to avg. player rating"}>
           {displayMode === "horizontal" ?
             <BarContainerFadedHorizontal>
-              {innerBar(value, maxValue, rank)}
+              {innerBar(value, maxValue, rank, idealValue)}
             </BarContainerFadedHorizontal> :
             <BarContainerFadedVertical>
-              {innerBar(value, maxValue, rank)}
+              {innerBar(value, maxValue, rank, idealValue)}
             </BarContainerFadedVertical>
           }
         </Tooltip> :
         (displayMode === "horizontal" ?
           <BarContainerHorizontal>
-            {innerBar(value, maxValue, rank)}
+            {innerBar(value, maxValue, rank, idealValue)}
           </BarContainerHorizontal> :
           <BarContainerVertical>
-            {innerBar(value, maxValue, rank)}
+            {innerBar(value, maxValue, rank, idealValue)}
           </BarContainerVertical>
         )
 
@@ -729,7 +731,7 @@ function App() {
                 <HorizontalCell>{timeBar(g.minPlayTime, g.maxPlayTime)}</HorizontalCell>
                 {showPlayerRating && <HorizontalCell>{bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}</HorizontalCell>}
                 {showGeekRating && <HorizontalCell>{bar(g.geekRating, 10, g.geekRatingRank)}</HorizontalCell>}
-                <HorizontalCell>{bar(g.avgWeight, 5, g.avgWeightRank)}</HorizontalCell>
+                <HorizontalCell>{bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight)}</HorizontalCell>
                 <HorizontalCell>{playerCountBar(playerCount, g)}</HorizontalCell>
                 {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u =>
                   <HorizontalCell>{userRatingBar(u, g)}</HorizontalCell>
@@ -750,7 +752,7 @@ function App() {
                 {verticalCell("Play Time", timeBar(g.minPlayTime, g.maxPlayTime))}
                 {showPlayerRating && verticalCell("Player Rating", bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank))}
                 {showGeekRating && verticalCell("Geek Rating", bar(g.geekRating, 10, g.geekRatingRank))}
-                {verticalCell("Weight", bar(g.avgWeight, 5, g.avgWeightRank))}
+                {verticalCell("Weight", bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight))}
                 {verticalCell(`${playerCount}-Player`, bar(g.avgWeight, 5, g.avgWeightRank))}
                 {showIndividualUserRatings || usernames.length < 2 ?
                   usernames.map(u => verticalCell(u, userRatingBar(u, g))) :
