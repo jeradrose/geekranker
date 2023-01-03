@@ -634,9 +634,6 @@ function App() {
             {showAdvancedOptions &&
               <>
                 <FiltersHeader>
-                  {screenWidth}
-                </FiltersHeader>
-                <FiltersHeader>
                   Columns
                 </FiltersHeader>
                 <FiltersInnerRow>
