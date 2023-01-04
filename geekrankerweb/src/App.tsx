@@ -484,26 +484,37 @@ function App() {
         )
 
   const timeBarMax = 240;
-  const innerTimeBar = (min: number, max: number) =>
-    <>
-      <Bar style={{ opacity: (Math.min(min, timeBarMax) / timeBarMax), width: (Math.min(min, timeBarMax) * (100 / timeBarMax)) }} />
-      <Bar style={{ opacity: (Math.min(max, timeBarMax) / timeBarMax), width: (Math.min(max - min, Math.max(timeBarMax - min, 0)) * (100 / timeBarMax)) }} />
-      {max > timeBarMax && <BarPlus />}
-      <BarText>
-        {min}
-        {min !== max && (
-          <> - {max}</>
-        )}
-      </BarText>
-    </>;
+  const innerTimeBar = (min: number, max: number, idealValue: number | false) => {
+    const minOpacity = 0.2 + ((Math.min(min, timeBarMax) / timeBarMax) * 0.8);
+    const maxOpacity = 0.2 + ((Math.min(max, timeBarMax) / timeBarMax) * 0.8);
+    const scale = 100 / timeBarMax;
+    const hasIdealValue = !!idealValue;
+    idealValue = idealValue || timeBarMax;
+
+    return (
+      <>
+        <Bar style={{ opacity: minOpacity, width: Math.min(min, idealValue) * scale }} />
+        <Bar style={{ opacity: minOpacity, width: Math.max(min - idealValue, 0) * scale, backgroundColor: "#f00" }} />
+        <Bar style={{ opacity: maxOpacity, width: Math.max(Math.min(idealValue, max, timeBarMax) - min, 0) * scale }} />
+        <Bar style={{ opacity: maxOpacity, width: Math.max(Math.min(max, timeBarMax) - Math.max(min, idealValue), 0) * scale, backgroundColor: "#f00" }} />
+        <Bar style={{ opacity: maxOpacity, width: Math.max((hasIdealValue ? idealValue : 0) - Math.min(max, timeBarMax), 0) * scale, backgroundColor: "#aaa" }} />
+        {max > timeBarMax && <BarPlus style={{ borderLeftColor: hasIdealValue && idealValue < max ? "#f00" : undefined }} />}
+        <BarText>
+          {min}
+          {min !== max && (
+            <> - {max}</>
+          )}
+        </BarText>
+      </>);
+  }
 
   const timeBar = (min: number, max: number) =>
   (displayMode === "horizontal" ?
     <BarContainerHorizontal>
-      {innerTimeBar(min, max)}
+      {innerTimeBar(min, max, includeIdealTime && idealTime)}
     </BarContainerHorizontal> :
     <BarContainerVertical>
-      {innerTimeBar(min, max)}
+      {innerTimeBar(min, max, includeIdealTime && idealTime)}
     </BarContainerVertical>
   )
 
