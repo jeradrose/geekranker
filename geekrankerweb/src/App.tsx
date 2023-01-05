@@ -718,13 +718,13 @@ function App() {
               <ImageAndNameHeader onClick={() => setSort("name")}>
                 GAME{sortArrow("name")}
               </ImageAndNameHeader>
+              {barHeader("grindex", "GR INDEX")}
               {barHeader("playtime", "TIME")}
               {showPlayerRating && barHeader("player-rating", "PLAYER RATING")}
               {showGeekRating && barHeader("geek-rating", "GEEK RATING")}
               {barHeader("weight", "WEIGHT")}
               {barHeader("player-count", `${playerCount}-PLAYER`)}
               {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeader(`user-${u}`, u.toUpperCase())) : barHeader(`users`, "Users")}
-              {barHeader("grindex", "GR INDEX")}
             </HeaderRow>
           </GamesHeader>
         }
@@ -739,6 +739,7 @@ function App() {
                   <GameName>{g.name}</GameName>
                 </ImageAndNameHorizontal>
 
+                <HorizontalCell>{bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}</HorizontalCell>
                 <HorizontalCell>{timeBar(g.minPlayTime, g.maxPlayTime)}</HorizontalCell>
                 {showPlayerRating && <HorizontalCell>{bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}</HorizontalCell>}
                 {showGeekRating && <HorizontalCell>{bar(g.geekRating, 10, g.geekRatingRank)}</HorizontalCell>}
@@ -749,8 +750,6 @@ function App() {
                 ) :
                   <HorizontalCell>{userRatingBar("", g)}</HorizontalCell>
                 }
-
-                <HorizontalCell>{bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}</HorizontalCell>
               </GameHorizontally> :
               <GameVertically style={{ width: screenWidth }}>
                 <ImageAndNameVertical href={`https://www.boardgamegeek.com/boardgame/${g.gameId}`} target="_balnk">
@@ -760,6 +759,7 @@ function App() {
                   <GameName>{g.name}</GameName>
                 </ImageAndNameVertical>
 
+                {verticalCell("GR Index", bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0))}
                 {verticalCell("Play Time", timeBar(g.minPlayTime, g.maxPlayTime))}
                 {showPlayerRating && verticalCell("Player Rating", bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank))}
                 {showGeekRating && verticalCell("Geek Rating", bar(g.geekRating, 10, g.geekRatingRank))}
@@ -769,7 +769,6 @@ function App() {
                   usernames.map(u => verticalCell(u, userRatingBar(u, g))) :
                   verticalCell("User Rating", userRatingBar("", g))
                 }
-                {verticalCell("GR Index", bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0))}
               </GameVertically>
           );
         })}
