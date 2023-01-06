@@ -336,11 +336,16 @@ type RankedScores = Record<number, RankedScore>;
 type FallBackTo = "player-rating" | "geek-rating";
 
 function App() {
+  const params = new URLSearchParams(window.location.search);
+
   const usernamesRef = useRef<HTMLInputElement>(null);
+
+  const getUsernamesFromString = (usernamesString: string | undefined | null): string[] =>
+    usernamesString?.split(/[^a-zA-Z0-9_]/).filter(u => u.length) ?? [];
 
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const [allGames, setAllGames] = useState<CollectionGame[]>([]);
-  const [usernames, setUsernames] = useState<string[]>([]);
+  const [usernames, setUsernames] = useState<string[]>(getUsernamesFromString(params.get("u")));
   const [sort, setSort] = useState<SortOptions>("grindex");
   const [playerCount, setPlayerCount] = useState<number>(2);
   const [loadingGames, setLoadingGames] = useState<boolean>(false);
@@ -366,6 +371,26 @@ function App() {
     updateMedia();
     window.addEventListener("resize", updateMedia);
     return () => window.removeEventListener("resize", updateMedia);
+  });
+
+  const setOrDeleteParam = (name: string, value: string, defaultValue: string) => {
+    if (value === defaultValue) {
+      params.delete(name);
+    } else {
+      params.set(name, value);
+    }
+  }
+
+  useEffect(() => {
+    setOrDeleteParam("u", usernames.join(' '), "");
+
+    let url = location.pathname;
+
+    if (params.toString()) {
+      url += `?${params}`;
+    }
+
+    window.history.replaceState({}, '', url);
   });
 
   const getGrIndex = (game: CollectionGame): number => {
@@ -400,6 +425,11 @@ function App() {
 
   useEffect(() => {
     const getApiData = async () => {
+      if (!usernames.length) {
+        setAllGames([]);
+        return;
+      }
+
       setLoadingGames(true);
 
       try {
@@ -428,8 +458,7 @@ function App() {
   }, [usernames]);
 
   const lockInUsernames = () => {
-    const newUsernames =
-      usernamesRef.current?.value?.split(/[^a-zA-Z0-9_]/).filter(u => u.length) ?? [];
+    const newUsernames = getUsernamesFromString(usernamesRef.current?.value);
 
     if (newUsernames.length === 0) {
       setAllGames([]);
