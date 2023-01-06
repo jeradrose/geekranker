@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { CollectionGame } from './models';
 import "typeface-open-sans";
 import { ArrowDownward, AddCircleOutline, RemoveCircleOutline, ExpandLess, ExpandMore, Info } from '@mui/icons-material';
@@ -336,9 +336,10 @@ type RankedScores = Record<number, RankedScore>;
 type FallBackTo = "player-rating" | "geek-rating";
 
 function App() {
+  const usernamesRef = useRef<HTMLInputElement>(null);
+
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const [allGames, setAllGames] = useState<CollectionGame[]>([]);
-  const [usernamesString, setUsernamesString] = useState<string>("");
   const [usernames, setUsernames] = useState<string[]>([]);
   const [sort, setSort] = useState<SortOptions>("grindex");
   const [playerCount, setPlayerCount] = useState<number>(2);
@@ -427,7 +428,8 @@ function App() {
   }, [usernames]);
 
   const lockInUsernames = () => {
-    const newUsernames = usernamesString.split(/[^a-zA-Z0-9_]/).filter(u => u.length);
+    const newUsernames =
+      usernamesRef.current?.value?.split(/[^a-zA-Z0-9_]/).filter(u => u.length) ?? [];
 
     if (newUsernames.length === 0) {
       setAllGames([]);
@@ -642,7 +644,7 @@ function App() {
           <Filters>
             <FiltersContainer>
               <PlayerFilter>
-                <Input size='small' value={usernamesString} inputProps={{ autoCapitalize: "none" }} onKeyDown={e => usernameFilterKeyPress(e.keyCode)} onChange={e => setUsernamesString(e.target.value)} placeholder="BGG Username(s)" />
+                <Input size='small' inputProps={{ autoCapitalize: "none" }} onKeyDown={e => usernameFilterKeyPress(e.keyCode)} defaultValue={params.get("u") ?? ""} inputRef={usernamesRef} placeholder="BGG Username(s)" />
                 <FilterButton size='small' variant='contained' onClick={() => lockInUsernames()} disabled={loadingGames}>{loadingGames ? "Loading Games..." : "Load Games"}</FilterButton>
               </PlayerFilter>
             </FiltersContainer>
