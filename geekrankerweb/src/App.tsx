@@ -427,7 +427,12 @@ function App() {
   }, [usernames]);
 
   const lockInUsernames = () => {
-    setUsernames(usernamesString.split(/[^a-zA-Z0-9_]/).filter(u => u.length));
+    const newUsernames = usernamesString.split(/[^a-zA-Z0-9_]/).filter(u => u.length);
+
+    if (newUsernames.length === 0) {
+      setAllGames([]);
+    }
+    setUsernames(newUsernames);
   };
 
   const getScores = (scoreGetter: (game: CollectionGame) => number): RankedScores => {
