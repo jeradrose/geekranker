@@ -339,16 +339,19 @@ function App() {
   const params = new URLSearchParams(window.location.search);
 
   const usernamesRef = useRef<HTMLInputElement>(null);
+  const renderCount = useRef<number>(0);
 
   const getUsernamesFromString = (usernamesString: string | undefined | null): string[] =>
     usernamesString?.split(/[^a-zA-Z0-9_]/).filter(u => u.length) ?? [];
 
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const [allGames, setAllGames] = useState<CollectionGame[]>([]);
+  const [loadingGames, setLoadingGames] = useState<boolean>(false);
+
+  // User options
   const [usernames, setUsernames] = useState<string[]>(getUsernamesFromString(params.get("u")));
   const [sort, setSort] = useState<SortOptions>("grindex");
   const [playerCount, setPlayerCount] = useState<number>(2);
-  const [loadingGames, setLoadingGames] = useState<boolean>(false);
   const [showGeekRating, setShowGeekRating] = useState<boolean>(false);
   const [showPlayerRating, setShowPlayerRating] = useState<boolean>(false);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState<boolean>(false);
@@ -694,6 +697,8 @@ function App() {
 
   const displayMode: "horizontal" | "vertical" = columnWidths + 35 > screenWidth && preventHorizontalScroll ? "vertical" : "horizontal";
 
+  renderCount.current++;
+
   return (
     <>
       <GlobalStyle />
@@ -772,6 +777,16 @@ function App() {
                 <FiltersInnerRow>
                   {toggle(preventHorizontalScroll, setPreventHorizontalScroll, "Prevent Horizontal Scrolling")}
                 </FiltersInnerRow>
+                {location.href.startsWith("http://localhost") || (usernames.length === 1 && usernames[0] === "jader201") &&
+                  <>
+                    <FiltersHeader>
+                      Diagnostics
+                    </FiltersHeader>
+                    <FiltersInnerRow>
+                      renderCount: {renderCount.current}
+                    </FiltersInnerRow>
+                  </>
+                }
               </>
             }
           </Filters>
