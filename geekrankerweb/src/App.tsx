@@ -82,21 +82,21 @@ const SliderContainer = styled.div`
   justify-content: space-between;
   align-items: center;
   width: 320px;
-  gap: 5px;
 `;
 
 const SliderLabel = styled.div`
-  flex-basis: 50%;
+  flex-basis: 170px;
   justify-items: center;
 `;
 
 const StyledSlider = styled(Slider)`
-  flex-basis: 40%;
+  flex-basis: 100px;
 `;
 
 const SliderValue = styled.div`
   text-align: center;
-  flex-basis: 5%;
+  flex-basis: 50px;
+  padding-right: 5px;
   font-weight: bold;
   color: #348CE9;
 `;
@@ -638,8 +638,29 @@ function App() {
       {component}
     </VerticalCell>
 
+  const isIos = () => {
+    return [
+      'iPad Simulator',
+      'iPhone Simulator',
+      'iPod Simulator',
+      'iPad',
+      'iPhone',
+      'iPod'
+    ].includes(navigator.platform)
+      // iPad on iOS 13 detection
+      || (navigator.userAgent.includes("Mac") && "ontouchend" in document)
+  }
+
   const handleFallBackToChange = (event: React.ChangeEvent<HTMLInputElement>) =>
     setFallBackTo((event.target as HTMLInputElement).value as FallBackTo);
+
+  const handleSliderChange = (event: Event, callback: () => void) => {
+    if (isIos() && event.type === 'mousedown') {
+      return;
+    }
+
+    callback();
+  }
 
   const filteredGames = allGames.filter(g => g.userStats.filter(us => (includeOwned && us.isOwned) || (includeWishlist && us.isWishlisted)).length > 0);
 
@@ -723,7 +744,7 @@ function App() {
                       {toggle(includeIdealWeight, setIncludeIdealWeight, "Ideal weight")}
                     </SliderLabel>
                     <SliderValue style={{ color: (includeIdealWeight ? "" : "#000"), opacity: (includeIdealWeight ? 1 : .38) }}>{idealWeight}</SliderValue>
-                    <StyledSlider disabled={!includeIdealWeight} valueLabelDisplay="auto" min={1} max={5} step={0.5} value={idealWeight} onChange={(_, value) => setIdealWeight(Number(value))} />
+                    <StyledSlider disabled={!includeIdealWeight} min={1} max={5} step={0.5} value={idealWeight} onChange={(event, value) => handleSliderChange(event, () => setIdealWeight(Number(value)))} />
                   </SliderContainer>
                 </FiltersInnerRow>
                 <FiltersInnerRow>
@@ -732,7 +753,7 @@ function App() {
                       {toggle(includeIdealTime, setIncludeIdealTime, "Ideal time")}
                     </SliderLabel>
                     <SliderValue style={{ color: (includeIdealTime ? "" : "#000"), opacity: (includeIdealTime ? 1 : .38) }}>{idealTime}</SliderValue>
-                    <StyledSlider disabled={!includeIdealTime} valueLabelDisplay="auto" min={30} max={240} step={30} value={idealTime} onChange={(_, value) => setIdealTime(Number(value))} />
+                    <StyledSlider disabled={!includeIdealTime} min={30} max={240} step={30} value={idealTime} onChange={(event, value) => handleSliderChange(event, () => setIdealTime(Number(value)))} />
                   </SliderContainer>
                 </FiltersInnerRow>
                 <FiltersInnerRow>
