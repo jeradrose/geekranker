@@ -336,7 +336,7 @@ type RankedScores = Record<number, RankedScore>;
 type FallBackTo = "player-rating" | "geek-rating";
 
 function App() {
-  const params = new URLSearchParams(window.location.search);
+  let params = new URLSearchParams(window.location.search);
 
   const usernamesRef = useRef<HTMLInputElement>(null);
   const renderCount = useRef<number>(0);
@@ -344,25 +344,34 @@ function App() {
   const getUsernamesFromString = (usernamesString: string | undefined | null): string[] =>
     usernamesString?.split(/[^a-zA-Z0-9_]/).filter(u => u.length) ?? [];
 
+  const parseNumberOrDefault = (value: string | null, defaultValue: number) => !value ? defaultValue : parseInt(value);
+  const parseBoolOrDefault = (value: string | null, defaultValue: boolean) => value === null ? defaultValue : !(value.toLowerCase() === "false" || value === "0" || value === "no");
+
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const [allGames, setAllGames] = useState<CollectionGame[]>([]);
   const [loadingGames, setLoadingGames] = useState<boolean>(false);
 
   // User options
+  const sortDefault: SortOptions = "grindex";
+  const playerCountDefault = 2;
+  const fallbackToDefault: FallBackTo = "player-rating";
+  const idealTimeDefault = 60;
+  const idealWeightDefault = 3;
+
   const [usernames, setUsernames] = useState<string[]>(getUsernamesFromString(params.get("u")));
-  const [sort, setSort] = useState<SortOptions>("grindex");
-  const [playerCount, setPlayerCount] = useState<number>(2);
-  const [showGeekRating, setShowGeekRating] = useState<boolean>(false);
-  const [showPlayerRating, setShowPlayerRating] = useState<boolean>(false);
+  const [sort, setSort] = useState<SortOptions>(params.get("s") || sortDefault);
+  const [playerCount, setPlayerCount] = useState<number>(parseNumberOrDefault(params.get("pc"), playerCountDefault));
+  const [showGeekRating, setShowGeekRating] = useState<boolean>(parseBoolOrDefault(params.get("gr"), false));
+  const [showPlayerRating, setShowPlayerRating] = useState<boolean>(parseBoolOrDefault(params.get("pr"), false));
   const [showAdvancedOptions, setShowAdvancedOptions] = useState<boolean>(false);
-  const [includeOwned, setIncludeOwned] = useState<boolean>(true);
-  const [includeWishlist, setIncludeWishlist] = useState<boolean>(false);
-  const [showIndividualUserRatings, setShowIndividualUserRatings] = useState<boolean>(false);
-  const [fallBackTo, setFallBackTo] = useState<FallBackTo>("player-rating");
-  const [includeIdealTime, setIncludeIdealTime] = useState<boolean>(false);
-  const [idealTime, setIdealTime] = useState<number>(60);
-  const [includeIdealWeight, setIncludeIdealWeight] = useState<boolean>(false);
-  const [idealWeight, setIdealWeight] = useState<number>(3);
+  const [includeOwned, setIncludeOwned] = useState<boolean>(parseBoolOrDefault(params.get("own"), true));
+  const [includeWishlist, setIncludeWishlist] = useState<boolean>(parseBoolOrDefault(params.get("wish"), false));
+  const [showIndividualUserRatings, setShowIndividualUserRatings] = useState<boolean>(parseBoolOrDefault(params.get("ir"), false));
+  const [fallBackTo, setFallBackTo] = useState<FallBackTo>(params.get("fb") as FallBackTo | null || fallbackToDefault);
+  const [includeIdealTime, setIncludeIdealTime] = useState<boolean>(parseBoolOrDefault(params.get("it"), false));
+  const [idealTime, setIdealTime] = useState<number>(parseNumberOrDefault(params.get("it"), idealTimeDefault));
+  const [includeIdealWeight, setIncludeIdealWeight] = useState<boolean>(parseBoolOrDefault(params.get("iw"), false));
+  const [idealWeight, setIdealWeight] = useState<number>(parseNumberOrDefault(params.get("iw"), idealWeightDefault));
   const [preventHorizontalScroll,
     setPreventHorizontalScroll] = useState<boolean>(false);
 
@@ -376,16 +385,32 @@ function App() {
     return () => window.removeEventListener("resize", updateMedia);
   });
 
-  const setOrDeleteParam = (name: string, value: string, defaultValue: string) => {
+  const setOrDeleteParam = (name: string, value: any, defaultValue: any) => {
     if (value === defaultValue) {
       params.delete(name);
     } else {
-      params.set(name, value);
+      if (typeof value === "boolean") {
+        params.set(name, value ? "1" : "0");
+      } else {
+        params.set(name, value);
+      }
     }
   }
 
   useEffect(() => {
+    params = new URLSearchParams();
+
     setOrDeleteParam("u", usernames.join(' '), "");
+    setOrDeleteParam("s", sort, sortDefault);
+    setOrDeleteParam("pc", playerCount, playerCountDefault);
+    setOrDeleteParam("gr", showGeekRating, false);
+    setOrDeleteParam("pr", showPlayerRating, false);
+    setOrDeleteParam("own", includeOwned, true);
+    setOrDeleteParam("wish", includeWishlist, false);
+    setOrDeleteParam("pr", showIndividualUserRatings, false);
+    setOrDeleteParam("fb", fallBackTo, fallbackToDefault);
+    setOrDeleteParam("it", includeIdealTime && idealTime, false);
+    setOrDeleteParam("iw", includeIdealWeight && idealWeight, false);
 
     let url = location.pathname;
 
