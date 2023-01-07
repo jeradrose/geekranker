@@ -581,10 +581,10 @@ function App() {
     usernames.map(u => gameUserRating(u, game, false)[0]).reduce((a, b) => a + b) / usernames.length;
 
   const sortArrow = (thisSort: SortOptions) =>
-    <ArrowDownward style={{ 'color': sort === thisSort ? '#fff' : '#0475BB', 'paddingLeft': 2 }} />;
+    <ArrowDownward key={`arrow-${thisSort}`} style={{ 'color': sort === thisSort ? '#fff' : '#0475BB', 'paddingLeft': 2 }} />;
 
   const barHeader = (thisSort: SortOptions, label: string) =>
-    <BarHeader key={thisSort} onClick={() => setSort(thisSort)}>{label}{sortArrow(thisSort)}</BarHeader>;
+    <BarHeader key={`header-${thisSort}`} onClick={() => setSort(thisSort)}>{label}{sortArrow(thisSort)}</BarHeader>;
 
   const playerCountBar = (count: number, game: CollectionGame) => {
     const filteredStats = game.playerCountStats.filter(s => s.playerCount === count);
@@ -624,8 +624,16 @@ function App() {
       }
       label={label} />
 
-  const verticalCell = (label: string, component: React.ReactNode) =>
-    <VerticalCell>
+  const slugify = (str: string) =>
+    str
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+  const verticalCell = (label: string, component: React.ReactNode, id?: number) =>
+    <VerticalCell key={`${slugify(label)}-${id ?? 0}`}>
       <VerticalLabel>{label}</VerticalLabel>
       {component}
     </VerticalCell>
@@ -767,7 +775,7 @@ function App() {
         {sortedGames.map(g => {
           return (
             displayMode === "horizontal" ?
-              <GameHorizontally key={`game-${g.gameId}`} style={{ minWidth: screenWidth }}>
+              <GameHorizontally key={`game-horizontal-${g.gameId}`} style={{ minWidth: screenWidth }}>
                 <ImageAndNameHorizontal href={`https://www.boardgamegeek.com/boardgame/${g.gameId}`} target="_balnk">
                   <ThumbnailContainer>
                     <Thumbnail src={g.imageUrl} />
@@ -781,13 +789,12 @@ function App() {
                 {showGeekRating && <HorizontalCell>{bar(g.geekRating, 10, g.geekRatingRank)}</HorizontalCell>}
                 <HorizontalCell>{bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight)}</HorizontalCell>
                 <HorizontalCell>{playerCountBar(playerCount, g)}</HorizontalCell>
-                {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u =>
-                  <HorizontalCell>{userRatingBar(u, g)}</HorizontalCell>
-                ) :
+                {showIndividualUserRatings || usernames.length < 2 ?
+                  usernames.map(u => <HorizontalCell key={`userRating-${g.gameId}-${u}`}>{userRatingBar(u, g)}</HorizontalCell>) :
                   <HorizontalCell>{userRatingBar("", g)}</HorizontalCell>
                 }
               </GameHorizontally> :
-              <GameVertically style={{ width: screenWidth }}>
+              <GameVertically key={`game-vertical-${g.gameId}`} style={{ width: screenWidth }}>
                 <ImageAndNameVertical href={`https://www.boardgamegeek.com/boardgame/${g.gameId}`} target="_balnk">
                   <ThumbnailContainer>
                     <Thumbnail src={g.imageUrl} />
@@ -802,7 +809,7 @@ function App() {
                 {verticalCell("Weight", bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight))}
                 {verticalCell(`${playerCount}-Player`, bar(g.avgWeight, 5, g.avgWeightRank))}
                 {showIndividualUserRatings || usernames.length < 2 ?
-                  usernames.map(u => verticalCell(u, userRatingBar(u, g))) :
+                  usernames.map(u => verticalCell(u, userRatingBar(u, g), g.gameId)) :
                   verticalCell("User Rating", userRatingBar("", g))
                 }
               </GameVertically>
