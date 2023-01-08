@@ -28,17 +28,22 @@ const GlobalStyle = createGlobalStyle`
   }
 `;
 
+const PageHeaderContainer = styled.div`
+  display: inline-flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 15px 15px 0 15px;
+  position: sticky;
+  left: 0;
+`;
+
 const PageHeader = styled.div`
   display: inline-flex;
   justify-content: space-between;
-  box-sizing: border-box;
   align-items: flex-end;
-  padding: 15px 15px 0 15px;
+  flex-grow: 1;
   flex-wrap: wrap-reverse;
   gap: 10px;
-  position: sticky;
-  left: 0;
-  flex-grow: 1;
 `;
 
 const Filters = styled.div`
@@ -55,7 +60,7 @@ const FiltersInnerRow = styled.div`
 
 const FiltersContainer = styled(FiltersInnerRow)`
   margin: 0 0 10px 0;
-  width: 100%;
+  flex-grow: 1;
 `;
 
 const FiltersHeader = styled(FiltersInnerRow)`
@@ -335,6 +340,44 @@ type RankedScores = Record<number, RankedScore>;
 
 type FallBackTo = "player-rating" | "geek-rating";
 
+enum QueryParams {
+  Usernames = "u",
+  PlayerCount = "pc",
+  Sort = "s",
+  ShowGrIndex = "sgi",
+  ShowUserRating = "sur",
+  ShowPlayerRating = "spr",
+  ShowGeekRating = "sgr",
+  ShowPlayerCount = "spc",
+  ShowWeight = "sw",
+  ShowTime = "st",
+  ShowIndividualUserRatings = "sir",
+  IncludeOwned = "own",
+  IncludeWishlisted = "wish",
+  IdealWieght = "iw",
+  IdealTime = "it",
+  FallBackTo = "fb",
+}
+
+const defaultQueryValues: { [key in QueryParams]: any } = {
+  [QueryParams.Usernames]: "",
+  [QueryParams.PlayerCount]: 2,
+  [QueryParams.Sort]: "grindex",
+  [QueryParams.ShowGrIndex]: true,
+  [QueryParams.ShowUserRating]: true,
+  [QueryParams.ShowPlayerRating]: false,
+  [QueryParams.ShowGeekRating]: false,
+  [QueryParams.ShowPlayerCount]: true,
+  [QueryParams.ShowWeight]: true,
+  [QueryParams.ShowTime]: true,
+  [QueryParams.ShowIndividualUserRatings]: false,
+  [QueryParams.IncludeOwned]: true,
+  [QueryParams.IncludeWishlisted]: false,
+  [QueryParams.IdealWieght]: null,
+  [QueryParams.IdealTime]: null,
+  [QueryParams.FallBackTo]: "player-rating",
+}
+
 function App() {
   let params = new URLSearchParams(window.location.search);
 
@@ -344,36 +387,81 @@ function App() {
   const getUsernamesFromString = (usernamesString: string | undefined | null): string[] =>
     usernamesString?.split(/[^a-zA-Z0-9_]/).filter(u => u.length) ?? [];
 
-  const parseNumberOrDefault = (value: string | null, defaultValue: number) => !value ? defaultValue : parseInt(value);
-  const parseBoolOrDefault = (value: string | null, defaultValue: boolean) => value === null ? defaultValue : !(value.toLowerCase() === "false" || value === "0" || value === "no");
+  const getStringQueryParam = (queryParam: QueryParams): string => {
+    const param = params.get(queryParam);
+    return param === null ? defaultQueryValues[queryParam] as string : param;
+  }
+
+  const getNumberQueryParam = (queryParam: QueryParams): number => {
+    const param = params.get(queryParam);
+    return !param ? defaultQueryValues[queryParam] as number : parseInt(param);
+  }
+
+  const getBoolQueryParam = (queryParam: QueryParams): boolean => {
+    const param = params.get(queryParam);
+    return param === null ?
+      defaultQueryValues[queryParam] as boolean :
+      !(param.toLowerCase() === "false" || param.toLowerCase() === "f" || param === "0" || param === "no");
+  }
 
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const [allGames, setAllGames] = useState<CollectionGame[]>([]);
   const [loadingGames, setLoadingGames] = useState<boolean>(false);
 
-  // User options
-  const sortDefault: SortOptions = "grindex";
-  const playerCountDefault = 2;
-  const fallbackToDefault: FallBackTo = "player-rating";
+  // User option nullable defaults
   const idealTimeDefault = 60;
   const idealWeightDefault = 3;
 
+  // Standard options
   const [usernames, setUsernames] = useState<string[]>(getUsernamesFromString(params.get("u")));
-  const [sort, setSort] = useState<SortOptions>(params.get("s") || sortDefault);
-  const [playerCount, setPlayerCount] = useState<number>(parseNumberOrDefault(params.get("pc"), playerCountDefault));
-  const [showGeekRating, setShowGeekRating] = useState<boolean>(parseBoolOrDefault(params.get("gr"), false));
-  const [showPlayerRating, setShowPlayerRating] = useState<boolean>(parseBoolOrDefault(params.get("pr"), false));
+  const [sort, setSort] = useState<SortOptions>(getStringQueryParam(QueryParams.Sort));
+  const [playerCount, setPlayerCount] = useState<number>(getNumberQueryParam(QueryParams.PlayerCount));
+
+  // Column visibility
+  const [showGrIndex, setShowGrIndex] = useState<boolean>(getBoolQueryParam(QueryParams.ShowGrIndex));
+  const [showGeekRating, setShowGeekRating] = useState<boolean>(getBoolQueryParam(QueryParams.ShowGeekRating));
+  const [showPlayerRating, setShowPlayerRating] = useState<boolean>(getBoolQueryParam(QueryParams.ShowPlayerRating));
+  const [showUserRating, setShowUserRating] = useState<boolean>(getBoolQueryParam(QueryParams.ShowUserRating));
+  const [showTime, setShowTime] = useState<boolean>(getBoolQueryParam(QueryParams.ShowTime));
+  const [showWeight, setShowWeight] = useState<boolean>(getBoolQueryParam(QueryParams.ShowWeight));
+  const [showPlayerCount, setShowPlayerCount] = useState<boolean>(getBoolQueryParam(QueryParams.ShowPlayerCount));
+  const [showIndividualUserRatings, setShowIndividualUserRatings] = useState<boolean>(getBoolQueryParam(QueryParams.ShowIndividualUserRatings));
+
   const [showAdvancedOptions, setShowAdvancedOptions] = useState<boolean>(false);
-  const [includeOwned, setIncludeOwned] = useState<boolean>(parseBoolOrDefault(params.get("own"), true));
-  const [includeWishlist, setIncludeWishlist] = useState<boolean>(parseBoolOrDefault(params.get("wish"), false));
-  const [showIndividualUserRatings, setShowIndividualUserRatings] = useState<boolean>(parseBoolOrDefault(params.get("ir"), false));
-  const [fallBackTo, setFallBackTo] = useState<FallBackTo>(params.get("fb") as FallBackTo | null || fallbackToDefault);
-  const [includeIdealTime, setIncludeIdealTime] = useState<boolean>(parseBoolOrDefault(params.get("it"), false));
-  const [idealTime, setIdealTime] = useState<number>(parseNumberOrDefault(params.get("it"), idealTimeDefault));
-  const [includeIdealWeight, setIncludeIdealWeight] = useState<boolean>(parseBoolOrDefault(params.get("iw"), false));
-  const [idealWeight, setIdealWeight] = useState<number>(parseNumberOrDefault(params.get("iw"), idealWeightDefault));
+
+  // Filter options
+  const [includeOwned, setIncludeOwned] = useState<boolean>(getBoolQueryParam(QueryParams.IncludeOwned));
+  const [includeWishlist, setIncludeWishlist] = useState<boolean>(getBoolQueryParam(QueryParams.IncludeWishlisted));
+
+  // Scoring options
+  const [includeIdealWeight, setIncludeIdealWeight] = useState<boolean>(getBoolQueryParam(QueryParams.IdealWieght));
+  const [idealWeight, setIdealWeight] = useState<number>(getNumberQueryParam(QueryParams.IdealWieght) || idealWeightDefault);
+  const [includeIdealTime, setIncludeIdealTime] = useState<boolean>(getBoolQueryParam(QueryParams.IdealTime));
+  const [idealTime, setIdealTime] = useState<number>(getNumberQueryParam(QueryParams.IdealTime) || idealTimeDefault);
+  const [fallBackTo, setFallBackTo] = useState<FallBackTo>(getStringQueryParam(QueryParams.FallBackTo) as FallBackTo);
+
+  // UI options
   const [preventHorizontalScroll,
     setPreventHorizontalScroll] = useState<boolean>(false);
+
+  const queryValues: { [key in QueryParams]: any } = {
+    [QueryParams.Usernames]: usernames.join(' '),
+    [QueryParams.PlayerCount]: playerCount,
+    [QueryParams.Sort]: sort,
+    [QueryParams.ShowGrIndex]: showGrIndex,
+    [QueryParams.ShowUserRating]: showUserRating,
+    [QueryParams.ShowPlayerRating]: showPlayerRating,
+    [QueryParams.ShowGeekRating]: showGeekRating,
+    [QueryParams.ShowPlayerCount]: showPlayerCount,
+    [QueryParams.ShowWeight]: showWeight,
+    [QueryParams.ShowTime]: showTime,
+    [QueryParams.ShowIndividualUserRatings]: showIndividualUserRatings,
+    [QueryParams.IncludeOwned]: includeOwned,
+    [QueryParams.IncludeWishlisted]: includeWishlist,
+    [QueryParams.IdealWieght]: includeIdealWeight && idealWeight,
+    [QueryParams.IdealTime]: includeIdealTime && idealTime,
+    [QueryParams.FallBackTo]: fallBackTo,
+  }
 
   const updateMedia = () => {
     setScreenWidth(document.documentElement.clientWidth || document.body.clientWidth);
@@ -385,14 +473,14 @@ function App() {
     return () => window.removeEventListener("resize", updateMedia);
   });
 
-  const setOrDeleteParam = (name: string, value: any, defaultValue: any) => {
-    if (value === defaultValue) {
-      params.delete(name);
+  const setOrDeleteParam = (queryParam: QueryParams) => {
+    if (queryValues[queryParam] === defaultQueryValues[queryParam]) {
+      params.delete(queryParam);
     } else {
-      if (typeof value === "boolean") {
-        params.set(name, value ? "1" : "0");
+      if (typeof queryValues[queryParam] === "boolean") {
+        params.set(queryParam, queryValues[queryParam] ? "1" : "0");
       } else {
-        params.set(name, value);
+        params.set(queryParam, queryValues[queryParam]);
       }
     }
   }
@@ -400,17 +488,9 @@ function App() {
   useEffect(() => {
     params = new URLSearchParams();
 
-    setOrDeleteParam("u", usernames.join(' '), "");
-    setOrDeleteParam("s", sort, sortDefault);
-    setOrDeleteParam("pc", playerCount, playerCountDefault);
-    setOrDeleteParam("gr", showGeekRating, false);
-    setOrDeleteParam("pr", showPlayerRating, false);
-    setOrDeleteParam("own", includeOwned, true);
-    setOrDeleteParam("wish", includeWishlist, false);
-    setOrDeleteParam("pr", showIndividualUserRatings, false);
-    setOrDeleteParam("fb", fallBackTo, fallbackToDefault);
-    setOrDeleteParam("it", includeIdealTime && idealTime, false);
-    setOrDeleteParam("iw", includeIdealWeight && idealWeight, false);
+    Object.values(QueryParams).forEach(queryParam => {
+      setOrDeleteParam(queryParam);
+    });
 
     let url = location.pathname;
 
@@ -711,13 +791,13 @@ function App() {
 
   const columnWidths =
     getColumnWidth(200, true) // name
-    + getColumnWidth(200, true) // time
+    + getColumnWidth(200, showGrIndex) // GR index
+    + getColumnWidth((showIndividualUserRatings ? usernames.length : 1) * 200, showPlayerRating) // user rating(s)
     + getColumnWidth(200, showPlayerRating) // player rating
     + getColumnWidth(200, showGeekRating) // geek rating
-    + getColumnWidth(200, true) // weight
-    + getColumnWidth(200, true) // player count rating
-    + getColumnWidth((showIndividualUserRatings ? usernames.length : 1) * 200, true) // user rating(s)
-    + getColumnWidth(200, true) // GR index
+    + getColumnWidth(200, showPlayerCount) // player count rating
+    + getColumnWidth(200, showWeight) // weight
+    + getColumnWidth(200, showTime) // time
     ;
 
   const displayMode: "horizontal" | "vertical" = columnWidths + 35 > screenWidth && preventHorizontalScroll ? "vertical" : "horizontal";
@@ -728,14 +808,17 @@ function App() {
     <>
       <GlobalStyle />
       <ThemeProvider theme={theme}>
-        <PageHeader style={{ width: screenWidth }}>
-          <Filters>
+        <PageHeaderContainer style={{ width: screenWidth }}>
+          <PageHeader>
             <FiltersContainer>
               <PlayerFilter>
                 <Input size='small' inputProps={{ autoCapitalize: "none" }} onKeyDown={e => usernameFilterKeyPress(e.keyCode)} defaultValue={params.get("u") ?? ""} inputRef={usernamesRef} placeholder="BGG Username(s)" />
                 <FilterButton size='small' variant='contained' onClick={() => lockInUsernames()} disabled={loadingGames}>{loadingGames ? "Loading Games..." : "Load Games"}</FilterButton>
               </PlayerFilter>
             </FiltersContainer>
+            <Logo src="/logo.png" alt="logo" />
+          </PageHeader>
+          <Filters>
             <FiltersContainer>
               <PlayerCountFilter>
                 <DecreasePlayerCount onClick={() => setPlayerCount(Math.max(playerCount - 1, 1))} style={{ color: playerCount === 1 ? "#ccc" : undefined }} />
@@ -754,8 +837,13 @@ function App() {
                   Columns
                 </FiltersHeader>
                 <FiltersInnerRow>
+                  {toggle(showGrIndex, setShowGrIndex, "GR Index")}
+                  {toggle(showUserRating, setShowUserRating, "User Rating")}
                   {toggle(showPlayerRating, setShowPlayerRating, "Player Rating")}
                   {toggle(showGeekRating, setShowGeekRating, "Geek Rating")}
+                  {toggle(showPlayerCount, setShowPlayerCount, "Player Count")}
+                  {toggle(showWeight, setShowWeight, "Weight")}
+                  {toggle(showTime, setShowTime, "Time")}
                   {toggle(showIndividualUserRatings, setShowIndividualUserRatings, "Individual Users Ratings", usernames.length < 2)}
                 </FiltersInnerRow>
                 <FiltersHeader>
@@ -815,21 +903,20 @@ function App() {
               </>
             }
           </Filters>
-          <Logo src="/logo.png" alt="logo" />
-        </PageHeader>
+        </PageHeaderContainer>
         {displayMode === "horizontal" &&
           <GamesHeader>
             <HeaderRow style={{ minWidth: screenWidth }}>
               <ImageAndNameHeader onClick={() => setSort("name")}>
                 GAME{sortArrow("name")}
               </ImageAndNameHeader>
-              {barHeader("grindex", "GR INDEX")}
-              {barHeader("playtime", "TIME")}
+              {showGrIndex && barHeader("grindex", "GR INDEX")}
+              {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeader(`user-${u}`, u.toUpperCase())) : barHeader(`users`, "Users")}
               {showPlayerRating && barHeader("player-rating", "PLAYER RATING")}
               {showGeekRating && barHeader("geek-rating", "GEEK RATING")}
-              {barHeader("weight", "WEIGHT")}
-              {barHeader("player-count", `${playerCount}-PLAYER`)}
-              {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeader(`user-${u}`, u.toUpperCase())) : barHeader(`users`, "Users")}
+              {showPlayerCount && barHeader("player-count", `${playerCount}-PLAYER`)}
+              {showWeight && barHeader("weight", "WEIGHT")}
+              {showTime && barHeader("playtime", "TIME")}
             </HeaderRow>
           </GamesHeader>
         }
@@ -844,16 +931,16 @@ function App() {
                   <GameName>{g.name}</GameName>
                 </ImageAndNameHorizontal>
 
-                <HorizontalCell>{bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}</HorizontalCell>
-                <HorizontalCell>{timeBar(g.minPlayTime, g.maxPlayTime)}</HorizontalCell>
-                {showPlayerRating && <HorizontalCell>{bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}</HorizontalCell>}
-                {showGeekRating && <HorizontalCell>{bar(g.geekRating, 10, g.geekRatingRank)}</HorizontalCell>}
-                <HorizontalCell>{bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight)}</HorizontalCell>
-                <HorizontalCell>{playerCountBar(playerCount, g)}</HorizontalCell>
+                {showGrIndex && <HorizontalCell>{bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}</HorizontalCell>}
                 {showIndividualUserRatings || usernames.length < 2 ?
                   usernames.map(u => <HorizontalCell key={`userRating-${g.gameId}-${u}`}>{userRatingBar(u, g)}</HorizontalCell>) :
                   <HorizontalCell>{userRatingBar("", g)}</HorizontalCell>
                 }
+                {showPlayerRating && <HorizontalCell>{bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}</HorizontalCell>}
+                {showGeekRating && <HorizontalCell>{bar(g.geekRating, 10, g.geekRatingRank)}</HorizontalCell>}
+                {showPlayerCount && <HorizontalCell>{playerCountBar(playerCount, g)}</HorizontalCell>}
+                {showWeight && <HorizontalCell>{bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight)}</HorizontalCell>}
+                {showTime && <HorizontalCell>{timeBar(g.minPlayTime, g.maxPlayTime)}</HorizontalCell>}
               </GameHorizontally> :
               <GameVertically key={`game-vertical-${g.gameId}`} style={{ width: screenWidth }}>
                 <ImageAndNameVertical href={`https://www.boardgamegeek.com/boardgame/${g.gameId}`} target="_balnk">
@@ -863,12 +950,12 @@ function App() {
                   <GameName>{g.name}</GameName>
                 </ImageAndNameVertical>
 
-                {verticalCell("GR Index", bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0))}
-                {verticalCell("Play Time", timeBar(g.minPlayTime, g.maxPlayTime))}
+                {showGrIndex && verticalCell("GR Index", bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0))}
+                {showTime && verticalCell("Play Time", timeBar(g.minPlayTime, g.maxPlayTime))}
                 {showPlayerRating && verticalCell("Player Rating", bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank))}
                 {showGeekRating && verticalCell("Geek Rating", bar(g.geekRating, 10, g.geekRatingRank))}
-                {verticalCell("Weight", bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight))}
-                {verticalCell(`${playerCount}-Player`, bar(g.avgWeight, 5, g.avgWeightRank))}
+                {showWeight && verticalCell("Weight", bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight))}
+                {showPlayerCount && verticalCell(`${playerCount}-Player`, bar(g.avgWeight, 5, g.avgWeightRank))}
                 {showIndividualUserRatings || usernames.length < 2 ?
                   usernames.map(u => verticalCell(u, userRatingBar(u, g), g.gameId)) :
                   verticalCell("User Rating", userRatingBar("", g))
