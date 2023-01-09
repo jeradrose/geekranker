@@ -203,12 +203,14 @@ const HorizontalCell = styled(CellBase)`
 `;
 
 const VerticalCell = styled(CellBase)`
-  padding: 5px 3px;
+  padding: 5px 15px;
   background-color: #fcfcfc;
 `;
 
 const VerticalLabel = styled.div`
-  width: 100px;
+  flex-grow: 1;
+  flex-shrink: 1;
+  max-width: 200px;
 `;
 
 const ImageAndNameHeader = styled.a`
@@ -244,13 +246,16 @@ const ImageAndNameHorizontal = styled(ImageAndNameHeader)`
 `;
 
 const ImageAndNameVertical = styled(ImageAndNameHeader)`
+  position: sticky;
+  top: 0;
   color: inherit;
   align-self: flex-start;
   background-color: #348CE9;
   font-weight: bold;
   color: #fff;
-  padding: 5px;
+  padding: 5px 15px;
   width: 100%;
+  z-index: 20;
 `;
 
 const Thumbnail = styled.img`
@@ -303,7 +308,6 @@ const BarContainerFadedVertical = styled(BarContainerVertical)`
 const Bar = styled.div`
   width: 150px;
   height: 20px;
-  z-index: 0;
   display: inline-flex;
   background-color: #F25D07;
 `;
@@ -320,7 +324,6 @@ const BarPlus = styled.div`
 const BarText = styled.div`
   padding-left: 2px;
   line-height: 20px;
-  z-index: 3;
 `;
 
 const BarRank = styled.span`
@@ -811,14 +814,14 @@ function App() {
         <PageHeaderContainer style={{ width: screenWidth }}>
           <PageHeader>
             <FiltersContainer>
-                <Input size='small' inputProps={{ autoCapitalize: "none" }} onKeyDown={e => usernameFilterKeyPress(e.keyCode)} defaultValue={params.get("u") ?? ""} inputRef={usernamesRef} placeholder="BGG Username(s)" />
+              <Input size='small' inputProps={{ autoCapitalize: "none" }} onKeyDown={e => usernameFilterKeyPress(e.keyCode)} defaultValue={params.get("u") ?? ""} inputRef={usernamesRef} placeholder="BGG Username(s)" />
               <PlayerFilter>
                 <FilterButton size='small' variant='contained' onClick={() => lockInUsernames()} disabled={loadingGames}>{loadingGames ? "Loading Games..." : "Load Games"}</FilterButton>
-              <PlayerCountFilter>
-                <DecreasePlayerCount onClick={() => setPlayerCount(Math.max(playerCount - 1, 1))} style={{ color: playerCount === 1 ? "#ccc" : undefined }} />
-                {playerCount} players
-                <IncreasePlayerCount onClick={() => setPlayerCount(Math.max(playerCount + 1, 1))} />
-              </PlayerCountFilter>
+                <PlayerCountFilter>
+                  <DecreasePlayerCount onClick={() => setPlayerCount(Math.max(playerCount - 1, 1))} style={{ color: playerCount === 1 ? "#ccc" : undefined }} />
+                  {playerCount} players
+                  <IncreasePlayerCount onClick={() => setPlayerCount(Math.max(playerCount + 1, 1))} />
+                </PlayerCountFilter>
               </PlayerFilter>
             </FiltersContainer>
             <Logo src="/logo.png" alt="logo" />
