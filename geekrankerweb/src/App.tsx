@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { CollectionGame } from './models';
 import "typeface-open-sans";
 import { ArrowDownward, AddCircleOutline, RemoveCircleOutline, ExpandLess, ExpandMore, Info } from '@mui/icons-material';
-import { TextField, Button, Tooltip, Switch, FormControlLabel, Slider, RadioGroup, Radio } from '@mui/material';
+import { TextField, Button, Tooltip, Switch, FormControlLabel, Slider, RadioGroup, Radio, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 
 import styled, { createGlobalStyle } from "styled-components"
 
@@ -332,7 +332,8 @@ const BarRank = styled.span`
   padding-left: 6px;
 `;
 
-type SortOptions = "name" | "geek-rating" | "player-rating" | "weight" | "player-count" | "playtime" | "grindex" | any;
+const sortOptions = ["game", "gr-index", "user-rating", "player-rating", "geek-rating", "player-count", "weight", "time"] as const;
+type SortOptions = typeof sortOptions[number] | any;
 
 type RankedScore = {
   score: number;
@@ -365,7 +366,7 @@ enum QueryParams {
 const defaultQueryValues: { [key in QueryParams]: any } = {
   [QueryParams.Usernames]: "",
   [QueryParams.PlayerCount]: 2,
-  [QueryParams.Sort]: "grindex",
+  [QueryParams.Sort]: "gr-index",
   [QueryParams.ShowGrIndex]: true,
   [QueryParams.ShowUserRating]: true,
   [QueryParams.ShowPlayerRating]: false,
@@ -677,6 +678,19 @@ function App() {
     });
   };
 
+  const getSortLabel = (sortOption: SortOptions) => {
+    switch (sortOption) {
+      case "game": return "Game";
+      case "gr-index": return "GR Index";
+      case "user-rating": return "User Rating";
+      case "player-rating": return "Player Rating";
+      case "geek-rating": return "Geek Rating";
+      case "player-count": return `${playerCount}-Player Rating`;
+      case "weight": return "Weight";
+      case "time": return "Time";
+    }
+  }
+
   const gameUserRating = (username: string, game: CollectionGame, unratedLast: boolean): [number, boolean] => {
     const filteredPlayerRating = game.userStats.filter(r => r.username === username);
 
@@ -694,8 +708,8 @@ function App() {
   const sortArrow = (thisSort: SortOptions) =>
     <ArrowDownward key={`arrow-${thisSort}`} style={{ 'color': sort === thisSort ? '#fff' : '#0475BB', 'paddingLeft': 2 }} />;
 
-  const barHeader = (thisSort: SortOptions, label: string) =>
-    <BarHeader key={`header-${thisSort}`} onClick={() => setSort(thisSort)}>{label}{sortArrow(thisSort)}</BarHeader>;
+  const barHeader = (thisSort: SortOptions, label?: string) =>
+    <BarHeader key={`header-${thisSort}`} onClick={() => setSort(thisSort)}>{(label || getSortLabel(thisSort))}{sortArrow(thisSort)}</BarHeader>;
 
   const playerCountBar = (count: number, game: CollectionGame) => {
     const filteredStats = game.playerCountStats.filter(s => s.playerCount === count);
@@ -784,10 +798,11 @@ function App() {
         (sort === 'player-rating') ? filteredGames.sort((a, b) => b.avgPlayerRating - a.avgPlayerRating) :
           (sort === 'weight') ? filteredGames.sort((a, b) => b.avgWeight - a.avgWeight) :
             (sort === 'player-count') ? gamesSortedByPlayerCount(playerCount) :
-              (sort === 'playtime') ? filteredGames.sort((a, b) => b.maxPlayTime - a.maxPlayTime) :
-                (sort === 'grindex') ? filteredGames.sort((a, b) => grIndexes[b.gameId].score - grIndexes[a.gameId].score) :
-                  usernames.map(u => `user-${u}`).filter(s => s === sort).length === 1 ? gamesSortedByUserRatings(sort.substring(5)) :
-                    filteredGames;
+              (sort === 'time') ? filteredGames.sort((a, b) => b.maxPlayTime - a.maxPlayTime) :
+                (sort === 'gr-index') ? filteredGames.sort((a, b) => grIndexes[b.gameId].score - grIndexes[a.gameId].score) :
+                  (sort === 'user-rating') ? filteredGames.sort((a, b) => getAvgUserRatings(b) - getAvgUserRatings(a)) :
+                    usernames.map(u => `user-${u}`).filter(s => s === sort).length === 1 ? gamesSortedByUserRatings(sort.substring(5)) :
+                      filteredGames;
 
   const getColumnWidth = (width: number, isShown: boolean) =>
     width * (isShown ? 1 : 0);
@@ -842,10 +857,20 @@ function App() {
                   {toggle(showUserRating, setShowUserRating, "User Rating")}
                   {toggle(showPlayerRating, setShowPlayerRating, "Player Rating")}
                   {toggle(showGeekRating, setShowGeekRating, "Geek Rating")}
-                  {toggle(showPlayerCount, setShowPlayerCount, "Player Count")}
+                  {toggle(showPlayerCount, setShowPlayerCount, `${playerCount}-Player Rating`)}
                   {toggle(showWeight, setShowWeight, "Weight")}
                   {toggle(showTime, setShowTime, "Time")}
                   {toggle(showIndividualUserRatings, setShowIndividualUserRatings, "Individual Users Ratings", usernames.length < 2)}
+                  <FormControl>
+                    <InputLabel>Sort</InputLabel>
+                    <Select
+                      value={sort}
+                      label="Sort"
+                      onChange={event => setSort(event.target.value)}
+                    >
+                      {sortOptions.map(sort => <MenuItem value={sort}>{getSortLabel(sort)}</MenuItem>)}
+                    </Select>
+                  </FormControl>
                 </FiltersInnerRow>
                 <FiltersHeader>
                   Filters
@@ -908,16 +933,16 @@ function App() {
         {displayMode === "horizontal" &&
           <GamesHeader>
             <HeaderRow style={{ minWidth: screenWidth }}>
-              <ImageAndNameHeader onClick={() => setSort("name")}>
-                GAME{sortArrow("name")}
+              <ImageAndNameHeader onClick={() => setSort("game")}>
+                Game{sortArrow("game")}
               </ImageAndNameHeader>
-              {showGrIndex && barHeader("grindex", "GR INDEX")}
-              {showUserRating && (showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeader(`user-${u}`, u.toUpperCase())) : barHeader(`users`, "Users"))}
-              {showPlayerRating && barHeader("player-rating", "PLAYER RATING")}
-              {showGeekRating && barHeader("geek-rating", "GEEK RATING")}
-              {showPlayerCount && barHeader("player-count", `${playerCount}-PLAYER`)}
-              {showWeight && barHeader("weight", "WEIGHT")}
-              {showTime && barHeader("playtime", "TIME")}
+              {showGrIndex && barHeader("gr-index")}
+              {showUserRating && (showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeader(`user-${u}`, u.toUpperCase())) : barHeader(`user-rating`))}
+              {showPlayerRating && barHeader("player-rating")}
+              {showGeekRating && barHeader("geek-rating")}
+              {showPlayerCount && barHeader("player-count")}
+              {showWeight && barHeader("weight")}
+              {showTime && barHeader("time")}
             </HeaderRow>
           </GamesHeader>
         }
@@ -958,7 +983,7 @@ function App() {
                 )}
                 {showPlayerRating && verticalCell("Player Rating", bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank))}
                 {showGeekRating && verticalCell("Geek Rating", bar(g.geekRating, 10, g.geekRatingRank))}
-                {showPlayerCount && verticalCell(`${playerCount}-Player`, bar(g.avgWeight, 5, g.avgWeightRank))}
+                {showPlayerCount && verticalCell(`${playerCount}-Player Rating`, bar(g.avgWeight, 5, g.avgWeightRank))}
                 {showWeight && verticalCell("Weight", bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight))}
                 {showTime && verticalCell("Play Time", timeBar(g.minPlayTime, g.maxPlayTime))}
               </GameVertically>
