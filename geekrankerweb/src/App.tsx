@@ -911,7 +911,7 @@ function App() {
                 GAME{sortArrow("name")}
               </ImageAndNameHeader>
               {showGrIndex && barHeader("grindex", "GR INDEX")}
-              {showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeader(`user-${u}`, u.toUpperCase())) : barHeader(`users`, "Users")}
+              {showUserRating && (showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeader(`user-${u}`, u.toUpperCase())) : barHeader(`users`, "Users"))}
               {showPlayerRating && barHeader("player-rating", "PLAYER RATING")}
               {showGeekRating && barHeader("geek-rating", "GEEK RATING")}
               {showPlayerCount && barHeader("player-count", `${playerCount}-PLAYER`)}
@@ -932,10 +932,10 @@ function App() {
                 </ImageAndNameHorizontal>
 
                 {showGrIndex && <HorizontalCell>{bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}</HorizontalCell>}
-                {showIndividualUserRatings || usernames.length < 2 ?
+                {showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
                   usernames.map(u => <HorizontalCell key={`userRating-${g.gameId}-${u}`}>{userRatingBar(u, g)}</HorizontalCell>) :
                   <HorizontalCell>{userRatingBar("", g)}</HorizontalCell>
-                }
+                )}
                 {showPlayerRating && <HorizontalCell>{bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}</HorizontalCell>}
                 {showGeekRating && <HorizontalCell>{bar(g.geekRating, 10, g.geekRatingRank)}</HorizontalCell>}
                 {showPlayerCount && <HorizontalCell>{playerCountBar(playerCount, g)}</HorizontalCell>}
@@ -951,15 +951,15 @@ function App() {
                 </ImageAndNameVertical>
 
                 {showGrIndex && verticalCell("GR Index", bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0))}
-                {showTime && verticalCell("Play Time", timeBar(g.minPlayTime, g.maxPlayTime))}
-                {showPlayerRating && verticalCell("Player Rating", bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank))}
-                {showGeekRating && verticalCell("Geek Rating", bar(g.geekRating, 10, g.geekRatingRank))}
-                {showWeight && verticalCell("Weight", bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight))}
-                {showPlayerCount && verticalCell(`${playerCount}-Player`, bar(g.avgWeight, 5, g.avgWeightRank))}
-                {showIndividualUserRatings || usernames.length < 2 ?
+                {showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
                   usernames.map(u => verticalCell(u, userRatingBar(u, g), g.gameId)) :
                   verticalCell("User Rating", userRatingBar("", g))
-                }
+                )}
+                {showPlayerRating && verticalCell("Player Rating", bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank))}
+                {showGeekRating && verticalCell("Geek Rating", bar(g.geekRating, 10, g.geekRatingRank))}
+                {showPlayerCount && verticalCell(`${playerCount}-Player`, bar(g.avgWeight, 5, g.avgWeightRank))}
+                {showWeight && verticalCell("Weight", bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight))}
+                {showTime && verticalCell("Play Time", timeBar(g.minPlayTime, g.maxPlayTime))}
               </GameVertically>
           );
         })}
