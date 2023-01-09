@@ -332,6 +332,42 @@ const BarRank = styled.span`
   padding-left: 6px;
 `;
 
+const EmptyState = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
+
+const Intro = styled.div`
+  background-color: #fcfcfc;
+  padding: 15px;
+  margin: 15px;
+  border: 2px solid #F25D07;
+  border-radius: 20px;
+  max-width: 700px
+`;
+
+const IntroHeader = styled.div`
+  font-weight: bold;
+`;
+
+const IntroList = styled.ul`
+
+`;
+
+const IntroListItem = styled.li`
+  margin: 10px 0;
+`;
+
+const IntroTip = styled.div`
+  padding-top: 4px;
+  color: #348CE9;
+`
+
+const IntroTipLink = styled(IntroTip)`
+  cursor: pointer;
+`
+
 const sortOptions = ["game", "gr-index", "user-rating", "player-rating", "geek-rating", "player-count", "weight", "time"] as const;
 type SortOptions = typeof sortOptions[number] | any;
 
@@ -447,6 +483,8 @@ function App() {
   // UI options
   const [preventHorizontalScroll,
     setPreventHorizontalScroll] = useState<boolean>(false);
+
+  const [showTips, setShowTips] = useState<boolean>(false);
 
   const queryValues: { [key in QueryParams]: any } = {
     [QueryParams.Usernames]: usernames.join(' '),
@@ -945,6 +983,38 @@ function App() {
               {showTime && barHeader("time")}
             </HeaderRow>
           </GamesHeader>
+        }
+        {sortedGames.length === 0 &&
+          <EmptyState>
+            <Intro>
+              <IntroHeader>Geek Ranker can be used to:</IntroHeader>
+              <IntroList>
+                <IntroListItem>
+                  View your BGG collection alongside data like Player Count Ratings, Geek Ratings, and many more.
+                  {showTips && <IntroTip>Just type your BGG username above and click "Load Games".</IntroTip>}
+                </IntroListItem>
+                <IntroListItem>
+                  View your collection with other BGG users' collections -- see how your games stack against others that share your interests.
+                  {showTips && <IntroTip>Enter yours and others' BGG usernames (separated by space) and click "Load Games".</IntroTip>}
+                </IntroListItem>
+                <IntroListItem>
+                  Rank your games using the Geek Ranker Index (GR Index) that combines many stats into one score.
+                  {showTips && <IntroTip>After loading your games, click "Advanced Options" to toggle columns, and play around with different filters and scoring options.</IntroTip>}
+                </IntroListItem>
+                <IntroListItem>
+                  Use the GR Index with your wishlist to figure out which games are best in different scenarios (e.g. 2 player, mid-light weight, 30 minutes), to help narrow down the next game to add to your collection.
+                  {showTips && <IntroTip>Under "Advanced Options", toggle "Wishlisted Games" and try different scenarios to find the best fit for the games you have your eye on.</IntroTip>}
+                </IntroListItem>
+                <IntroListItem>
+                  Share your list with others on BGG or social media.
+                  {showTips && <IntroTip>Just copy the URL -- it is updated as you make changes, so they'll see what you see just by visiting the URL you share.</IntroTip>}
+                </IntroListItem>
+                <IntroListItem>
+                  <IntroTipLink onClick={() => setShowTips(!showTips)}>Click here to toggle tips!</IntroTipLink>
+                </IntroListItem>
+              </IntroList>
+            </Intro>
+          </EmptyState>
         }
         {sortedGames.map(g => {
           return (
