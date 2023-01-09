@@ -71,9 +71,9 @@ const FiltersHeader = styled(FiltersInnerRow)`
 const PlayerFilter = styled.div`
   width: 100%;
   display: flex;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 20px;
   flex-wrap: wrap;
+  margin-top: 10px;
 `;
 
 const Input = styled(TextField)`
@@ -132,7 +132,7 @@ const PlayerCountFilter = styled.div`
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
-  width: 120px;
+  width: 130px;
   line-height: 24px;
 `;
 
@@ -811,21 +811,19 @@ function App() {
         <PageHeaderContainer style={{ width: screenWidth }}>
           <PageHeader>
             <FiltersContainer>
-              <PlayerFilter>
                 <Input size='small' inputProps={{ autoCapitalize: "none" }} onKeyDown={e => usernameFilterKeyPress(e.keyCode)} defaultValue={params.get("u") ?? ""} inputRef={usernamesRef} placeholder="BGG Username(s)" />
+              <PlayerFilter>
                 <FilterButton size='small' variant='contained' onClick={() => lockInUsernames()} disabled={loadingGames}>{loadingGames ? "Loading Games..." : "Load Games"}</FilterButton>
-              </PlayerFilter>
-            </FiltersContainer>
-            <Logo src="/logo.png" alt="logo" />
-          </PageHeader>
-          <Filters>
-            <FiltersContainer>
               <PlayerCountFilter>
                 <DecreasePlayerCount onClick={() => setPlayerCount(Math.max(playerCount - 1, 1))} style={{ color: playerCount === 1 ? "#ccc" : undefined }} />
                 {playerCount} players
                 <IncreasePlayerCount onClick={() => setPlayerCount(Math.max(playerCount + 1, 1))} />
               </PlayerCountFilter>
+              </PlayerFilter>
             </FiltersContainer>
+            <Logo src="/logo.png" alt="logo" />
+          </PageHeader>
+          <Filters>
             <FiltersContainer>
               <AdvancedOptionsButton onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}>
                 {showAdvancedOptions ? <ExpandLess style={{ color: '#348CE9' }} /> : <ExpandMore style={{ color: '#348CE9' }} />}Advanced Options
