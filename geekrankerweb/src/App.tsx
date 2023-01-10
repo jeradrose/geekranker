@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { CollectionGame } from './models';
 import "typeface-open-sans";
-import { ArrowDownward, AddCircleOutline, RemoveCircleOutline, ExpandLess, ExpandMore, Info } from '@mui/icons-material';
-import { TextField, Button, Tooltip, Switch, FormControlLabel, Slider, RadioGroup, Radio, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { ArrowDownward, AddCircleOutline, RemoveCircleOutline, ExpandLess, ExpandMore, Info, Clear } from '@mui/icons-material';
+import { TextField, Button, Tooltip, Switch, FormControlLabel, Slider, RadioGroup, Radio, FormControl, InputLabel, Select, MenuItem, IconButton } from '@mui/material';
 
 import styled, { createGlobalStyle } from "styled-components"
 
@@ -80,6 +80,10 @@ const Input = styled(TextField)`
   box-sizing: border-box;
   width: 100%;
   background-color: #fff;
+`;
+
+const ClearIcon = styled(Clear)`
+  padding-right: -120px;
 `;
 
 const SliderContainer = styled.div`
@@ -820,6 +824,13 @@ function App() {
       || (navigator.userAgent.includes("Mac") && "ontouchend" in document)
   }
 
+  const handleUsernamesClear = () => {
+    if (usernamesRef.current) {
+      usernamesRef.current.value = "";
+    }
+    lockInUsernames();
+  }
+
   const handleFallBackToChange = (event: React.ChangeEvent<HTMLInputElement>) =>
     setFallBackTo((event.target as HTMLInputElement).value as FallBackTo);
 
@@ -873,7 +884,25 @@ function App() {
         <PageHeaderContainer style={{ width: screenWidth }}>
           <PageHeader>
             <FiltersContainer>
-              <Input size='small' inputProps={{ autoCapitalize: "none" }} onKeyDown={e => usernameFilterKeyPress(e.key)} defaultValue={params.get("u") ?? ""} inputRef={usernamesRef} placeholder="BGG Username(s)" />
+              <Input
+                size='small'
+                inputProps={{ autoCapitalize: "none" }}
+                onKeyDown={e => usernameFilterKeyPress(e.key)}
+                defaultValue={params.get("u") ?? ""}
+                inputRef={usernamesRef}
+                placeholder="BGG Username(s)"
+                InputProps={{
+                  style: { paddingRight: 0 },
+                  endAdornment: (
+                    <IconButton
+                      disabled={!usernamesRef.current?.value}
+                      onClick={() => handleUsernamesClear()}
+                    >
+                      <ClearIcon />
+                    </IconButton>
+                  )
+                }}
+              />
               <PlayerFilter>
                 <FilterButton size='small' variant='contained' onClick={() => lockInUsernames()} disabled={loadingGames}>{loadingGames ? "Loading Games..." : "Load Games"}</FilterButton>
                 <PlayerCountFilter>
