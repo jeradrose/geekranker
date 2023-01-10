@@ -911,6 +911,7 @@ function App() {
                       value={sort}
                       label="Sort"
                       onChange={event => setSort(event.target.value)}
+                      size="small"
                     >
                       {sortOptions.map(sort => <MenuItem value={sort}>{getSortLabel(sort)}</MenuItem>)}
                     </Select>
