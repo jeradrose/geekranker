@@ -775,9 +775,9 @@ function App() {
     return bar(rating, 10, hasUserRating ? ratings[0].rank ?? 0 : 0);
   }
 
-  const usernameFilterKeyPress = (keyCode: number) => {
-    if (keyCode ===
-      13) {
+  const usernameFilterKeyPress = (key: string) => {
+    if (key === "Enter") {
+      usernamesRef.current?.blur();
       lockInUsernames();
     }
   }
@@ -873,7 +873,7 @@ function App() {
         <PageHeaderContainer style={{ width: screenWidth }}>
           <PageHeader>
             <FiltersContainer>
-              <Input size='small' inputProps={{ autoCapitalize: "none" }} onKeyDown={e => usernameFilterKeyPress(e.keyCode)} defaultValue={params.get("u") ?? ""} inputRef={usernamesRef} placeholder="BGG Username(s)" />
+              <Input size='small' inputProps={{ autoCapitalize: "none" }} onKeyDown={e => usernameFilterKeyPress(e.key)} defaultValue={params.get("u") ?? ""} inputRef={usernamesRef} placeholder="BGG Username(s)" />
               <PlayerFilter>
                 <FilterButton size='small' variant='contained' onClick={() => lockInUsernames()} disabled={loadingGames}>{loadingGames ? "Loading Games..." : "Load Games"}</FilterButton>
                 <PlayerCountFilter>
