@@ -159,6 +159,7 @@ const GamesHeader = styled.div`
   top: 0;
   background-color: #fcfcfc;
   z-index: 20;
+  height: 40px;
 `;
 
 const RowBase = styled.div`
@@ -333,9 +334,14 @@ const BarRank = styled.span`
 `;
 
 const EmptyState = styled.div`
-  display: flex;
+  display: inline-flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  position: sticky;
+  left: 0;
   justify-content: center;
   align-items: center;
+  margin: -5px;
 `;
 
 const Intro = styled.div`
@@ -344,7 +350,7 @@ const Intro = styled.div`
   margin: 15px;
   border: 2px solid #F25D07;
   border-radius: 20px;
-  max-width: 700px
+  max-width: 700px;
 `;
 
 const IntroHeader = styled.div`
@@ -971,21 +977,25 @@ function App() {
         {displayMode === "horizontal" &&
           <GamesHeader>
             <HeaderRow style={{ minWidth: screenWidth }}>
-              <ImageAndNameHeader onClick={() => setSort("game")}>
-                Game{sortArrow("game")}
-              </ImageAndNameHeader>
-              {showGrIndex && barHeader("gr-index")}
-              {showUserRating && (showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeader(`user-${u}`, u.toUpperCase())) : barHeader(`user-rating`))}
-              {showPlayerRating && barHeader("player-rating")}
-              {showGeekRating && barHeader("geek-rating")}
-              {showPlayerCount && barHeader("player-count")}
-              {showWeight && barHeader("weight")}
-              {showTime && barHeader("time")}
+              {sortedGames.length > 0 &&
+                <>
+                  <ImageAndNameHeader onClick={() => setSort("game")}>
+                    Game{sortArrow("game")}
+                  </ImageAndNameHeader>
+                  {showGrIndex && barHeader("gr-index")}
+                  {showUserRating && (showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeader(`user-${u}`, u.toUpperCase())) : barHeader(`user-rating`))}
+                  {showPlayerRating && barHeader("player-rating")}
+                  {showGeekRating && barHeader("geek-rating")}
+                  {showPlayerCount && barHeader("player-count")}
+                  {showWeight && barHeader("weight")}
+                  {showTime && barHeader("time")}
+                </>
+              }
             </HeaderRow>
           </GamesHeader>
         }
         {sortedGames.length === 0 &&
-          <EmptyState>
+          <EmptyState style={{ width: screenWidth }}>
             <Intro>
               <IntroHeader>Geek Ranker can be used to:</IntroHeader>
               <IntroList>
