@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { CollectionGame } from './models';
 import "typeface-open-sans";
-import { ArrowDownward, AddCircleOutline, RemoveCircleOutline, ExpandLess, ExpandMore, Info, Clear } from '@mui/icons-material';
+import { ArrowDownward, ExpandLess, ExpandMore, Info, Clear } from '@mui/icons-material';
 import { TextField, Button, Tooltip, Switch, FormControlLabel, Slider, RadioGroup, Radio, FormControl, InputLabel, Select, MenuItem, IconButton } from '@mui/material';
 
 import styled, { createGlobalStyle } from "styled-components"
@@ -130,24 +130,6 @@ const Logo = styled.img`
   width: 400px;
   object-fit: contain;
   padding: 5px 0;
-`;
-
-const PlayerCountFilter = styled.div`
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 130px;
-  line-height: 24px;
-`;
-
-const DecreasePlayerCount = styled(RemoveCircleOutline)`
-  color: #348CE9;
-  cursor: pointer;
-`;
-
-const IncreasePlayerCount = styled(AddCircleOutline)`
-  color: #348CE9;
-  cursor: pointer;
 `;
 
 const AdvancedOptionsButton = styled.div`
@@ -392,7 +374,6 @@ type FallBackTo = "player-rating" | "geek-rating";
 
 enum QueryParams {
   Usernames = "u",
-  PlayerCount = "pc",
   Sort = "s",
   ShowGrIndex = "sgi",
   ShowUserRating = "sur",
@@ -404,6 +385,8 @@ enum QueryParams {
   ShowIndividualUserRatings = "sir",
   IncludeOwned = "own",
   IncludeWishlisted = "wish",
+  ScorePlayerCount = "spc",
+  PlayerCount = "pc",
   IdealWieght = "iw",
   IdealTime = "it",
   FallBackTo = "fb",
@@ -411,7 +394,6 @@ enum QueryParams {
 
 const defaultQueryValues: { [key in QueryParams]: any } = {
   [QueryParams.Usernames]: "",
-  [QueryParams.PlayerCount]: 2,
   [QueryParams.Sort]: "gr-index",
   [QueryParams.ShowGrIndex]: true,
   [QueryParams.ShowUserRating]: true,
@@ -423,6 +405,8 @@ const defaultQueryValues: { [key in QueryParams]: any } = {
   [QueryParams.ShowIndividualUserRatings]: false,
   [QueryParams.IncludeOwned]: true,
   [QueryParams.IncludeWishlisted]: false,
+  [QueryParams.ScorePlayerCount]: false,
+  [QueryParams.PlayerCount]: 2,
   [QueryParams.IdealWieght]: null,
   [QueryParams.IdealTime]: null,
   [QueryParams.FallBackTo]: "player-rating",
@@ -465,7 +449,6 @@ function App() {
   // Standard options
   const [usernames, setUsernames] = useState<string[]>(getUsernamesFromString(params.get("u")));
   const [sort, setSort] = useState<SortOptions>(getStringQueryParam(QueryParams.Sort));
-  const [playerCount, setPlayerCount] = useState<number>(getNumberQueryParam(QueryParams.PlayerCount));
 
   // Column visibility
   const [showGrIndex, setShowGrIndex] = useState<boolean>(getBoolQueryParam(QueryParams.ShowGrIndex));
@@ -484,6 +467,8 @@ function App() {
   const [includeWishlist, setIncludeWishlist] = useState<boolean>(getBoolQueryParam(QueryParams.IncludeWishlisted));
 
   // Scoring options
+  const [scorePlayerCount, setScorePlayerCount] = useState<boolean>(getBoolQueryParam(QueryParams.ScorePlayerCount));
+  const [playerCount, setPlayerCount] = useState<number>(getNumberQueryParam(QueryParams.PlayerCount));
   const [includeIdealWeight, setIncludeIdealWeight] = useState<boolean>(getBoolQueryParam(QueryParams.IdealWieght));
   const [idealWeight, setIdealWeight] = useState<number>(getNumberQueryParam(QueryParams.IdealWieght) || idealWeightDefault);
   const [includeIdealTime, setIncludeIdealTime] = useState<boolean>(getBoolQueryParam(QueryParams.IdealTime));
@@ -498,7 +483,6 @@ function App() {
 
   const queryValues: { [key in QueryParams]: any } = {
     [QueryParams.Usernames]: usernames.join(' '),
-    [QueryParams.PlayerCount]: playerCount,
     [QueryParams.Sort]: sort,
     [QueryParams.ShowGrIndex]: showGrIndex,
     [QueryParams.ShowUserRating]: showUserRating,
@@ -510,8 +494,10 @@ function App() {
     [QueryParams.ShowIndividualUserRatings]: showIndividualUserRatings,
     [QueryParams.IncludeOwned]: includeOwned,
     [QueryParams.IncludeWishlisted]: includeWishlist,
-    [QueryParams.IdealWieght]: includeIdealWeight && idealWeight,
-    [QueryParams.IdealTime]: includeIdealTime && idealTime,
+    [QueryParams.ScorePlayerCount]: scorePlayerCount,
+    [QueryParams.PlayerCount]: playerCount,
+    [QueryParams.IdealWieght]: includeIdealWeight ? idealWeight : null,
+    [QueryParams.IdealTime]: includeIdealTime ? idealTime : null,
     [QueryParams.FallBackTo]: fallBackTo,
   }
 
@@ -554,30 +540,39 @@ function App() {
   });
 
   const getGrIndex = (game: CollectionGame): number => {
-    const playerCountStats = game.playerCountStats.filter(s => s.playerCount === playerCount);
-
-    if (playerCountStats.length !== 1) {
-      return 0;
-    }
-
     const userRatings = usernames.map(username => gameUserRating(username, game, false)[0]);
-
     const avgUserRating = (userRatings.reduce((a, b) => a + b) / userRatings.length);
 
-    let numerator = playerCountStats[0].score * avgUserRating
+    let numerator = avgUserRating;
     let denominator = 10;
 
+    console.log(`1: numerator: ${numerator}, denominator: ${denominator}, dividend: ${numerator / denominator}`);
+
+    if (scorePlayerCount) {
+      const playerCountStats = game.playerCountStats.filter(s => s.playerCount === playerCount);
+
+      if (playerCountStats.length !== 1) {
+        return 0;
+      }
+
+      numerator *= playerCountStats[0].score;
+      denominator *= 10;
+      console.log(`2: numerator: ${numerator}, denominator: ${denominator}, dividend: ${numerator / denominator}`);
+    }
+
     if (includeIdealWeight) {
-      numerator = numerator * (idealWeight - Math.abs(game.avgWeight - idealWeight));
-      denominator = denominator * idealWeight;
+      numerator *= 10 * ((idealWeight - Math.abs(game.avgWeight - idealWeight)) / idealWeight);
+      denominator *= 10;
+      console.log(`3: numerator: ${numerator}, denominator: ${denominator}, dividend: ${numerator / denominator}`);
     }
 
     if (includeIdealTime) {
-      numerator = numerator * Math.max(idealTime - Math.abs(game.maxPlayTime - idealTime), 0);
-      denominator = denominator * idealTime;
+      numerator *= 10 * (Math.max(idealTime - Math.abs(game.maxPlayTime - idealTime), 0) / idealTime);
+      denominator *= 10;
+      console.log(`4: numerator: ${numerator}, denominator: ${denominator}, dividend: ${numerator / denominator}`);
     }
 
-    return numerator / denominator;
+    return 10 * numerator / denominator;
   }
 
   const getApiUrl = (url: string): string =>
@@ -905,11 +900,6 @@ function App() {
               />
               <PlayerFilter>
                 <FilterButton size='small' variant='contained' onClick={() => lockInUsernames()} disabled={loadingGames}>{loadingGames ? "Loading Games..." : "Load Games"}</FilterButton>
-                <PlayerCountFilter>
-                  <DecreasePlayerCount onClick={() => setPlayerCount(Math.max(playerCount - 1, 1))} style={{ color: playerCount === 1 ? "#ccc" : undefined }} />
-                  {playerCount} players
-                  <IncreasePlayerCount onClick={() => setPlayerCount(Math.max(playerCount + 1, 1))} />
-                </PlayerCountFilter>
               </PlayerFilter>
             </FiltersContainer>
             <Logo src="/logo.png" alt="logo" />
@@ -956,6 +946,15 @@ function App() {
                 <FiltersHeader>
                   Scoring
                 </FiltersHeader>
+                <FiltersInnerRow>
+                  <SliderContainer>
+                    <SliderLabel>
+                      {toggle(scorePlayerCount, setScorePlayerCount, "Player Count")}
+                    </SliderLabel>
+                    <SliderValue>{playerCount}</SliderValue>
+                    <StyledSlider min={1} max={8} step={1} value={playerCount} onChange={(event, value) => handleSliderChange(event, () => setPlayerCount(Number(value)))} />
+                  </SliderContainer>
+                </FiltersInnerRow>
                 <FiltersInnerRow>
                   <SliderContainer>
                     <SliderLabel>
