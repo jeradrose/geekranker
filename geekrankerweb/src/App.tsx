@@ -561,14 +561,14 @@ function App() {
     }
 
     if (includeIdealWeight) {
-      numerator *= 10 * ((idealWeight - Math.abs(game.avgWeight - idealWeight)) / idealWeight);
-      denominator *= 10;
+      numerator *= 5 - Math.abs(game.avgWeight - idealWeight);
+      denominator *= 5;
       console.log(`3: numerator: ${numerator}, denominator: ${denominator}, dividend: ${numerator / denominator}`);
     }
 
     if (includeIdealTime) {
-      numerator *= 10 * (Math.max(idealTime - Math.abs(game.maxPlayTime - idealTime), 0) / idealTime);
-      denominator *= 10;
+      numerator *= Math.max(150 - Math.abs(game.maxPlayTime - idealTime), 0);
+      denominator *= 150;
       console.log(`4: numerator: ${numerator}, denominator: ${denominator}, dividend: ${numerator / denominator}`);
     }
 
