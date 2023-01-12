@@ -372,6 +372,7 @@ type RankedScore = {
 type RankedScores = Record<number, RankedScore>;
 
 type FallBackTo = "player-rating" | "geek-rating";
+type BaseRating = FallBackTo | "user-rating";
 
 enum QueryParams {
   Usernames = "u",
@@ -391,6 +392,7 @@ enum QueryParams {
   PlayerCount = "pc",
   IdealWieght = "iw",
   IdealTime = "it",
+  BaseRating = "br",
   FallBackTo = "fb",
 }
 
@@ -412,6 +414,7 @@ const defaultQueryValues: { [key in QueryParams]: any } = {
   [QueryParams.PlayerCount]: 2,
   [QueryParams.IdealWieght]: null,
   [QueryParams.IdealTime]: null,
+  [QueryParams.BaseRating]: "user-rating",
   [QueryParams.FallBackTo]: "player-rating",
 }
 
@@ -477,6 +480,7 @@ function App() {
   const [idealWeight, setIdealWeight] = useState<number>(getNumberQueryParam(QueryParams.IdealWieght) || idealWeightDefault);
   const [includeIdealTime, setIncludeIdealTime] = useState<boolean>(getBoolQueryParam(QueryParams.IdealTime));
   const [idealTime, setIdealTime] = useState<number>(getNumberQueryParam(QueryParams.IdealTime) || idealTimeDefault);
+  const [baseRating, setBaseRating] = useState<BaseRating>(getStringQueryParam(QueryParams.BaseRating) as BaseRating);
   const [fallBackTo, setFallBackTo] = useState<FallBackTo>(getStringQueryParam(QueryParams.FallBackTo) as FallBackTo);
 
   // UI options
@@ -503,6 +507,7 @@ function App() {
     [QueryParams.PlayerCount]: playerCount,
     [QueryParams.IdealWieght]: includeIdealWeight ? idealWeight : null,
     [QueryParams.IdealTime]: includeIdealTime ? idealTime : null,
+    [QueryParams.BaseRating]: baseRating,
     [QueryParams.FallBackTo]: fallBackTo,
   }
 
@@ -545,13 +550,27 @@ function App() {
   });
 
   const getGrIndex = (game: CollectionGame): number => {
-    const userRatings = usernames.map(username => gameUserRating(username, game, false)[0]);
-    const avgUserRating = (userRatings.reduce((a, b) => a + b) / userRatings.length);
+    let numerator = 1;
+    let denominator = 1;
 
-    let numerator = avgUserRating;
-    let denominator = 10;
+    switch (baseRating) {
+      case "user-rating": {
+        const userRatings = usernames.map(username => gameUserRating(username, game, false)[0]);
+        const avgUserRating = (userRatings.reduce((a, b) => a + b) / userRatings.length);
 
-    console.log(`1: numerator: ${numerator}, denominator: ${denominator}, dividend: ${numerator / denominator}`);
+        numerator *= avgUserRating;
+        break;
+      }
+      case "player-rating": {
+        numerator *= game.avgPlayerRating;
+        break;
+      }
+      case "geek-rating": {
+        numerator *= game.geekRating;
+      }
+    }
+
+    denominator *= 10;
 
     if (scorePlayerCount) {
       const playerCountStats = game.playerCountStats.filter(s => s.playerCount === playerCount);
@@ -562,19 +581,16 @@ function App() {
 
       numerator *= playerCountStats[0].score;
       denominator *= 10;
-      console.log(`2: numerator: ${numerator}, denominator: ${denominator}, dividend: ${numerator / denominator}`);
     }
 
     if (includeIdealWeight) {
       numerator *= 5 - Math.abs(game.avgWeight - idealWeight);
       denominator *= 5;
-      console.log(`3: numerator: ${numerator}, denominator: ${denominator}, dividend: ${numerator / denominator}`);
     }
 
     if (includeIdealTime) {
       numerator *= Math.max(150 - Math.abs(game.maxPlayTime - idealTime), 0);
       denominator *= 150;
-      console.log(`4: numerator: ${numerator}, denominator: ${denominator}, dividend: ${numerator / denominator}`);
     }
 
     return 10 * numerator / denominator;
@@ -834,6 +850,9 @@ function App() {
   const handleFallBackToChange = (event: React.ChangeEvent<HTMLInputElement>) =>
     setFallBackTo((event.target as HTMLInputElement).value as FallBackTo);
 
+  const handleBaseRatingChange = (event: React.ChangeEvent<HTMLInputElement>) =>
+    setBaseRating((event.target as HTMLInputElement).value as BaseRating);
+
   const handleSliderChange = (event: Event, callback: () => void) => {
     if (isIos() && event.type === 'mousedown') {
       return;
@@ -923,7 +942,7 @@ function App() {
                 <FiltersInnerRow>
                   {toggle(showGrIndex, setShowGrIndex, "GR Index")}
                   {toggle(showUserRating, setShowUserRating, "User Rating")}
-                  {toggle(showPlayerRating, setShowPlayerRating, "Player Rating")}
+                  {toggle(showPlayerRating, setShowPlayerRating, "Average Rating")}
                   {toggle(showGeekRating, setShowGeekRating, "Geek Rating")}
                   {toggle(showPlayerCount, setShowPlayerCount, `${playerCount}-Player Rating`)}
                   {toggle(showWeight, setShowWeight, "Weight")}
@@ -953,6 +972,26 @@ function App() {
                   Scoring
                 </FiltersHeader>
                 <FiltersInnerRow>
+                  <FallBackContainer>
+                    Base Rating:
+                    <RadioGroup value={baseRating} onChange={handleBaseRatingChange} row>
+                      <FormControlLabel value="user-rating" control={<Radio />} label="User" />
+                      <FormControlLabel value="player-rating" control={<Radio />} label="Average" />
+                      <FormControlLabel value="geek-rating" control={<Radio />} label="Geek" />
+                    </RadioGroup>
+                  </FallBackContainer>
+                </FiltersInnerRow>
+                <FiltersInnerRow>
+                  <FallBackContainer>
+                    Fallback Rating:
+                    <RadioGroup value={fallBackTo} onChange={handleFallBackToChange} row>
+                      <FormControlLabel value="player-rating" control={<Radio />} label="Average" />
+                      <FormControlLabel value="geek-rating" control={<Radio />} label="Geek" />
+                    </RadioGroup>
+                    <Tooltip title="When a user rating isn't set, use this instead."><FallBackInfo /></Tooltip>
+                  </FallBackContainer>
+                </FiltersInnerRow>
+                <FiltersInnerRow>
                   <SliderContainer>
                     <SliderLabel>
                       {toggle(scorePlayerCount, setScorePlayerCount, "Player Count")}
@@ -964,7 +1003,7 @@ function App() {
                 <FiltersInnerRow>
                   <SliderContainer>
                     <SliderLabel>
-                      {toggle(includeIdealWeight, setIncludeIdealWeight, "Ideal weight")}
+                      {toggle(includeIdealWeight, setIncludeIdealWeight, "Ideal Weight")}
                     </SliderLabel>
                     <SliderValue style={{ color: (includeIdealWeight ? "" : "#000"), opacity: (includeIdealWeight ? 1 : .38) }}>{idealWeight}</SliderValue>
                     <StyledSlider disabled={!includeIdealWeight} min={1} max={5} step={0.5} value={idealWeight} onChange={(event, value) => handleSliderChange(event, () => setIdealWeight(Number(value)))} />
@@ -973,21 +1012,11 @@ function App() {
                 <FiltersInnerRow>
                   <SliderContainer>
                     <SliderLabel>
-                      {toggle(includeIdealTime, setIncludeIdealTime, "Ideal time")}
+                      {toggle(includeIdealTime, setIncludeIdealTime, "Ideal Time")}
                     </SliderLabel>
                     <SliderValue style={{ color: (includeIdealTime ? "" : "#000"), opacity: (includeIdealTime ? 1 : .38) }}>{idealTime}</SliderValue>
                     <StyledSlider disabled={!includeIdealTime} min={30} max={240} step={30} value={idealTime} onChange={(event, value) => handleSliderChange(event, () => setIdealTime(Number(value)))} />
                   </SliderContainer>
-                </FiltersInnerRow>
-                <FiltersInnerRow>
-                  <FallBackContainer>
-                    Fallback rating:
-                    <RadioGroup value={fallBackTo} onChange={handleFallBackToChange} row>
-                      <FormControlLabel value="player-rating" control={<Radio />} label="Player" />
-                      <FormControlLabel value="geek-rating" control={<Radio />} label="Geek" />
-                    </RadioGroup>
-                    <Tooltip title="When a user rating isn't set, use this instead."><FallBackInfo /></Tooltip>
-                  </FallBackContainer>
                 </FiltersInnerRow>
                 <FiltersHeader>
                   UI Options
@@ -1096,7 +1125,7 @@ function App() {
                   usernames.map(u => verticalCell(u, userRatingBar(u, g), g.gameId)) :
                   verticalCell("User Rating", userRatingBar("", g))
                 )}
-                {showPlayerRating && verticalCell("Player Rating", bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank))}
+                {showPlayerRating && verticalCell("Average Rating", bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank))}
                 {showGeekRating && verticalCell("Geek Rating", bar(g.geekRating, 10, g.geekRatingRank))}
                 {showPlayerCount && verticalCell(`${playerCount}-Player Rating`, bar(g.avgWeight, 5, g.avgWeightRank))}
                 {showWeight && verticalCell("Weight", bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight))}
