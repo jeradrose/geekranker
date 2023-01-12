@@ -50,6 +50,7 @@ const Filters = styled.div`
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+  user-select: none;
 `;
 
 const FiltersInnerRow = styled.div`
