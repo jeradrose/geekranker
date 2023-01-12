@@ -385,6 +385,7 @@ enum QueryParams {
   ShowIndividualUserRatings = "sir",
   IncludeOwned = "own",
   IncludeWishlisted = "wish",
+  IncludeRated = "rated",
   ScorePlayerCount = "spc",
   PlayerCount = "pc",
   IdealWieght = "iw",
@@ -405,7 +406,8 @@ const defaultQueryValues: { [key in QueryParams]: any } = {
   [QueryParams.ShowIndividualUserRatings]: false,
   [QueryParams.IncludeOwned]: true,
   [QueryParams.IncludeWishlisted]: false,
-  [QueryParams.ScorePlayerCount]: false,
+  [QueryParams.IncludeRated]: false,
+  [QueryParams.ScorePlayerCount]: true,
   [QueryParams.PlayerCount]: 2,
   [QueryParams.IdealWieght]: null,
   [QueryParams.IdealTime]: null,
@@ -464,7 +466,8 @@ function App() {
 
   // Filter options
   const [includeOwned, setIncludeOwned] = useState<boolean>(getBoolQueryParam(QueryParams.IncludeOwned));
-  const [includeWishlist, setIncludeWishlist] = useState<boolean>(getBoolQueryParam(QueryParams.IncludeWishlisted));
+  const [includeWishlisted, setIncludeWishlisted] = useState<boolean>(getBoolQueryParam(QueryParams.IncludeWishlisted));
+  const [includeRated, setIncludeRated] = useState<boolean>(getBoolQueryParam(QueryParams.IncludeRated));
 
   // Scoring options
   const [scorePlayerCount, setScorePlayerCount] = useState<boolean>(getBoolQueryParam(QueryParams.ScorePlayerCount));
@@ -493,7 +496,8 @@ function App() {
     [QueryParams.ShowTime]: showTime,
     [QueryParams.ShowIndividualUserRatings]: showIndividualUserRatings,
     [QueryParams.IncludeOwned]: includeOwned,
-    [QueryParams.IncludeWishlisted]: includeWishlist,
+    [QueryParams.IncludeWishlisted]: includeWishlisted,
+    [QueryParams.IncludeRated]: includeRated,
     [QueryParams.ScorePlayerCount]: scorePlayerCount,
     [QueryParams.PlayerCount]: playerCount,
     [QueryParams.IdealWieght]: includeIdealWeight ? idealWeight : null,
@@ -837,7 +841,7 @@ function App() {
     callback();
   }
 
-  const filteredGames = allGames.filter(g => g.userStats.filter(us => (includeOwned && us.isOwned) || (includeWishlist && us.isWishlisted)).length > 0);
+  const filteredGames = allGames.filter(g => g.userStats.filter(us => (includeOwned && us.isOwned) || (includeWishlisted && us.isWishlisted) || (includeRated && us.rating)).length > 0);
 
   const grIndexes = getScores(g => getGrIndex(g));
   const avgUserRatings = getScores(g => getAvgUserRatings(g));
@@ -941,7 +945,8 @@ function App() {
                 </FiltersHeader>
                 <FiltersInnerRow>
                   {toggle(includeOwned, setIncludeOwned, "Owned Games")}
-                  {toggle(includeWishlist, setIncludeWishlist, "Wishlisted Games")}
+                  {toggle(includeWishlisted, setIncludeWishlisted, "Wishlisted Games")}
+                  {toggle(includeRated, setIncludeRated, "Rated Games")}
                 </FiltersInnerRow>
                 <FiltersHeader>
                   Scoring
