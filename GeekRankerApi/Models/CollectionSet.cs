@@ -14,6 +14,7 @@ public class CollectionGame {
     public int GeekRatingRank { get; set; }
     public int MinPlayTime { get; set; }
     public int MaxPlayTime { get; set; }
+    public bool IsExpansion { get; set; }
     public DateTime CacheDate { get; set; }
 }
 

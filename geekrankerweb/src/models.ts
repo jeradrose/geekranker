@@ -12,6 +12,7 @@ export interface CollectionGame {
   geekRatingRank: number;
   minPlayTime: number;
   maxPlayTime: number;
+  isExpansion: boolean;
   cacheDate: Date;
 }
 

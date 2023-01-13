@@ -55,7 +55,7 @@ public class BggClient {
 
             async Task<string> apiCallAsync() {
                 try {
-                    return await _client.GetStringAsync($"https://boardgamegeek.com/xmlapi2/collection?username={username}&stats=1&excludesubtype=boardgameexpansion");
+                    return await _client.GetStringAsync($"https://boardgamegeek.com/xmlapi2/collection?username={username}&stats=1"); //&excludesubtype=boardgameexpansion
                 } catch (Exception ex) {
                     throw new BggException($"Exception calling BGG API after {maxRetries} attempts: {ex.Message}");
                 }

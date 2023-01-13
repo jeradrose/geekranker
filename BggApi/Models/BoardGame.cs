@@ -8,6 +8,9 @@ public class BoardGame {
     [XmlAttribute("id")]
     public int ObjectId { get; set; }
 
+    [XmlAttribute("type")]
+    public string Type { get; set; }
+
     [XmlElement("thumbnail")]
     public string ThumbnailUrl { get; set; }
 
@@ -43,7 +46,7 @@ public class BoardGame {
 
     [XmlElement("statistics")]
     public List<Statistics> Statistics { get; set; }
-    
+
     public DateTime CacheDate { get; set; }
 }
 

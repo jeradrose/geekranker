@@ -53,6 +53,7 @@ public class BoardGameController : ControllerBase {
                 AvgWeight = g.Statistics.Single().Ratings.Single().AverageWeight.Value,
                 MinPlayTime = g.MinPlayTime.Value,
                 MaxPlayTime = g.MaxPlayTime.Value,
+                IsExpansion = g.Type == "boardgameexpansion",
                 CacheDate = g.CacheDate,
                 UserStats = collections
                     .Select(c => {
