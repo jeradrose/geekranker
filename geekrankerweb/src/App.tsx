@@ -53,6 +53,10 @@ const Filters = styled.div`
   user-select: none;
 `;
 
+const FilterLabel = styled.div`
+  padding-right: 15px;
+`;
+
 const FiltersInnerRow = styled.div`
   display: flex;
   align-items: center;
@@ -971,7 +975,7 @@ function App() {
                   {toggle(showUserRating, setShowUserRating, "User Rating")}
                   {toggle(showPlayerRating, setShowPlayerRating, "Average Rating")}
                   {toggle(showGeekRating, setShowGeekRating, "Geek Rating")}
-                  {toggle(showPlayerCount, setShowPlayerCount, `${playerCount}-Player Rating`)}
+                  {toggle(showPlayerCount, setShowPlayerCount, `Player Count Rating(s)`)}
                   {toggle(showWeight, setShowWeight, "Weight")}
                   {toggle(showTime, setShowTime, "Time")}
                   {toggle(showIndividualUserRatings, setShowIndividualUserRatings, "Individual Users Ratings", usernames.length < 2)}
@@ -1002,9 +1006,13 @@ function App() {
                   Filters
                 </FiltersHeader>
                 <FiltersInnerRow>
+                  <FilterLabel>Status:</FilterLabel>
                   {toggle(includeOwned, setIncludeOwned, "Owned Games")}
                   {toggle(includeWishlisted, setIncludeWishlisted, "Wishlisted Games")}
                   {toggle(includeRated, setIncludeRated, "Rated Games")}
+                </FiltersInnerRow>
+                <FiltersInnerRow>
+                  <FilterLabel>Type:</FilterLabel>
                   {toggle(includeBase, setIncludeBase, "Base Games")}
                   {toggle(includeExpansion, setIncludeExpansion, "Expansions")}
                 </FiltersInnerRow>
