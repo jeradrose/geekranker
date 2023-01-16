@@ -16,6 +16,7 @@ export enum QueryParams {
   IncludeRated = "rated",
   IncludeBase = "base",
   IncludeExpansion = "exp",
+  GameIdFilter = "fid",
   ScorePlayerCount = "spc",
   PlayerCount = "pc",
   PlayerCountRange = "pcr",
@@ -43,6 +44,7 @@ export const defaultQueryValues: { [key in QueryParams]: any } = {
   [QueryParams.IncludeRated]: false,
   [QueryParams.IncludeBase]: true,
   [QueryParams.IncludeExpansion]: false,
+  [QueryParams.GameIdFilter]: "all",
   [QueryParams.ScorePlayerCount]: true,
   [QueryParams.PlayerCount]: 2,
   [QueryParams.PlayerCountRange]: "2 4",
@@ -53,6 +55,11 @@ export const defaultQueryValues: { [key in QueryParams]: any } = {
 }
 
 export const queryParams = new URLSearchParams(window.location.search);
+
+export const getTypedStringQueryParam = <T>(queryParam: QueryParams): T => {
+  const param = queryParams.get(queryParam) as T;
+  return param === null ? defaultQueryValues[queryParam] as T : param;
+}
 
 export const getStringQueryParam = (queryParam: QueryParams): string => {
   const param = queryParams.get(queryParam);

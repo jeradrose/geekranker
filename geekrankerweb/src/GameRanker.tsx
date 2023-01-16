@@ -5,7 +5,7 @@ import { ArrowDownward, ExpandLess, ExpandMore, Info } from '@mui/icons-material
 import { Tooltip, Switch, FormControlLabel, Slider, RadioGroup, Radio, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 
 import styled from "styled-components"
-import { defaultQueryValues, QueryParams, getBoolQueryParam, getNumberArrayQueryParam, getNumberQueryParam, getStringQueryParam } from './Utilities';
+import { defaultQueryValues, QueryParams, getBoolQueryParam, getNumberArrayQueryParam, getNumberQueryParam, getStringQueryParam, getTypedStringQueryParam } from './Utilities';
 
 const Filters = styled.div`
   display: flex;
@@ -308,6 +308,7 @@ type RankedScore = {
 
 type RankedScores = Record<number, RankedScore>;
 
+type GameIdFilter = "all" | "only-selected" | "hide-selected";
 type FallBackTo = "player-rating" | "geek-rating";
 type BaseRating = FallBackTo | "user-rating";
 
@@ -348,6 +349,7 @@ function GameRanker({ usernames, gameIds, allGames, screenWidth }: GameRankerPro
   const [includeRated, setIncludeRated] = useState<boolean>(getBoolQueryParam(QueryParams.IncludeRated));
   const [includeBase, setIncludeBase] = useState<boolean>(getBoolQueryParam(QueryParams.IncludeBase));
   const [includeExpansion, setIncludeExpansion] = useState<boolean>(getBoolQueryParam(QueryParams.IncludeExpansion));
+  const [gameIdFilter, setGameIdFilter] = useState<GameIdFilter>(getTypedStringQueryParam<GameIdFilter>(QueryParams.GameIdFilter));
 
   // Scoring options
   const [scorePlayerCount, setScorePlayerCount] = useState<boolean>(getBoolQueryParam(QueryParams.ScorePlayerCount));
@@ -356,8 +358,8 @@ function GameRanker({ usernames, gameIds, allGames, screenWidth }: GameRankerPro
   const [idealWeight, setIdealWeight] = useState<number>(getNumberQueryParam(QueryParams.IdealWieght) || idealWeightDefault);
   const [includeIdealTime, setIncludeIdealTime] = useState<boolean>(getBoolQueryParam(QueryParams.IdealTime));
   const [idealTime, setIdealTime] = useState<number>(getNumberQueryParam(QueryParams.IdealTime) || idealTimeDefault);
-  const [baseRating, setBaseRating] = useState<BaseRating>(getStringQueryParam(QueryParams.BaseRating) as BaseRating);
-  const [fallBackTo, setFallBackTo] = useState<FallBackTo>(getStringQueryParam(QueryParams.FallBackTo) as FallBackTo);
+  const [baseRating, setBaseRating] = useState<BaseRating>(getTypedStringQueryParam<BaseRating>(QueryParams.BaseRating));
+  const [fallBackTo, setFallBackTo] = useState<FallBackTo>(getTypedStringQueryParam<FallBackTo>(QueryParams.FallBackTo));
 
   // UI options
   const [preventHorizontalScroll,
@@ -383,6 +385,7 @@ function GameRanker({ usernames, gameIds, allGames, screenWidth }: GameRankerPro
     [QueryParams.IncludeRated]: includeRated,
     [QueryParams.IncludeBase]: includeBase,
     [QueryParams.IncludeExpansion]: includeExpansion,
+    [QueryParams.GameIdFilter]: gameIdFilter,
     [QueryParams.ScorePlayerCount]: scorePlayerCount,
     [QueryParams.PlayerCount]: playerCount,
     [QueryParams.PlayerCountRange]: `${playerCountRange[0]} ${playerCountRange[1]}`,
@@ -654,6 +657,9 @@ function GameRanker({ usernames, gameIds, allGames, screenWidth }: GameRankerPro
       || (navigator.userAgent.includes("Mac") && "ontouchend" in document)
   }
 
+  const handleGameIdFilterChange = (event: React.ChangeEvent<HTMLInputElement>) =>
+    setGameIdFilter((event.target as HTMLInputElement).value as GameIdFilter);
+
   const handleFallBackToChange = (event: React.ChangeEvent<HTMLInputElement>) =>
     setFallBackTo((event.target as HTMLInputElement).value as FallBackTo);
 
@@ -668,18 +674,17 @@ function GameRanker({ usernames, gameIds, allGames, screenWidth }: GameRankerPro
     callback();
   }
 
-  const filteredGames = allGames.filter(g => g.userStats.filter(us =>
+  const filteredGames = allGames.filter(g =>
     (
-      (
-        (includeOwned && us.isOwned) ||
-        (includeWishlisted && us.isWishlisted) ||
-        (includeRated && us.rating)
-      ) && (
-        (includeBase && !g.isExpansion) ||
-        (includeExpansion && g.isExpansion)
-      )
-    ) || gameIds.filter(id => id === g.gameId).length
-  ).length > 0);
+      g.userStats.filter(us => (includeOwned && us.isOwned) || (includeWishlisted && us.isWishlisted) || (includeRated && us.rating)).length &&
+      ((includeBase && !g.isExpansion) || (includeExpansion && g.isExpansion)) &&
+      (gameIdFilter !== "hide-selected" || !gameIds.filter(id => id === g.gameId).length) &&
+      (gameIdFilter !== "only-selected" || gameIds.filter(id => id === g.gameId).length)
+    ) ||
+    (
+      gameIdFilter !== "hide-selected" && gameIds.filter(id => id === g.gameId).length
+    )
+  );
 
   const grIndexes = getScores(g => getGrIndex(g));
   const avgUserRatings = getScores(g => getAvgUserRatings(g));
@@ -776,6 +781,16 @@ function GameRanker({ usernames, gameIds, allGames, screenWidth }: GameRankerPro
               <FilterLabel>Type:</FilterLabel>
               {toggle(includeBase, setIncludeBase, "Base Games")}
               {toggle(includeExpansion, setIncludeExpansion, "Expansions")}
+            </FiltersInnerRow>
+            <FiltersInnerRow>
+              <FallBackContainer>
+                Filter Game IDs:
+                <RadioGroup value={gameIdFilter} onChange={handleGameIdFilterChange} row>
+                  <FormControlLabel value="all" control={<Radio />} label="All" />
+                  <FormControlLabel value="only-selected" control={<Radio />} label="Only Selected" />
+                  <FormControlLabel value="hide-selected" control={<Radio />} label="Hide Selected" />
+                </RadioGroup>
+              </FallBackContainer>
             </FiltersInnerRow>
             <FiltersHeader>
               Scoring
