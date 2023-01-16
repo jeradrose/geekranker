@@ -5,7 +5,7 @@ import { ArrowDownward, ExpandLess, ExpandMore, Info } from '@mui/icons-material
 import { Tooltip, Switch, FormControlLabel, Slider, RadioGroup, Radio, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 
 import styled from "styled-components"
-import { getBoolQueryParam, getNumberArrayQueryParam, getNumberQueryParam, getStringQueryParam } from './Utilities';
+import { defaultQueryValues, QueryParams, getBoolQueryParam, getNumberArrayQueryParam, getNumberQueryParam, getStringQueryParam } from './Utilities';
 
 const Filters = styled.div`
   display: flex;
@@ -310,56 +310,6 @@ type RankedScores = Record<number, RankedScore>;
 
 type FallBackTo = "player-rating" | "geek-rating";
 type BaseRating = FallBackTo | "user-rating";
-
-enum QueryParams {
-  Usernames = "u",
-  Sort = "s",
-  ShowGrIndex = "sgi",
-  ShowUserRating = "sur",
-  ShowPlayerRating = "spr",
-  ShowGeekRating = "sgr",
-  ShowPlayerCount = "spc",
-  ShowWeight = "sw",
-  ShowTime = "st",
-  ShowIndividualUserRatings = "sir",
-  IncludeOwned = "own",
-  IncludeWishlisted = "wish",
-  IncludeRated = "rated",
-  IncludeBase = "base",
-  IncludeExpansion = "exp",
-  ScorePlayerCount = "spc",
-  PlayerCount = "pc",
-  PlayerCountRange = "pcr",
-  IdealWieght = "iw",
-  IdealTime = "it",
-  BaseRating = "br",
-  FallBackTo = "fb",
-}
-
-const defaultQueryValues: { [key in QueryParams]: any } = {
-  [QueryParams.Usernames]: "",
-  [QueryParams.Sort]: "gr-index",
-  [QueryParams.ShowGrIndex]: true,
-  [QueryParams.ShowUserRating]: true,
-  [QueryParams.ShowPlayerRating]: false,
-  [QueryParams.ShowGeekRating]: false,
-  [QueryParams.ShowPlayerCount]: true,
-  [QueryParams.ShowWeight]: true,
-  [QueryParams.ShowTime]: true,
-  [QueryParams.ShowIndividualUserRatings]: false,
-  [QueryParams.IncludeOwned]: true,
-  [QueryParams.IncludeWishlisted]: false,
-  [QueryParams.IncludeRated]: false,
-  [QueryParams.IncludeBase]: true,
-  [QueryParams.IncludeExpansion]: false,
-  [QueryParams.ScorePlayerCount]: true,
-  [QueryParams.PlayerCount]: 2,
-  [QueryParams.PlayerCountRange]: "2 4",
-  [QueryParams.IdealWieght]: null,
-  [QueryParams.IdealTime]: null,
-  [QueryParams.BaseRating]: "user-rating",
-  [QueryParams.FallBackTo]: "player-rating",
-}
 
 interface GameRankerProps {
   usernames: string[],
