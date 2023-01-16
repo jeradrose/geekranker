@@ -298,7 +298,7 @@ const IntroTipLink = styled(IntroTip)`
   cursor: pointer;
 `
 
-const sortOptions = ["game", "gr-index", "user-rating", "player-rating", "geek-rating", "weight", "time"] as const;
+const sortOptions = ["game", "game-id", "gr-index", "user-rating", "player-rating", "geek-rating", "weight", "time"] as const;
 type SortOptions = typeof sortOptions[number] | any;
 
 type RankedScore = {
@@ -329,6 +329,7 @@ function GameRanker({ usernames, gameIds, allGames, screenWidth }: GameRankerPro
   const [sort, setSort] = useState<SortOptions>(getStringQueryParam(QueryParams.Sort));
 
   // Column visibility
+  const [showGameId, setShowGameId] = useState<boolean>(getBoolQueryParam(QueryParams.ShowGrIndex));
   const [showGrIndex, setShowGrIndex] = useState<boolean>(getBoolQueryParam(QueryParams.ShowGrIndex));
   const [showGeekRating, setShowGeekRating] = useState<boolean>(getBoolQueryParam(QueryParams.ShowGeekRating));
   const [showPlayerRating, setShowPlayerRating] = useState<boolean>(getBoolQueryParam(QueryParams.ShowPlayerRating));
@@ -366,7 +367,9 @@ function GameRanker({ usernames, gameIds, allGames, screenWidth }: GameRankerPro
 
   const queryValues: { [key in QueryParams]: any } = {
     [QueryParams.Usernames]: usernames.join(' '),
+    [QueryParams.GameIds]: gameIds,
     [QueryParams.Sort]: sort,
+    [QueryParams.ShowGameId]: showGameId,
     [QueryParams.ShowGrIndex]: showGrIndex,
     [QueryParams.ShowUserRating]: showUserRating,
     [QueryParams.ShowPlayerRating]: showPlayerRating,
@@ -563,6 +566,7 @@ function GameRanker({ usernames, gameIds, allGames, screenWidth }: GameRankerPro
   const getSortLabel = (sortOption: SortOptions) => {
     switch (sortOption) {
       case "game": return "Game";
+      case "game-id": return "ID";
       case "gr-index": return "GR Index";
       case "user-rating": return "User Rating";
       case "player-rating": return "Player Rating";
@@ -682,21 +686,23 @@ function GameRanker({ usernames, gameIds, allGames, screenWidth }: GameRankerPro
 
   const sortedGames =
     (sort === 'name') ? filteredGames.sort((a, b) => a.name.localeCompare(b.name)) :
-      (sort === 'geek-rating') ? filteredGames.sort((a, b) => b.geekRating - a.geekRating) :
-        (sort === 'player-rating') ? filteredGames.sort((a, b) => b.avgPlayerRating - a.avgPlayerRating) :
-          (sort === 'weight') ? filteredGames.sort((a, b) => b.avgWeight - a.avgWeight) :
-            ((sort as string).startsWith('playercount')) ? gamesSortedByPlayerCount(parseInt(sort.split("-")[1])) :
-              (sort === 'time') ? filteredGames.sort((a, b) => b.maxPlayTime - a.maxPlayTime) :
-                (sort === 'gr-index') ? filteredGames.sort((a, b) => grIndexes[b.gameId].score - grIndexes[a.gameId].score) :
-                  (sort === 'user-rating') ? filteredGames.sort((a, b) => getAvgUserRatings(b) - getAvgUserRatings(a)) :
-                    usernames.map(u => `user-${u}`).filter(s => s === sort).length === 1 ? gamesSortedByUserRatings(sort.substring(5)) :
-                      filteredGames;
+      (sort === 'game-id') ? filteredGames.sort((a, b) => a.gameId - b.gameId) :
+        (sort === 'geek-rating') ? filteredGames.sort((a, b) => b.geekRating - a.geekRating) :
+          (sort === 'player-rating') ? filteredGames.sort((a, b) => b.avgPlayerRating - a.avgPlayerRating) :
+            (sort === 'weight') ? filteredGames.sort((a, b) => b.avgWeight - a.avgWeight) :
+              ((sort as string).startsWith('playercount')) ? gamesSortedByPlayerCount(parseInt(sort.split("-")[1])) :
+                (sort === 'time') ? filteredGames.sort((a, b) => b.maxPlayTime - a.maxPlayTime) :
+                  (sort === 'gr-index') ? filteredGames.sort((a, b) => grIndexes[b.gameId].score - grIndexes[a.gameId].score) :
+                    (sort === 'user-rating') ? filteredGames.sort((a, b) => getAvgUserRatings(b) - getAvgUserRatings(a)) :
+                      usernames.map(u => `user-${u}`).filter(s => s === sort).length === 1 ? gamesSortedByUserRatings(sort.substring(5)) :
+                        filteredGames;
 
   const getColumnWidth = (width: number, isShown: boolean) =>
     width * (isShown ? 1 : 0);
 
   const columnWidths =
     getColumnWidth(200, true) // name
+    + getColumnWidth(200, showGameId) // game ID
     + getColumnWidth(200, showGrIndex) // GR index
     + getColumnWidth(200 * (showIndividualUserRatings ? usernames.length : 1), showPlayerRating) // user rating(s)
     + getColumnWidth(200, showPlayerRating) // player rating
@@ -725,6 +731,7 @@ function GameRanker({ usernames, gameIds, allGames, screenWidth }: GameRankerPro
               Columns
             </FiltersHeader>
             <FiltersInnerRow>
+              {toggle(showGameId, setShowGameId, "Game ID")}
               {toggle(showGrIndex, setShowGrIndex, "GR Index")}
               {toggle(showUserRating, setShowUserRating, "User Rating")}
               {toggle(showPlayerRating, setShowPlayerRating, "Average Rating")}
@@ -847,6 +854,7 @@ function GameRanker({ usernames, gameIds, allGames, screenWidth }: GameRankerPro
                 <ImageAndNameHeader onClick={() => setSort("game")}>
                   Game{sortArrow("game")}
                 </ImageAndNameHeader>
+                {showGameId && barHeader("game-id")}
                 {showGrIndex && barHeader("gr-index")}
                 {showUserRating && (showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeader(`user-${u}`, u.toUpperCase())) : barHeader(`user-rating`))}
                 {showPlayerRating && barHeader("player-rating")}
@@ -902,6 +910,7 @@ function GameRanker({ usernames, gameIds, allGames, screenWidth }: GameRankerPro
                 <GameName>{g.name}</GameName>
               </ImageAndNameHorizontal>
 
+              {showGameId && <HorizontalCell>{g.gameId}</HorizontalCell>}
               {showGrIndex && <HorizontalCell>{bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}</HorizontalCell>}
               {showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
                 usernames.map(u => <HorizontalCell key={`userRating-${g.gameId}-${u}`}>{userRatingBar(u, g)}</HorizontalCell>) :
@@ -921,6 +930,7 @@ function GameRanker({ usernames, gameIds, allGames, screenWidth }: GameRankerPro
                 <GameName>{g.name}</GameName>
               </ImageAndNameVertical>
 
+              {showGameId && verticalCell("Game ID", g.gameId)}
               {showGrIndex && verticalCell("GR Index", bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0))}
               {showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
                 usernames.map(u => verticalCell(u, userRatingBar(u, g), g.gameId)) :
