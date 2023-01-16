@@ -8,7 +8,7 @@ namespace BggApi;
 public class BggClient {
     private static readonly HttpClient _client = new HttpClient();
 
-    public async Task<List<BoardGame>> GetBoardGamesAsync(int[] gameIds) {
+    public async Task<List<BoardGame>> GetBoardGamesAsync(IEnumerable<int> gameIds) {
         var cache = new SqliteCache(new SqliteCacheOptions());
         var gameIdList = string.Join(',', gameIds.Distinct().Order());
         var cacheKey = $"{nameof(GetBoardGamesAsync)}-{gameIdList}";

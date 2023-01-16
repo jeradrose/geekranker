@@ -82,10 +82,14 @@ const Logo = styled.img`
 
 function App() {
   const usernamesRef = useRef<HTMLInputElement>(null);
+  const gameIdsRef = useRef<HTMLInputElement>(null);
   const renderCount = useRef<number>(0);
 
   const getUsernamesFromString = (usernamesString: string | undefined | null): string[] =>
     usernamesString?.split(/[^a-zA-Z0-9_]/).filter(u => u.length) ?? [];
+
+  const getGameIdsFromString = (gameIdsString: string | undefined | null): number[] =>
+    gameIdsString?.split(/[^0-9]/).filter(id => id.length).map(id => parseInt(id)) ?? [];
 
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const [loadingGames, setLoadingGames] = useState<boolean>(false);
@@ -93,6 +97,7 @@ function App() {
 
   // Standard options
   const [usernames, setUsernames] = useState<string[]>(getUsernamesFromString(queryParams.get(QueryParams.Usernames)));
+  const [gameIds, setGameIds] = useState<number[]>(getGameIdsFromString(queryParams.get(QueryParams.GameIds)));
 
   const updateMedia = () => {
     setScreenWidth(document.documentElement.clientWidth || document.body.clientWidth);
@@ -100,7 +105,8 @@ function App() {
 
   useEffect(() => {
     const getApiData = async () => {
-      if (!usernames.length) {
+      console.log("loading games");
+      if (!usernames.length && !gameIds.length) {
         setAllGames([]);
         return;
       }
@@ -112,7 +118,7 @@ function App() {
           getApiUrl("/BoardGame/GetRankings"),
           {
             method: 'post',
-            body: JSON.stringify(usernames),
+            body: JSON.stringify({ usernames, gameIds }),
             headers: {
               'Content-type': 'application/json'
             }
@@ -130,7 +136,7 @@ function App() {
     };
 
     getApiData();
-  }, [usernames]);
+  }, [usernames, gameIds]);
 
   useEffect(() => {
     updateMedia();
@@ -138,27 +144,24 @@ function App() {
     return () => window.removeEventListener("resize", updateMedia);
   });
 
-  const lockInUsernames = () => {
-    const newUsernames = getUsernamesFromString(usernamesRef.current?.value);
-
-    if (newUsernames.length === 0) {
-      // setAllGames([]);
-    }
-    setUsernames(newUsernames);
+  const loadGames = () => {
+    setUsernames(getUsernamesFromString(usernamesRef.current?.value));
+    setGameIds(getGameIdsFromString(gameIdsRef.current?.value))
+    console.log(`usernames: ${usernames}, gameIds: ${gameIds}`);
   };
 
-  const usernameFilterKeyPress = (key: string) => {
+  const inputKeyPress = (key: string) => {
     if (key === "Enter") {
       usernamesRef.current?.blur();
-      lockInUsernames();
+      loadGames();
     }
   }
 
-  const handleUsernamesClear = () => {
-    if (usernamesRef.current) {
-      usernamesRef.current.value = "";
+  const handleClear = (ref: React.RefObject<HTMLInputElement>) => {
+    if (ref.current) {
+      ref.current.value = "";
     }
-    lockInUsernames();
+    loadGames();
   }
 
   renderCount.current++;
@@ -173,27 +176,43 @@ function App() {
               <Input
                 size='small'
                 inputProps={{ autoCapitalize: "none" }}
-                onKeyDown={e => usernameFilterKeyPress(e.key)}
+                onKeyDown={e => inputKeyPress(e.key)}
                 defaultValue={queryParams.get(QueryParams.Usernames) ?? ""}
                 inputRef={usernamesRef}
                 placeholder="BGG Username(s)"
                 InputProps={{
                   style: { paddingRight: 0 },
                   endAdornment: (
-                    <IconButton disabled={!usernamesRef.current?.value} onClick={() => handleUsernamesClear()}>
+                    <IconButton disabled={!usernamesRef.current?.value} onClick={() => handleClear(usernamesRef)}>
                       <ClearIcon />
                     </IconButton>
                   )
                 }}
               />
-              <FilterButton size='small' variant='contained' onClick={() => lockInUsernames()} disabled={loadingGames}>
+              <Input
+                size='small'
+                inputProps={{ autoCapitalize: "none" }}
+                onKeyDown={e => inputKeyPress(e.key)}
+                defaultValue={queryParams.get(QueryParams.GameIds) ?? ""}
+                inputRef={gameIdsRef}
+                placeholder="BGG Game ID(s)"
+                InputProps={{
+                  style: { paddingRight: 0 },
+                  endAdornment: (
+                    <IconButton disabled={!gameIdsRef.current?.value} onClick={() => handleClear(gameIdsRef)}>
+                      <ClearIcon />
+                    </IconButton>
+                  )
+                }}
+              />
+              <FilterButton size='small' variant='contained' onClick={() => loadGames()} disabled={loadingGames}>
                 {loadingGames ? "Loading Games..." : "Load Games"}
               </FilterButton>
             </InputContainer>
             <Logo src="/logo.png" alt="logo" />
           </PageHeader>
         </PageHeaderContainer>
-        <GameRanker usernames={usernames} allGames={allGames} screenWidth={screenWidth} />
+        <GameRanker usernames={usernames} gameIds={gameIds} allGames={allGames} screenWidth={screenWidth} />
       </ThemeProvider>
     </>
   );

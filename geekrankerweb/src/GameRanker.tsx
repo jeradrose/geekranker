@@ -363,11 +363,12 @@ const defaultQueryValues: { [key in QueryParams]: any } = {
 
 interface GameRankerProps {
   usernames: string[],
+  gameIds: number[],
   allGames: CollectionGame[],
   screenWidth: number,
 }
 
-function GameRanker({ usernames, allGames, screenWidth }: GameRankerProps) {
+function GameRanker({ usernames, gameIds, allGames, screenWidth }: GameRankerProps) {
   const renderCount = useRef<number>(0);
 
   // User option nullable defaults
@@ -715,13 +716,15 @@ function GameRanker({ usernames, allGames, screenWidth }: GameRankerProps) {
 
   const filteredGames = allGames.filter(g => g.userStats.filter(us =>
     (
-      (includeOwned && us.isOwned) ||
-      (includeWishlisted && us.isWishlisted) ||
-      (includeRated && us.rating)
-    ) && (
-      (includeBase && !g.isExpansion) ||
-      (includeExpansion && g.isExpansion)
-    )
+      (
+        (includeOwned && us.isOwned) ||
+        (includeWishlisted && us.isWishlisted) ||
+        (includeRated && us.rating)
+      ) && (
+        (includeBase && !g.isExpansion) ||
+        (includeExpansion && g.isExpansion)
+      )
+    ) || gameIds.filter(id => id === g.gameId).length
   ).length > 0);
 
   const grIndexes = getScores(g => getGrIndex(g));

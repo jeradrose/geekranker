@@ -2,6 +2,7 @@ using BggApi;
 using BggApi.Models;
 using GeekRankerApi.Models;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 
 namespace GeekRankerApi.Controllers;
 
@@ -26,20 +27,19 @@ public class BoardGameController : ControllerBase {
     }
 
     [HttpPost("GetRankings")]
-    public async Task<List<CollectionGame>> GetRankings([FromBody]string[] usernames) {
-        usernames = usernames.Where(un => !string.IsNullOrEmpty(un)).Distinct().ToArray();
-
-        if (usernames.Length == 0) {
-            return new List<CollectionGame>();
-        }
+    public async Task<List<CollectionGame>> GetRankings([FromBody]GetRankingsRequest request) {
+        var usernames = request.Usernames.Where(un => !string.IsNullOrEmpty(un)).Distinct().ToArray();
+        var gameIds = request.GameIds.Distinct().ToList();
 
         var collections = new Dictionary<string, List<CollectionItem>>();
-        
+
         foreach (var username in usernames) { 
             collections.Add(username, await _bggApi.GetCollectionAsync(username));
         }
 
-        var gameIds = collections.SelectMany(s => s.Value.Select(g => g.Id)).Distinct().ToArray();
+        gameIds.AddRange(collections.SelectMany(s => s.Value.Select(g => g.Id)).Distinct());
+
+        gameIds = gameIds.Distinct().Order().ToList();
 
         var games = await _bggApi.GetBoardGamesAsync(gameIds);
 
