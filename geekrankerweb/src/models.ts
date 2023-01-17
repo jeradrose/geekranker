@@ -13,6 +13,7 @@ export interface CollectionGame {
   minPlayTime: number;
   maxPlayTime: number;
   isExpansion: boolean;
+  isFromThread: boolean;
   cacheDate: Date;
 }
 

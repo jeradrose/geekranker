@@ -83,6 +83,7 @@ const Logo = styled.img`
 function App() {
   const usernamesRef = useRef<HTMLInputElement>(null);
   const gameIdsRef = useRef<HTMLInputElement>(null);
+  const threadIdRef = useRef<HTMLInputElement>(null);
   const renderCount = useRef<number>(0);
 
   const getUsernamesFromString = (usernamesString: string | undefined | null): string[] =>
@@ -91,6 +92,9 @@ function App() {
   const getGameIdsFromString = (gameIdsString: string | undefined | null): number[] =>
     gameIdsString?.split(/[^0-9]/).filter(id => id.length).map(id => parseInt(id)) ?? [];
 
+  const getThreadIdFromString = (threadIdString: string | undefined | null): number | undefined =>
+    parseInt(threadIdString?.split(/[^0-9]/).find(id => id.length) || "");
+
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const [loadingGames, setLoadingGames] = useState<boolean>(false);
   const [allGames, setAllGames] = useState<CollectionGame[]>([]);
@@ -98,13 +102,14 @@ function App() {
   // Standard options
   const [usernames, setUsernames] = useState<string[]>(getUsernamesFromString(queryParams.get(QueryParams.Usernames)));
   const [gameIds, setGameIds] = useState<number[]>(getGameIdsFromString(queryParams.get(QueryParams.GameIds)));
+  const [threadId, setThreadId] = useState<number | undefined>(getThreadIdFromString(queryParams.get(QueryParams.ThreadId)));
 
   const updateMedia = () => {
     setScreenWidth(document.documentElement.clientWidth || document.body.clientWidth);
   };
 
   const getApiData = async () => {
-    if (!usernames.length && !gameIds.length) {
+    if (!usernames.length && !gameIds.length && !threadId) {
       setAllGames([]);
       return;
     }
@@ -116,7 +121,7 @@ function App() {
         getApiUrl("/BoardGame/GetRankings"),
         {
           method: 'post',
-          body: JSON.stringify({ usernames, gameIds }),
+          body: JSON.stringify({ usernames, gameIds, threadId }),
           headers: {
             'Content-type': 'application/json'
           }
@@ -135,7 +140,7 @@ function App() {
 
   useEffect(() => {
     getApiData();
-  }, [usernames]);
+  }, [usernames, threadId]);
 
   useEffect(() => {
     if (gameIdsRef.current) {
@@ -152,6 +157,7 @@ function App() {
   const loadGames = () => {
     setUsernames(getUsernamesFromString(usernamesRef.current?.value));
     setGameIds(getGameIdsFromString(gameIdsRef.current?.value))
+    setThreadId(getThreadIdFromString(threadIdRef.current?.value ?? ""));
   };
 
   const inputKeyPress = (key: string) => {
@@ -209,6 +215,22 @@ function App() {
                   )
                 }}
               />
+              <Input
+                size='small'
+                inputProps={{ autoCapitalize: "none" }}
+                onKeyDown={e => inputKeyPress(e.key)}
+                defaultValue={queryParams.get(QueryParams.ThreadId) ?? ""}
+                inputRef={threadIdRef}
+                placeholder="BGG Thread ID"
+                InputProps={{
+                  style: { paddingRight: 0 },
+                  endAdornment: (
+                    <IconButton disabled={!threadIdRef.current?.value} onClick={() => handleClear(threadIdRef)}>
+                      <ClearIcon />
+                    </IconButton>
+                  )
+                }}
+              />
               <FilterButton size='small' variant='contained' onClick={() => loadGames()} disabled={loadingGames}>
                 {loadingGames ? "Loading Games..." : "Load Games"}
               </FilterButton>
@@ -216,7 +238,7 @@ function App() {
             <Logo src="/logo.png" alt="logo" />
           </PageHeader>
         </PageHeaderContainer>
-        <GameRanker usernames={usernames} gameIds={gameIds} setGameIds={setGameIds} allGames={allGames} screenWidth={screenWidth} />
+        <GameRanker usernames={usernames} gameIds={gameIds} threadId={threadId} setGameIds={setGameIds} allGames={allGames} screenWidth={screenWidth} />
       </ThemeProvider>
     </>
   );

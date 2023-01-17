@@ -2,6 +2,8 @@ using BggApi.Models;
 using Microsoft.Extensions.Caching.Distributed;
 using NeoSmart.Caching.Sqlite;
 using System.Xml.Serialization;
+using Thread = BggApi.Models.Thread;
+using SystemThread = System.Threading.Thread;
 
 namespace BggApi;
 
@@ -69,7 +71,7 @@ public class BggClient {
                     throw new BggException("Too many attempts.");
                 }
                 tries++;
-                Thread.Sleep(1000 * tries); // Add another second delay for each retry
+                SystemThread.Sleep(1000 * tries); // Add another second delay for each retry
                 xml = await apiCallAsync();
             }
 
@@ -99,5 +101,32 @@ public class BggClient {
         }
 
         return collection;
+    }
+
+    public async Task<Thread?> GetThreadAsync(int threadId) {
+        var cache = new SqliteCache(new SqliteCacheOptions());
+        var cacheKey = $"{nameof(GetBoardGamesAsync)}-{threadId}";
+        var cacheDateKey = $"{cacheKey}-date";
+
+        var xml = cache.GetString(cacheKey);
+        var dateString = cache.GetString(cacheDateKey);
+
+        if (string.IsNullOrEmpty(xml) || string.IsNullOrEmpty(dateString)) {
+            xml = await _client.GetStringAsync($"https://boardgamegeek.com/xmlapi2/thread?id={threadId}");
+            dateString = DateTime.UtcNow.ToString();
+            cache.SetString(cacheKey, xml, new DistributedCacheEntryOptions { });
+            cache.SetString(cacheDateKey, dateString);
+        }
+
+        var serializer = new XmlSerializer(
+            typeof(Thread),
+            new XmlRootAttribute("thread")
+        );
+
+        using var sr = new StringReader(xml);
+
+        var thread = (Thread?)serializer.Deserialize(sr);
+
+        return thread;
     }
 }

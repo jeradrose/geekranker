@@ -3,6 +3,7 @@ using BggApi.Models;
 using GeekRankerApi.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace GeekRankerApi.Controllers;
 
@@ -39,6 +40,22 @@ public class BoardGameController : ControllerBase {
 
         gameIds.AddRange(collections.SelectMany(s => s.Value.Select(g => g.Id)).Distinct());
 
+        var threadGameIds = new List<int>();
+
+        if (request.ThreadId.HasValue) {
+            var thread = await _bggApi.GetThreadAsync(request.ThreadId.Value);
+
+            if (thread != null) {
+                var regex = new Regex(@"boardgamegeek\.com\/boardgame\/([0-9]*)");
+
+                threadGameIds = thread.Articles.ArticleList.SelectMany(a =>
+                    regex.Matches(a.Body).Select(m => int.Parse(m.Groups[1].Value))
+                ).ToList();
+
+                gameIds.AddRange(threadGameIds);
+            }
+        }
+
         gameIds = gameIds.Distinct().Order().ToList();
 
         var games = await _bggApi.GetBoardGamesAsync(gameIds);
@@ -54,6 +71,7 @@ public class BoardGameController : ControllerBase {
                 MinPlayTime = g.MinPlayTime.Value,
                 MaxPlayTime = g.MaxPlayTime.Value,
                 IsExpansion = g.Type == "boardgameexpansion",
+                IsFromThread = threadGameIds.Contains(g.ObjectId),
                 CacheDate = g.CacheDate,
                 UserStats = collections
                     .Select(c => {

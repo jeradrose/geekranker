@@ -317,12 +317,13 @@ type BaseRating = FallBackTo | "user-rating";
 interface GameRankerProps {
   usernames: string[],
   gameIds: number[],
+  threadId: number | undefined,
   setGameIds: (gameId: number[]) => void,
   allGames: CollectionGame[],
   screenWidth: number,
 }
 
-function GameRanker({ usernames, gameIds, setGameIds, allGames, screenWidth }: GameRankerProps) {
+function GameRanker({ usernames, gameIds, threadId, setGameIds, allGames, screenWidth }: GameRankerProps) {
   const renderCount = useRef<number>(0);
 
   // User option nullable defaults
@@ -373,6 +374,7 @@ function GameRanker({ usernames, gameIds, setGameIds, allGames, screenWidth }: G
   const queryValues: { [key in QueryParams]: any } = {
     [QueryParams.Usernames]: usernames.join(' '),
     [QueryParams.GameIds]: gameIds,
+    [QueryParams.ThreadId]: threadId,
     [QueryParams.Sort]: sort,
     [QueryParams.ShowGameId]: showGameId,
     [QueryParams.ShowGrIndex]: showGrIndex,
@@ -426,21 +428,15 @@ function GameRanker({ usernames, gameIds, setGameIds, allGames, screenWidth }: G
     let numerator = 1;
     let denominator = 1;
 
-    switch (baseRating) {
-      case "user-rating": {
-        const userRatings = usernames.map(username => gameUserRating(username, game, false)[0]);
-        const avgUserRating = (userRatings.reduce((a, b) => a + b) / userRatings.length);
+    if (baseRating === "user-rating" && usernames.length) {
+      const userRatings = usernames.map(username => gameUserRating(username, game, false)[0]);
+      const avgUserRating = (userRatings.reduce((a, b) => a + b) / userRatings.length);
 
-        numerator *= avgUserRating;
-        break;
-      }
-      case "player-rating": {
-        numerator *= game.avgPlayerRating;
-        break;
-      }
-      case "geek-rating": {
-        numerator *= game.geekRating;
-      }
+      numerator *= avgUserRating;
+    } else if (baseRating === "player-rating" || (baseRating === "user-rating" && !usernames.length && fallBackTo === "player-rating")) {
+      numerator *= game.avgPlayerRating;
+    } else {
+      numerator *= game.geekRating;
     }
 
     denominator *= 10;
@@ -575,7 +571,7 @@ function GameRanker({ usernames, gameIds, setGameIds, allGames, screenWidth }: G
       case "game-id": return "ID";
       case "gr-index": return "GR Index";
       case "user-rating": return "User Rating";
-      case "player-rating": return "Player Rating";
+      case "player-rating": return "Average Rating";
       case "geek-rating": return "Geek Rating";
       case "weight": return "Weight";
       case "time": return "Time";
@@ -594,7 +590,7 @@ function GameRanker({ usernames, gameIds, setGameIds, allGames, screenWidth }: G
     filteredGames.sort((a, b) => gameUserRating(username, b, true)[0] - gameUserRating(username, a, true)[0]);
 
   const getAvgUserRatings = (game: CollectionGame): number =>
-    usernames.map(u => gameUserRating(u, game, false)[0]).reduce((a, b) => a + b) / usernames.length;
+    (usernames.length && (usernames.map(u => gameUserRating(u, game, false)[0]).reduce((a, b) => a + b) / usernames.length)) ?? 0;
 
   const sortArrow = (thisSort: SortOptions) =>
     <ArrowDownward key={`arrow-${thisSort}`} style={{ 'color': sort === thisSort ? '#fff' : '#0475BB', 'paddingLeft': 2 }} />;
@@ -698,9 +694,8 @@ function GameRanker({ usernames, gameIds, setGameIds, allGames, screenWidth }: G
       (gameIdFilter !== "hide-selected" || !gameIds.filter(id => id === g.gameId).length) &&
       (gameIdFilter !== "only-selected" || gameIds.filter(id => id === g.gameId).length)
     ) ||
-    (
-      gameIdFilter !== "hide-selected" && gameIds.filter(id => id === g.gameId).length
-    )
+    gameIdFilter !== "hide-selected" && gameIds.filter(id => id === g.gameId).length ||
+    g.isFromThread
   );
 
   const grIndexes = getScores(g => getGrIndex(g));
