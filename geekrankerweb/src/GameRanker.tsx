@@ -689,13 +689,17 @@ function GameRanker({ usernames, gameIds, threadId, setGameIds, allGames, screen
 
   const filteredGames = allGames.filter(g =>
     (
-      g.userStats.filter(us => (includeOwned && us.isOwned) || (includeWishlisted && us.isWishlisted) || (includeRated && us.rating)).length &&
-      ((includeBase && !g.isExpansion) || (includeExpansion && g.isExpansion)) &&
+      (
+        (
+          g.userStats.filter(us => (includeOwned && us.isOwned) || (includeWishlisted && us.isWishlisted) || (includeRated && us.rating)).length &&
+          ((includeBase && !g.isExpansion) || (includeExpansion && g.isExpansion))
+        ) ||
+        g.isFromThread
+      ) &&
       (gameIdFilter !== "hide-selected" || !gameIds.filter(id => id === g.gameId).length) &&
       (gameIdFilter !== "only-selected" || gameIds.filter(id => id === g.gameId).length)
     ) ||
-    gameIdFilter !== "hide-selected" && gameIds.filter(id => id === g.gameId).length ||
-    g.isFromThread
+    gameIdFilter !== "hide-selected" && gameIds.filter(id => id === g.gameId).length
   );
 
   const grIndexes = getScores(g => getGrIndex(g));
