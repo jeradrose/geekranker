@@ -103,40 +103,45 @@ function App() {
     setScreenWidth(document.documentElement.clientWidth || document.body.clientWidth);
   };
 
-  useEffect(() => {
-    const getApiData = async () => {
-      console.log("loading games");
-      if (!usernames.length && !gameIds.length) {
-        setAllGames([]);
-        return;
-      }
+  const getApiData = async () => {
+    if (!usernames.length && !gameIds.length) {
+      setAllGames([]);
+      return;
+    }
 
-      setLoadingGames(true);
+    setLoadingGames(true);
 
-      try {
-        const response = await fetch(
-          getApiUrl("/BoardGame/GetRankings"),
-          {
-            method: 'post',
-            body: JSON.stringify({ usernames, gameIds }),
-            headers: {
-              'Content-type': 'application/json'
-            }
+    try {
+      const response = await fetch(
+        getApiUrl("/BoardGame/GetRankings"),
+        {
+          method: 'post',
+          body: JSON.stringify({ usernames, gameIds }),
+          headers: {
+            'Content-type': 'application/json'
           }
-        );
-
-        if (response.ok) {
-          setAllGames(await response.json());
         }
-      } catch (ex) {
-        console.log(ex);
-      } finally {
-        setLoadingGames(false);
-      }
-    };
+      );
 
+      if (response.ok) {
+        setAllGames(await response.json());
+      }
+    } catch (ex) {
+      console.log(ex);
+    } finally {
+      setLoadingGames(false);
+    }
+  };
+
+  useEffect(() => {
     getApiData();
-  }, [usernames, gameIds]);
+  }, [usernames]);
+
+  useEffect(() => {
+    if (gameIdsRef.current) {
+      gameIdsRef.current.value = gameIds.join(' ');
+    }
+  }, [gameIds]);
 
   useEffect(() => {
     updateMedia();
@@ -147,7 +152,6 @@ function App() {
   const loadGames = () => {
     setUsernames(getUsernamesFromString(usernamesRef.current?.value));
     setGameIds(getGameIdsFromString(gameIdsRef.current?.value))
-    console.log(`usernames: ${usernames}, gameIds: ${gameIds}`);
   };
 
   const inputKeyPress = (key: string) => {
@@ -212,7 +216,7 @@ function App() {
             <Logo src="/logo.png" alt="logo" />
           </PageHeader>
         </PageHeaderContainer>
-        <GameRanker usernames={usernames} gameIds={gameIds} allGames={allGames} screenWidth={screenWidth} />
+        <GameRanker usernames={usernames} gameIds={gameIds} setGameIds={setGameIds} allGames={allGames} screenWidth={screenWidth} />
       </ThemeProvider>
     </>
   );

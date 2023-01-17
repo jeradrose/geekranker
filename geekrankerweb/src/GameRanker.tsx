@@ -128,6 +128,8 @@ const HorizontalCell = styled(CellBase)`
 `;
 
 const VerticalCell = styled(CellBase)`
+  display: flex;
+  align-items: center;
   padding: 5px 15px;
   background-color: #fcfcfc;
 `;
@@ -315,11 +317,12 @@ type BaseRating = FallBackTo | "user-rating";
 interface GameRankerProps {
   usernames: string[],
   gameIds: number[],
+  setGameIds: (gameId: number[]) => void,
   allGames: CollectionGame[],
   screenWidth: number,
 }
 
-function GameRanker({ usernames, gameIds, allGames, screenWidth }: GameRankerProps) {
+function GameRanker({ usernames, gameIds, setGameIds, allGames, screenWidth }: GameRankerProps) {
   const renderCount = useRef<number>(0);
 
   // User option nullable defaults
@@ -630,6 +633,20 @@ function GameRanker({ usernames, gameIds, allGames, screenWidth }: GameRankerPro
       }
       label={label} />
 
+  const toggleGameId = (gameId: number) => {
+    const isSelected = gameIds.filter(id => id === gameId).length > 0;
+    return (
+      <FormControlLabel
+        style={{ userSelect: 'none', font: 'inherit' }}
+        control={
+          <Switch
+            checked={isSelected}
+            onChange={() => isSelected ? setGameIds(gameIds.filter(id => id !== gameId)) : setGameIds(gameIds.concat([gameId]))} />
+        }
+        label={gameId} />
+    );
+  }
+
   const slugify = (str: string) =>
     str
       .toLowerCase()
@@ -925,7 +942,7 @@ function GameRanker({ usernames, gameIds, allGames, screenWidth }: GameRankerPro
                 <GameName>{g.name}</GameName>
               </ImageAndNameHorizontal>
 
-              {showGameId && <HorizontalCell>{g.gameId}</HorizontalCell>}
+              {showGameId && <HorizontalCell>{toggleGameId(g.gameId)}</HorizontalCell>}
               {showGrIndex && <HorizontalCell>{bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}</HorizontalCell>}
               {showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
                 usernames.map(u => <HorizontalCell key={`userRating-${g.gameId}-${u}`}>{userRatingBar(u, g)}</HorizontalCell>) :
@@ -945,7 +962,7 @@ function GameRanker({ usernames, gameIds, allGames, screenWidth }: GameRankerPro
                 <GameName>{g.name}</GameName>
               </ImageAndNameVertical>
 
-              {showGameId && verticalCell("Game ID", g.gameId)}
+              {showGameId && verticalCell("Game ID", toggleGameId(g.gameId))}
               {showGrIndex && verticalCell("GR Index", bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0))}
               {showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
                 usernames.map(u => verticalCell(u, userRatingBar(u, g), g.gameId)) :
