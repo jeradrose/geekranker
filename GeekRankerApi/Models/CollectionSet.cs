@@ -16,6 +16,7 @@ public class CollectionGame {
     public int MaxPlayTime { get; set; }
     public bool IsExpansion { get; set; }
     public bool IsFromThread { get; set; }
+    public bool IsFromGeekList { get; set; }
     public DateTime CacheDate { get; set; }
 }
 

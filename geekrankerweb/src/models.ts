@@ -14,6 +14,7 @@ export interface CollectionGame {
   maxPlayTime: number;
   isExpansion: boolean;
   isFromThread: boolean;
+  isFromGeekList: boolean;
   cacheDate: Date;
 }
 

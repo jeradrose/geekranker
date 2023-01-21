@@ -1,6 +1,7 @@
 export enum QueryParams {
   Usernames = "u",
   ThreadId = "t",
+  GeekListId = "l",
   Sort = "s",
   ShowGameId = "sid",
   ShowGrIndex = "sgi",
@@ -31,6 +32,7 @@ export const defaultQueryValues: { [key in QueryParams]: any } = {
   [QueryParams.Usernames]: [],
   [QueryParams.GameIds]: [],
   [QueryParams.ThreadId]: undefined,
+  [QueryParams.GeekListId]: undefined,
   [QueryParams.Sort]: "gr-index",
   [QueryParams.ShowGameId]: false,
   [QueryParams.ShowGrIndex]: true,

@@ -56,6 +56,23 @@ public class BoardGameController : ControllerBase {
             }
         }
 
+        var geekListGameIds = new List<int>();
+
+        if (request.GeekListId.HasValue) {
+            var geekList = await _bggApi.GetGeekListAsync(request.GeekListId.Value);
+
+            if (geekList != null) {
+                geekListGameIds = geekList
+                    .Items
+                    .Where(i => i.ObjectType == "thing" && i.SubType == "boardgame")
+                    .Select(i => i.ObjectId)
+                    .Distinct()
+                    .ToList();
+
+                gameIds.AddRange(geekListGameIds);
+            }
+        }
+
         gameIds = gameIds.Distinct().Order().ToList();
 
         var games = await _bggApi.GetBoardGamesAsync(gameIds);
@@ -72,6 +89,7 @@ public class BoardGameController : ControllerBase {
                 MaxPlayTime = g.MaxPlayTime.Value,
                 IsExpansion = g.Type == "boardgameexpansion",
                 IsFromThread = threadGameIds.Contains(g.ObjectId),
+                IsFromGeekList = geekListGameIds.Contains(g.ObjectId),
                 CacheDate = g.CacheDate,
                 UserStats = collections
                     .Select(c => {

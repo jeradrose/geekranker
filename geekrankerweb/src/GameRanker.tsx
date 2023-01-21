@@ -318,12 +318,13 @@ interface GameRankerProps {
   usernames: string[],
   gameIds: number[],
   threadId: number | undefined,
+  geekListId: number | undefined,
   setGameIds: (gameId: number[]) => void,
   allGames: CollectionGame[],
   screenWidth: number,
 }
 
-function GameRanker({ usernames, gameIds, threadId, setGameIds, allGames, screenWidth }: GameRankerProps) {
+function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allGames, screenWidth }: GameRankerProps) {
   const renderCount = useRef<number>(0);
 
   // User option nullable defaults
@@ -375,6 +376,7 @@ function GameRanker({ usernames, gameIds, threadId, setGameIds, allGames, screen
     [QueryParams.Usernames]: usernames.join(' '),
     [QueryParams.GameIds]: (gameIds ?? []).join(' '),
     [QueryParams.ThreadId]: threadId,
+    [QueryParams.GeekListId]: geekListId,
     [QueryParams.Sort]: sort,
     [QueryParams.ShowGameId]: showGameId,
     [QueryParams.ShowGrIndex]: showGrIndex,
@@ -694,7 +696,7 @@ function GameRanker({ usernames, gameIds, threadId, setGameIds, allGames, screen
           g.userStats.filter(us => (includeOwned && us.isOwned) || (includeWishlisted && us.isWishlisted) || (includeRated && us.rating)).length &&
           ((includeBase && !g.isExpansion) || (includeExpansion && g.isExpansion))
         ) ||
-        g.isFromThread
+        g.isFromThread || g.isFromGeekList
       ) &&
       (gameIdFilter !== "hide-selected" || !gameIds.filter(id => id === g.gameId).length) &&
       (gameIdFilter !== "only-selected" || gameIds.filter(id => id === g.gameId).length)

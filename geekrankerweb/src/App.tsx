@@ -84,6 +84,7 @@ function App() {
   const usernamesRef = useRef<HTMLInputElement>(null);
   const gameIdsRef = useRef<HTMLInputElement>(null);
   const threadIdRef = useRef<HTMLInputElement>(null);
+  const geekListIdRef = useRef<HTMLInputElement>(null);
   const renderCount = useRef<number>(0);
 
   const getUsernamesFromString = (usernamesString: string | undefined | null): string[] =>
@@ -92,9 +93,9 @@ function App() {
   const getGameIdsFromString = (gameIdsString: string | undefined | null): number[] =>
     gameIdsString?.split(/[^0-9]/).filter(id => id.length).map(id => parseInt(id)) ?? [];
 
-  const getThreadIdFromString = (threadIdString: string | undefined | null): number | undefined => {
-    const parsedThreadId = parseInt(threadIdString?.split(/[^0-9]/).find(id => id.length) || "");
-    return isNaN(parsedThreadId) ? undefined : parsedThreadId;
+  const getIdFromString = (idString: string | undefined | null): number | undefined => {
+    const parsedId = parseInt(idString?.split(/[^0-9]/).find(id => id.length) || "");
+    return isNaN(parsedId) ? undefined : parsedId;
   }
 
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
@@ -104,14 +105,15 @@ function App() {
   // Standard options
   const [usernames, setUsernames] = useState<string[]>(getUsernamesFromString(queryParams.get(QueryParams.Usernames)));
   const [gameIds, setGameIds] = useState<number[]>(getGameIdsFromString(queryParams.get(QueryParams.GameIds)));
-  const [threadId, setThreadId] = useState<number | undefined>(getThreadIdFromString(queryParams.get(QueryParams.ThreadId)));
+  const [threadId, setThreadId] = useState<number | undefined>(getIdFromString(queryParams.get(QueryParams.ThreadId)));
+  const [geekListId, setGeekListId] = useState<number | undefined>(getIdFromString(queryParams.get(QueryParams.GeekListId)));
 
   const updateMedia = () => {
     setScreenWidth(document.documentElement.clientWidth || document.body.clientWidth);
   };
 
   const getApiData = async () => {
-    if (!usernames.length && !gameIds.length && !threadId) {
+    if (!usernames.length && !gameIds.length && !threadId && !geekListId) {
       setAllGames([]);
       return;
     }
@@ -123,7 +125,7 @@ function App() {
         getApiUrl("/BoardGame/GetRankings"),
         {
           method: 'post',
-          body: JSON.stringify({ usernames, gameIds, threadId }),
+          body: JSON.stringify({ usernames, gameIds, threadId, geekListId }),
           headers: {
             'Content-type': 'application/json'
           }
@@ -159,7 +161,8 @@ function App() {
   const loadGames = () => {
     setUsernames(getUsernamesFromString(usernamesRef.current?.value));
     setGameIds(getGameIdsFromString(gameIdsRef.current?.value))
-    setThreadId(getThreadIdFromString(threadIdRef.current?.value ?? ""));
+    setThreadId(getIdFromString(threadIdRef.current?.value ?? ""));
+    setGeekListId(getIdFromString(geekListIdRef.current?.value ?? ""));
   };
 
   const inputKeyPress = (key: string) => {
@@ -233,6 +236,22 @@ function App() {
                   )
                 }}
               />
+              <Input
+                size='small'
+                inputProps={{ autoCapitalize: "none" }}
+                onKeyDown={e => inputKeyPress(e.key)}
+                defaultValue={queryParams.get(QueryParams.GeekListId) ?? ""}
+                inputRef={geekListIdRef}
+                placeholder="BGG GeekList ID"
+                InputProps={{
+                  style: { paddingRight: 0 },
+                  endAdornment: (
+                    <IconButton disabled={!geekListIdRef.current?.value} onClick={() => handleClear(geekListIdRef)}>
+                      <ClearIcon />
+                    </IconButton>
+                  )
+                }}
+              />
               <FilterButton size='small' variant='contained' onClick={() => loadGames()} disabled={loadingGames}>
                 {loadingGames ? "Loading Games..." : "Load Games"}
               </FilterButton>
@@ -240,7 +259,7 @@ function App() {
             <Logo src="/logo.png" alt="logo" />
           </PageHeader>
         </PageHeaderContainer>
-        <GameRanker usernames={usernames} gameIds={gameIds} threadId={threadId} setGameIds={setGameIds} allGames={allGames} screenWidth={screenWidth} />
+        <GameRanker usernames={usernames} gameIds={gameIds} threadId={threadId} geekListId={geekListId} setGameIds={setGameIds} allGames={allGames} screenWidth={screenWidth} />
       </ThemeProvider>
     </>
   );

@@ -4,6 +4,7 @@ using NeoSmart.Caching.Sqlite;
 using System.Xml.Serialization;
 using Thread = BggApi.Models.Thread;
 using SystemThread = System.Threading.Thread;
+using System.Threading;
 
 namespace BggApi;
 
@@ -11,20 +12,10 @@ public class BggClient {
     private static readonly HttpClient _client = new HttpClient();
 
     public async Task<List<BoardGame>> GetBoardGamesAsync(IEnumerable<int> gameIds) {
-        var cache = new SqliteCache(new SqliteCacheOptions());
         var gameIdList = string.Join(',', gameIds.Distinct().Order());
         var cacheKey = $"{nameof(GetBoardGamesAsync)}-{gameIdList}";
-        var cacheDateKey = $"{cacheKey}-date";
 
-        var xml = cache.GetString(cacheKey);
-        var dateString = cache.GetString(cacheDateKey);
-
-        if (string.IsNullOrEmpty(xml) || string.IsNullOrEmpty(dateString)) {
-            xml = await _client.GetStringAsync($"https://boardgamegeek.com/xmlapi2/thing?id={gameIdList}&stats=1");
-            dateString = DateTime.UtcNow.ToString();
-            cache.SetString(cacheKey, xml, new DistributedCacheEntryOptions { });
-            cache.SetString(cacheDateKey, dateString);
-        }
+        var (xml, dateString) = await GetOrSetXmlAndDateCache(cacheKey, $"https://boardgamegeek.com/xmlapi2/thing?id={gameIdList}&stats=1");
 
         var serializer = new XmlSerializer(
             typeof(List<BoardGame>), 
@@ -104,19 +95,9 @@ public class BggClient {
     }
 
     public async Task<Thread?> GetThreadAsync(int threadId) {
-        var cache = new SqliteCache(new SqliteCacheOptions());
-        var cacheKey = $"{nameof(GetBoardGamesAsync)}-{threadId}";
-        var cacheDateKey = $"{cacheKey}-date";
+        var cacheKey = $"{nameof(GetThreadAsync)}-{threadId}";
 
-        var xml = cache.GetString(cacheKey);
-        var dateString = cache.GetString(cacheDateKey);
-
-        if (string.IsNullOrEmpty(xml) || string.IsNullOrEmpty(dateString)) {
-            xml = await _client.GetStringAsync($"https://boardgamegeek.com/xmlapi2/thread?id={threadId}");
-            dateString = DateTime.UtcNow.ToString();
-            cache.SetString(cacheKey, xml, new DistributedCacheEntryOptions { });
-            cache.SetString(cacheDateKey, dateString);
-        }
+        var (xml, dateString) = await GetOrSetXmlAndDateCache(cacheKey, $"https://boardgamegeek.com/xmlapi2/thread?id={threadId}");
 
         var serializer = new XmlSerializer(
             typeof(Thread),
@@ -128,5 +109,39 @@ public class BggClient {
         var thread = (Thread?)serializer.Deserialize(sr);
 
         return thread;
+    }
+
+    public async Task<GeekList?> GetGeekListAsync(int geekListId) {
+        var cacheKey = $"{nameof(GetGeekListAsync)}-{geekListId}";
+
+        var (xml, dateString) = await GetOrSetXmlAndDateCache(cacheKey, $"https://boardgamegeek.com/xmlapi/geeklist/{geekListId}");
+
+        var serializer = new XmlSerializer(
+            typeof(GeekList),
+            new XmlRootAttribute("geeklist")
+        );
+
+        using var sr = new StringReader(xml);
+
+        var geekList = (GeekList?)serializer.Deserialize(sr);
+
+        return geekList;
+    }
+
+    private async Task<(string, string)> GetOrSetXmlAndDateCache(string cacheKey, string url) {
+        var cache = new SqliteCache(new SqliteCacheOptions());
+        var cacheDateKey = $"{cacheKey}-date";
+
+        var xml = cache.GetString(cacheKey);
+        var dateString = cache.GetString(cacheDateKey);
+
+        if (string.IsNullOrEmpty(xml) || string.IsNullOrEmpty(dateString)) {
+            xml = await _client.GetStringAsync(url);
+            dateString = DateTime.UtcNow.ToString();
+            cache.SetString(cacheKey, xml, new DistributedCacheEntryOptions { });
+            cache.SetString(cacheDateKey, dateString);
+        }
+
+        return (xml, dateString);
     }
 }
