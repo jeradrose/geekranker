@@ -92,8 +92,10 @@ function App() {
   const getGameIdsFromString = (gameIdsString: string | undefined | null): number[] =>
     gameIdsString?.split(/[^0-9]/).filter(id => id.length).map(id => parseInt(id)) ?? [];
 
-  const getThreadIdFromString = (threadIdString: string | undefined | null): number | undefined =>
-    parseInt(threadIdString?.split(/[^0-9]/).find(id => id.length) || "");
+  const getThreadIdFromString = (threadIdString: string | undefined | null): number | undefined => {
+    const parsedThreadId = parseInt(threadIdString?.split(/[^0-9]/).find(id => id.length) || "");
+    return isNaN(parsedThreadId) ? undefined : parsedThreadId;
+  }
 
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const [loadingGames, setLoadingGames] = useState<boolean>(false);

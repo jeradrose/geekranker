@@ -334,7 +334,7 @@ function GameRanker({ usernames, gameIds, threadId, setGameIds, allGames, screen
   const [sort, setSort] = useState<SortOptions>(getStringQueryParam(QueryParams.Sort));
 
   // Column visibility
-  const [showGameId, setShowGameId] = useState<boolean>(getBoolQueryParam(QueryParams.ShowGrIndex));
+  const [showGameId, setShowGameId] = useState<boolean>(getBoolQueryParam(QueryParams.ShowGameId));
   const [showGrIndex, setShowGrIndex] = useState<boolean>(getBoolQueryParam(QueryParams.ShowGrIndex));
   const [showGeekRating, setShowGeekRating] = useState<boolean>(getBoolQueryParam(QueryParams.ShowGeekRating));
   const [showPlayerRating, setShowPlayerRating] = useState<boolean>(getBoolQueryParam(QueryParams.ShowPlayerRating));
@@ -373,7 +373,7 @@ function GameRanker({ usernames, gameIds, threadId, setGameIds, allGames, screen
 
   const queryValues: { [key in QueryParams]: any } = {
     [QueryParams.Usernames]: usernames.join(' '),
-    [QueryParams.GameIds]: gameIds,
+    [QueryParams.GameIds]: (gameIds ?? []).join(' '),
     [QueryParams.ThreadId]: threadId,
     [QueryParams.Sort]: sort,
     [QueryParams.ShowGameId]: showGameId,
@@ -404,7 +404,7 @@ function GameRanker({ usernames, gameIds, threadId, setGameIds, allGames, screen
     const params = new URLSearchParams();
 
     Object.values(QueryParams).forEach(queryParam => {
-      if (queryValues[queryParam] === defaultQueryValues[queryParam]) {
+      if (JSON.stringify(queryValues[queryParam]) === JSON.stringify(defaultQueryValues[queryParam])) {
         params.delete(queryParam);
       } else {
         if (typeof queryValues[queryParam] === "boolean") {
