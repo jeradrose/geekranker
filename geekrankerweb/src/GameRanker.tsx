@@ -373,8 +373,8 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
   const [showTips, setShowTips] = useState<boolean>(false);
 
   const queryValues: { [key in QueryParams]: any } = {
-    [QueryParams.Usernames]: usernames.join(' '),
-    [QueryParams.GameIds]: (gameIds ?? []).join(' '),
+    [QueryParams.Usernames]: usernames.length ? usernames.join(' ') : undefined,
+    [QueryParams.GameIds]: gameIds.length ? gameIds.join(' ') : undefined,
     [QueryParams.ThreadId]: threadId,
     [QueryParams.GeekListId]: geekListId,
     [QueryParams.Sort]: sort,

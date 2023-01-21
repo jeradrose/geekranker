@@ -29,8 +29,8 @@ export enum QueryParams {
 }
 
 export const defaultQueryValues: { [key in QueryParams]: any } = {
-  [QueryParams.Usernames]: [],
-  [QueryParams.GameIds]: [],
+  [QueryParams.Usernames]: undefined,
+  [QueryParams.GameIds]: undefined,
   [QueryParams.ThreadId]: undefined,
   [QueryParams.GeekListId]: undefined,
   [QueryParams.Sort]: "gr-index",
