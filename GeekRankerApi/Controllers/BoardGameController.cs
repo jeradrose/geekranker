@@ -88,8 +88,8 @@ public class BoardGameController : ControllerBase {
                 MinPlayTime = g.MinPlayTime.Value,
                 MaxPlayTime = g.MaxPlayTime.Value,
                 IsExpansion = g.Type == "boardgameexpansion",
-                IsFromThread = threadGameIds.Contains(g.ObjectId),
-                IsFromGeekList = geekListGameIds.Contains(g.ObjectId),
+                ThreadSequence = threadGameIds.IndexOf(g.ObjectId) + 1,
+                GeekListSequence = geekListGameIds.IndexOf(g.ObjectId) + 1,
                 CacheDate = g.CacheDate,
                 UserStats = collections
                     .Select(c => {
