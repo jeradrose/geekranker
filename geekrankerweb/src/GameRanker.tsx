@@ -10,9 +10,12 @@ import { defaultQueryValues, QueryParams, getBoolQueryParam, getNumberArrayQuery
 const Filters = styled.div`
   display: flex;
   flex-direction: column;
-  flex-grow: 1;
+  box-sizing: border-box;
+  position: sticky;
+  left: 0;
+
   user-select: none;
-  margin: 0 15px;
+  padding: 0 15px;
 `;
 
 const FilterLabel = styled.div`
@@ -733,14 +736,16 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
 
   const columnWidths =
     getColumnWidth(200, true) // name
-    + getColumnWidth(200, showGameId) // game ID
-    + getColumnWidth(200, showGrIndex) // GR index
-    + getColumnWidth(200 * (showIndividualUserRatings ? usernames.length : 1), showPlayerRating) // user rating(s)
-    + getColumnWidth(200, showPlayerRating) // player rating
-    + getColumnWidth(200, showGeekRating) // geek rating
+    + getColumnWidth(200, showGameId)
+    + getColumnWidth(200, showThreadSequence)
+    + getColumnWidth(200, showGeekListSequence)
+    + getColumnWidth(200, showGrIndex)
+    + getColumnWidth(200 * (showIndividualUserRatings ? usernames.length : 1), showUserRating) // user rating(s)
+    + getColumnWidth(200, showPlayerRating)
+    + getColumnWidth(200, showGeekRating)
     + getColumnWidth(200 * (playerCountRange[1] - playerCountRange[0] + 1), showPlayerCount) // player count rating
-    + getColumnWidth(200, showWeight) // weight
-    + getColumnWidth(200, showTime) // time
+    + getColumnWidth(200, showWeight)
+    + getColumnWidth(200, showTime)
     ;
 
   const displayMode: "horizontal" | "vertical" = columnWidths + 35 > screenWidth && preventHorizontalScroll ? "vertical" : "horizontal";
@@ -750,7 +755,7 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
 
   return (
     <>
-      <Filters>
+      <Filters style={{ width: screenWidth }}>
         <FiltersContainer>
           <AdvancedOptionsButton onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}>
             {showAdvancedOptions ? <ExpandLess style={{ color: '#348CE9' }} /> : <ExpandMore style={{ color: '#348CE9' }} />}Advanced Options
@@ -957,7 +962,8 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
 
               {showGameId && <HorizontalCell>{toggleGameId(g.gameId)}</HorizontalCell>}
               {showThreadSequence && <HorizontalCell>{g.threadSequence ? g.threadSequence : ""}</HorizontalCell>}
-              {showGeekListSequence && <HorizontalCell>{g.geekListSequence ? g.geekListSequence : ""}</HorizontalCell>}
+              {showGeekListSequence && <HorizontalCell>{g.geekListSequence ? g.geekListSequence : ""
+              }</HorizontalCell>}
               {showGrIndex && <HorizontalCell>{bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}</HorizontalCell>}
               {showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
                 usernames.map(u => <HorizontalCell key={`userRating-${g.gameId}-${u}`}>{userRatingBar(u, g)}</HorizontalCell>) :
@@ -978,8 +984,8 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
               </ImageAndNameVertical>
 
               {showGameId && verticalCell("Game ID", toggleGameId(g.gameId))}
-              {showGameId && verticalCell("Thread #", g.threadSequence)}
-              {showGameId && verticalCell("GeekList #", g.geekListSequence)}
+              {showThreadSequence && verticalCell("Thread #", g.threadSequence)}
+              {showGeekListSequence && verticalCell("GeekList #", g.geekListSequence)}
               {showGrIndex && verticalCell("GR Index", bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0))}
               {showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
                 usernames.map(u => verticalCell(u, userRatingBar(u, g), g.gameId)) :
