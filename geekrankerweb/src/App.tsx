@@ -52,6 +52,7 @@ const PageHeader = styled.div`
 
 const InputContainer = styled.div`
   display: flex;
+  flex-direction: column;
   gap: 10px;
   flex-wrap: wrap;
   margin-bottom: 10px;
