@@ -4,12 +4,12 @@ import styled, { createGlobalStyle } from "styled-components"
 import "typeface-open-sans";
 
 import { Clear } from '@mui/icons-material';
-import { TextField, Button, IconButton } from '@mui/material';
+import { TextField, Button, IconButton, Box, Tabs, Tab } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material';
 
 
 import { CollectionGame } from './models';
-import { getApiUrl, queryParams, QueryParams } from './Utilities';
+import { getApiUrl, getStringQueryParam, getQueryParam, QueryParams, SelectedTab } from './Utilities';
 import GameRanker from './GameRanker';
 
 const theme = createTheme({
@@ -99,15 +99,18 @@ function App() {
     return isNaN(parsedId) ? undefined : parsedId;
   }
 
+  const [tab, setTab] = useState<SelectedTab>(getStringQueryParam(QueryParams.SelectedTab) as SelectedTab);
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const [loadingGames, setLoadingGames] = useState<boolean>(false);
   const [allGames, setAllGames] = useState<CollectionGame[]>([]);
 
+  const [loadCount, setLoadCount] = useState<number>(0);
+
   // Standard options
-  const [usernames, setUsernames] = useState<string[]>(getUsernamesFromString(queryParams.get(QueryParams.Usernames)));
-  const [gameIds, setGameIds] = useState<number[]>(getGameIdsFromString(queryParams.get(QueryParams.GameIds)));
-  const [threadId, setThreadId] = useState<number | undefined>(getIdFromString(queryParams.get(QueryParams.ThreadId)));
-  const [geekListId, setGeekListId] = useState<number | undefined>(getIdFromString(queryParams.get(QueryParams.GeekListId)));
+  const [usernames, setUsernames] = useState<string[]>(getUsernamesFromString(getQueryParam(QueryParams.Usernames)));
+  const [gameIds, setGameIds] = useState<number[]>(getGameIdsFromString(getQueryParam(QueryParams.GameIds)));
+  const [threadId, setThreadId] = useState<number | undefined>(getIdFromString(getQueryParam(QueryParams.ThreadId)));
+  const [geekListId, setGeekListId] = useState<number | undefined>(getIdFromString(getQueryParam(QueryParams.GeekListId)));
 
   const updateMedia = () => {
     setScreenWidth(document.documentElement.clientWidth || document.body.clientWidth);
@@ -145,7 +148,7 @@ function App() {
 
   useEffect(() => {
     getApiData();
-  }, [usernames, threadId]);
+  }, [loadCount]);
 
   useEffect(() => {
     if (gameIdsRef.current) {
@@ -160,10 +163,26 @@ function App() {
   });
 
   const loadGames = () => {
-    setUsernames(getUsernamesFromString(usernamesRef.current?.value));
-    setGameIds(getGameIdsFromString(gameIdsRef.current?.value))
-    setThreadId(getIdFromString(threadIdRef.current?.value ?? ""));
-    setGeekListId(getIdFromString(geekListIdRef.current?.value ?? ""));
+    let blockReload = false;
+
+    if (tab === 'game') {
+      // Don't reload if the IDs on the Game ID tab didn't impact the already loaded games
+      const loadedGameIds = allGames.map(g => g.gameId).sort();
+      const selectedGameIds = getGameIdsFromString(gameIdsRef.current?.value).sort();
+
+      blockReload =
+        selectedGameIds.filter(id => loadedGameIds.indexOf(id) > -1).length ===
+        loadedGameIds.filter(id => selectedGameIds.indexOf(id) > -1).length
+    }
+
+    usernamesRef.current && setUsernames(getUsernamesFromString(usernamesRef.current.value));
+    gameIdsRef.current && setGameIds(getGameIdsFromString(gameIdsRef.current.value))
+    threadIdRef.current && setThreadId(getIdFromString(threadIdRef.current.value));
+    geekListIdRef.current && setGeekListId(getIdFromString(geekListIdRef.current.value));
+
+    if (!blockReload) {
+      setLoadCount(loadCount + 1);
+    }
   };
 
   const inputKeyPress = (key: string) => {
@@ -180,6 +199,27 @@ function App() {
     loadGames();
   }
 
+  const input = (inputTab: SelectedTab, placeholder: string, queryParam: QueryParams, ref: React.RefObject<HTMLInputElement>) => {
+    return (tab === inputTab || tab === 'advanced') && (
+      <Input
+        size='small'
+        inputProps={{ autoCapitalize: "none" }}
+        onKeyDown={e => inputKeyPress(e.key)}
+        defaultValue={getQueryParam(queryParam) ?? ""}
+        inputRef={ref}
+        placeholder={placeholder}
+        InputProps={{
+          style: { paddingRight: 0 },
+          endAdornment: (
+            <IconButton disabled={!ref.current?.value} onClick={() => handleClear(ref)}>
+              <ClearIcon />
+            </IconButton>
+          )
+        }}
+      />
+    );
+  }
+
   renderCount.current++;
 
   return (
@@ -189,70 +229,19 @@ function App() {
         <PageHeaderContainer style={{ width: screenWidth }}>
           <PageHeader>
             <InputContainer>
-              <Input
-                size='small'
-                inputProps={{ autoCapitalize: "none" }}
-                onKeyDown={e => inputKeyPress(e.key)}
-                defaultValue={queryParams.get(QueryParams.Usernames) ?? ""}
-                inputRef={usernamesRef}
-                placeholder="BGG Username(s)"
-                InputProps={{
-                  style: { paddingRight: 0 },
-                  endAdornment: (
-                    <IconButton disabled={!usernamesRef.current?.value} onClick={() => handleClear(usernamesRef)}>
-                      <ClearIcon />
-                    </IconButton>
-                  )
-                }}
-              />
-              <Input
-                size='small'
-                inputProps={{ autoCapitalize: "none" }}
-                onKeyDown={e => inputKeyPress(e.key)}
-                defaultValue={queryParams.get(QueryParams.GameIds) ?? ""}
-                inputRef={gameIdsRef}
-                placeholder="BGG Game ID(s)"
-                InputProps={{
-                  style: { paddingRight: 0 },
-                  endAdornment: (
-                    <IconButton disabled={!gameIdsRef.current?.value} onClick={() => handleClear(gameIdsRef)}>
-                      <ClearIcon />
-                    </IconButton>
-                  )
-                }}
-              />
-              <Input
-                size='small'
-                inputProps={{ autoCapitalize: "none" }}
-                onKeyDown={e => inputKeyPress(e.key)}
-                defaultValue={queryParams.get(QueryParams.ThreadId) ?? ""}
-                inputRef={threadIdRef}
-                placeholder="BGG Thread ID"
-                InputProps={{
-                  style: { paddingRight: 0 },
-                  endAdornment: (
-                    <IconButton disabled={!threadIdRef.current?.value} onClick={() => handleClear(threadIdRef)}>
-                      <ClearIcon />
-                    </IconButton>
-                  )
-                }}
-              />
-              <Input
-                size='small'
-                inputProps={{ autoCapitalize: "none" }}
-                onKeyDown={e => inputKeyPress(e.key)}
-                defaultValue={queryParams.get(QueryParams.GeekListId) ?? ""}
-                inputRef={geekListIdRef}
-                placeholder="BGG GeekList ID"
-                InputProps={{
-                  style: { paddingRight: 0 },
-                  endAdornment: (
-                    <IconButton disabled={!geekListIdRef.current?.value} onClick={() => handleClear(geekListIdRef)}>
-                      <ClearIcon />
-                    </IconButton>
-                  )
-                }}
-              />
+              <Box>
+                <Tabs value={tab} onChange={(_, value) => setTab(value)}>
+                  <Tab value="user" label="By Username" />
+                  <Tab value="game" label="By Game ID" />
+                  <Tab value="thread" label="By Thread" />
+                  <Tab value="geeklist" label="By GeekList ID" />
+                  <Tab value="advanced" label="Advanced" />
+                </Tabs>
+              </Box>
+              {input('user', "BGG Username(s)", QueryParams.Usernames, usernamesRef)}
+              {input('game', "BGG Game ID(s)", QueryParams.GameIds, gameIdsRef)}
+              {input('thread', "BGG Thread ID", QueryParams.ThreadId, threadIdRef)}
+              {input('geeklist', "BGG GeekList ID", QueryParams.GeekListId, geekListIdRef)}
               <FilterButton size='small' variant='contained' onClick={() => loadGames()} disabled={loadingGames}>
                 {loadingGames ? "Loading Games..." : "Load Games"}
               </FilterButton>
@@ -260,7 +249,7 @@ function App() {
             <Logo src="/logo.png" alt="logo" />
           </PageHeader>
         </PageHeaderContainer>
-        <GameRanker usernames={usernames} gameIds={gameIds} threadId={threadId} geekListId={geekListId} setGameIds={setGameIds} allGames={allGames} screenWidth={screenWidth} />
+        <GameRanker tab={tab} usernames={usernames} gameIds={gameIds} threadId={threadId} geekListId={geekListId} setGameIds={setGameIds} allGames={allGames} screenWidth={screenWidth} />
       </ThemeProvider>
     </>
   );

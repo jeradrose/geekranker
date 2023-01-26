@@ -5,7 +5,7 @@ import { ArrowDownward, ExpandLess, ExpandMore, Info } from '@mui/icons-material
 import { Tooltip, Switch, FormControlLabel, Slider, RadioGroup, Radio, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 
 import styled from "styled-components"
-import { defaultQueryValues, QueryParams, getBoolQueryParam, getNumberArrayQueryParam, getNumberQueryParam, getStringQueryParam, getTypedStringQueryParam } from './Utilities';
+import { defaultQueryValues, QueryParams, getBoolQueryParam, getNumberArrayQueryParam, getNumberQueryParam, getStringQueryParam, getTypedStringQueryParam, SelectedTab } from './Utilities';
 
 const Filters = styled.div`
   display: flex;
@@ -318,6 +318,7 @@ type FallBackTo = "player-rating" | "geek-rating";
 type BaseRating = FallBackTo | "user-rating";
 
 interface GameRankerProps {
+  tab: SelectedTab,
   usernames: string[],
   gameIds: number[],
   threadId: number | undefined,
@@ -327,7 +328,7 @@ interface GameRankerProps {
   screenWidth: number,
 }
 
-function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allGames, screenWidth }: GameRankerProps) {
+function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds, allGames, screenWidth }: GameRankerProps) {
   const renderCount = useRef<number>(0);
 
   // User option nullable defaults
@@ -378,6 +379,7 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
   const [showTips, setShowTips] = useState<boolean>(false);
 
   const queryValues: { [key in QueryParams]: any } = {
+    [QueryParams.SelectedTab]: tab,
     [QueryParams.Usernames]: usernames.length ? usernames.join(' ') : undefined,
     [QueryParams.GameIds]: gameIds.length ? gameIds.join(' ') : undefined,
     [QueryParams.ThreadId]: threadId,
@@ -704,15 +706,21 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
     (
       (
         (
-          g.userStats.filter(us => (includeOwned && us.isOwned) || (includeWishlisted && us.isWishlisted) || (includeRated && us.rating)).length &&
-          ((includeBase && !g.isExpansion) || (includeExpansion && g.isExpansion))
+          (tab === 'advanced' || tab === 'user') &&
+          (
+            g.userStats.filter(us => (includeOwned && us.isOwned) || (includeWishlisted && us.isWishlisted) || (includeRated && us.rating)).length &&
+            ((includeBase && !g.isExpansion) || (includeExpansion && g.isExpansion))
+          )
         ) ||
-        g.threadSequence || g.geekListSequence
+        ((tab === 'advanced' || tab === 'thread') && g.threadSequence) ||
+        ((tab === 'advanced' || tab === 'geeklist') && g.geekListSequence)
       ) &&
-      (gameIdFilter !== "hide-selected" || !gameIds.filter(id => id === g.gameId).length) &&
-      (gameIdFilter !== "only-selected" || gameIds.filter(id => id === g.gameId).length)
-    ) ||
-    gameIdFilter !== "hide-selected" && gameIds.filter(id => id === g.gameId).length
+      (
+        (gameIdFilter === "all") ||
+        (gameIdFilter === "hide-selected" && gameIds.indexOf(g.gameId) === -1) ||
+        (gameIdFilter === "only-selected" && gameIds.indexOf(g.gameId) > -1)
+      )
+    ) || (tab === 'game' && gameIds.indexOf(g.gameId) > -1)
   );
 
   const grIndexes = getScores(g => getGrIndex(g));
@@ -721,8 +729,8 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
   const sortedGames =
     (sort === 'game') ? filteredGames.sort((a, b) => a.name.localeCompare(b.name)) :
       (sort === 'id') ? filteredGames.sort((a, b) => a.gameId - b.gameId) :
-        (sort === 'thread') ? filteredGames.sort((a, b) => a.threadSequence - b.threadSequence) :
-          (sort === 'geek-list') ? filteredGames.sort((a, b) => a.geekListSequence - b.geekListSequence) :
+        (sort === 'thread') ? filteredGames.sort((a, b) => (a.threadSequence || Number.MAX_VALUE) - (b.threadSequence || Number.MAX_VALUE)) :
+          (sort === 'geek-list') ? filteredGames.sort((a, b) => (a.geekListSequence || Number.MAX_VALUE) - (b.geekListSequence || Number.MAX_VALUE)) :
             (sort === 'geek-rating') ? filteredGames.sort((a, b) => b.geekRating - a.geekRating) :
               (sort === 'player-rating') ? filteredGames.sort((a, b) => b.avgPlayerRating - a.avgPlayerRating) :
                 (sort === 'weight') ? filteredGames.sort((a, b) => b.avgWeight - a.avgWeight) :
@@ -770,30 +778,32 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
             </FiltersHeader>
             <FiltersInnerRow>
               {toggle(showGameId, setShowGameId, "Game ID")}
-              {toggle(showThreadSequence, setShowThreadSequence, "Thread #")}
-              {toggle(showGeekListSequence, setShowGeekListSequence, "GeekList #")}
+              {(tab === 'advanced' || tab === 'thread') && toggle(showThreadSequence, setShowThreadSequence, "Thread #")}
+              {(tab === 'advanced' || tab === 'geeklist') && toggle(showGeekListSequence, setShowGeekListSequence, "GeekList #")}
               {toggle(showGrIndex, setShowGrIndex, "GR Index")}
-              {toggle(showUserRating, setShowUserRating, "User Rating")}
+              {(tab === 'advanced' || tab === 'user') && toggle(showUserRating, setShowUserRating, "User Rating")}
               {toggle(showPlayerRating, setShowPlayerRating, "Average Rating")}
               {toggle(showGeekRating, setShowGeekRating, "Geek Rating")}
               {toggle(showPlayerCount, setShowPlayerCount, `Player Count Rating(s)`)}
               {toggle(showWeight, setShowWeight, "Weight")}
               {toggle(showTime, setShowTime, "Time")}
-              {toggle(showIndividualUserRatings, setShowIndividualUserRatings, "Individual Users Ratings", usernames.length < 2)}
+              {(tab === 'advanced' || tab === 'user') && toggle(showIndividualUserRatings, setShowIndividualUserRatings, "Individual Users Ratings", usernames.length < 2)}
             </FiltersInnerRow>
-            <FiltersInnerRow>
-              <FormControl>
-                <InputLabel>Sort</InputLabel>
-                <Select
-                  value={sort}
-                  label="Sort"
-                  onChange={event => setSort(event.target.value)}
-                  size="small"
-                >
-                  {sortOptions.map(sort => <MenuItem key={`sort-select-${sort}`} value={sort}>{getSortLabel(sort)}</MenuItem>)}
-                </Select>
-              </FormControl>
-            </FiltersInnerRow>
+            {(tab === 'advanced' || displayMode === 'vertical') &&
+              < FiltersInnerRow >
+                <FormControl>
+                  <InputLabel>Sort</InputLabel>
+                  <Select
+                    value={sort}
+                    label="Sort"
+                    onChange={event => setSort(event.target.value)}
+                    size="small"
+                  >
+                    {sortOptions.map(sort => <MenuItem key={`sort-select-${sort}`} value={sort}>{getSortLabel(sort)}</MenuItem>)}
+                  </Select>
+                </FormControl>
+              </FiltersInnerRow>
+            }
             <FiltersInnerRow>
               <SliderContainer>
                 <SliderLabel>Player Counts
@@ -806,27 +816,31 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
             <FiltersHeader>
               Filters
             </FiltersHeader>
-            <FiltersInnerRow>
-              <FilterLabel>Status:</FilterLabel>
-              {toggle(includeOwned, setIncludeOwned, "Owned Games")}
-              {toggle(includeWishlisted, setIncludeWishlisted, "Wishlisted Games")}
-              {toggle(includeRated, setIncludeRated, "Rated Games")}
-            </FiltersInnerRow>
+            {(tab === 'advanced' || tab === 'user') &&
+              <FiltersInnerRow>
+                <FilterLabel>Status:</FilterLabel>
+                {toggle(includeOwned, setIncludeOwned, "Owned Games")}
+                {toggle(includeWishlisted, setIncludeWishlisted, "Wishlisted Games")}
+                {toggle(includeRated, setIncludeRated, "Rated Games")}
+              </FiltersInnerRow>
+            }
             <FiltersInnerRow>
               <FilterLabel>Type:</FilterLabel>
               {toggle(includeBase, setIncludeBase, "Base Games")}
               {toggle(includeExpansion, setIncludeExpansion, "Expansions")}
             </FiltersInnerRow>
-            <FiltersInnerRow>
-              <FallBackContainer>
-                Filter Game IDs:
-                <RadioGroup value={gameIdFilter} onChange={handleGameIdFilterChange} row>
-                  <FormControlLabel value="all" control={<Radio />} label="All" />
-                  <FormControlLabel value="only-selected" control={<Radio />} label="Only Selected" />
-                  <FormControlLabel value="hide-selected" control={<Radio />} label="Hide Selected" />
-                </RadioGroup>
-              </FallBackContainer>
-            </FiltersInnerRow>
+            {(tab !== 'game' &&
+              <FiltersInnerRow>
+                <FallBackContainer>
+                  Filter Game IDs:
+                  <RadioGroup value={gameIdFilter} onChange={handleGameIdFilterChange} row>
+                    <FormControlLabel value="all" control={<Radio />} label="All" />
+                    <FormControlLabel value="only-selected" control={<Radio />} label="Only Selected" />
+                    <FormControlLabel value="hide-selected" control={<Radio />} label="Hide Selected" />
+                  </RadioGroup>
+                </FallBackContainer>
+              </FiltersInnerRow>
+            )}
             <FiltersHeader>
               Scoring
             </FiltersHeader>
@@ -840,16 +854,18 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
                 </RadioGroup>
               </FallBackContainer>
             </FiltersInnerRow>
-            <FiltersInnerRow>
-              <FallBackContainer>
-                Fallback Rating:
-                <RadioGroup value={fallBackTo} onChange={handleFallBackToChange} row>
-                  <FormControlLabel value="player-rating" control={<Radio />} label="Average" />
-                  <FormControlLabel value="geek-rating" control={<Radio />} label="Geek" />
-                </RadioGroup>
-                <Tooltip title="When a user rating isn't set, use this instead."><FallBackInfo /></Tooltip>
-              </FallBackContainer>
-            </FiltersInnerRow>
+            {(tab === 'advanced' || tab === 'user') &&
+              <FiltersInnerRow>
+                <FallBackContainer>
+                  Fallback Rating:
+                  <RadioGroup value={fallBackTo} onChange={handleFallBackToChange} row>
+                    <FormControlLabel value="player-rating" control={<Radio />} label="Average" />
+                    <FormControlLabel value="geek-rating" control={<Radio />} label="Geek" />
+                  </RadioGroup>
+                  <Tooltip title="When a user rating isn't set, use this instead."><FallBackInfo /></Tooltip>
+                </FallBackContainer>
+              </FiltersInnerRow>
+            }
             <FiltersInnerRow>
               <SliderContainer>
                 <SliderLabel>
@@ -905,10 +921,10 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
                   Game{sortArrow("game")}
                 </ImageAndNameHeader>
                 {showGameId && barHeader("id")}
-                {showThreadSequence && barHeader("thread")}
-                {showGeekListSequence && barHeader("geek-list")}
+                {(tab === 'advanced' || tab === 'thread') && showThreadSequence && barHeader("thread")}
+                {(tab === 'advanced' || tab === 'geeklist') && showGeekListSequence && barHeader("geek-list")}
                 {showGrIndex && barHeader("gr-index")}
-                {showUserRating && (showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeaderDynamic(`user-${u}`, u.toUpperCase())) : barHeader(`user-rating`))}
+                {(tab === 'advanced' || tab === 'user') && showUserRating && (showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeaderDynamic(`user-${u}`, u.toUpperCase())) : barHeader(`user-rating`))}
                 {showPlayerRating && barHeader("player-rating")}
                 {showGeekRating && barHeader("geek-rating")}
                 {showPlayerCount && playerCountArray.map(pc => barHeaderDynamic(`playercount-${pc}`, `${pc}-Player`))}
@@ -963,11 +979,11 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
               </ImageAndNameHorizontal>
 
               {showGameId && <HorizontalCell>{toggleGameId(g.gameId)}</HorizontalCell>}
-              {showThreadSequence && <HorizontalCell>{g.threadSequence ? g.threadSequence : ""}</HorizontalCell>}
-              {showGeekListSequence && <HorizontalCell>{g.geekListSequence ? g.geekListSequence : ""
+              {(tab === 'advanced' || tab === 'thread') && showThreadSequence && <HorizontalCell>{g.threadSequence ? g.threadSequence : ""}</HorizontalCell>}
+              {(tab === 'advanced' || tab === 'geeklist') && showGeekListSequence && <HorizontalCell>{g.geekListSequence ? g.geekListSequence : ""
               }</HorizontalCell>}
               {showGrIndex && <HorizontalCell>{bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}</HorizontalCell>}
-              {showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
+              {(tab === 'advanced' || tab === 'user') && showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
                 usernames.map(u => <HorizontalCell key={`userRating-${g.gameId}-${u}`}>{userRatingBar(u, g)}</HorizontalCell>) :
                 <HorizontalCell>{userRatingBar("", g)}</HorizontalCell>
               )}
@@ -986,10 +1002,10 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
               </ImageAndNameVertical>
 
               {showGameId && verticalCell(getSortLabel("game"), toggleGameId(g.gameId))}
-              {showThreadSequence && verticalCell(getSortLabel("thread"), g.threadSequence)}
-              {showGeekListSequence && verticalCell(getSortLabel("geek-list"), g.geekListSequence)}
+              {(tab === 'advanced' || tab === 'thread') && showThreadSequence && verticalCell(getSortLabel("thread"), g.threadSequence)}
+              {(tab === 'advanced' || tab === 'geeklist') && showGeekListSequence && verticalCell(getSortLabel("geek-list"), g.geekListSequence)}
               {showGrIndex && verticalCell(getSortLabel("gr-index"), bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0))}
-              {showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
+              {(tab === 'advanced' || tab === 'user') && showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
                 usernames.map(u => verticalCell(u, userRatingBar(u, g), g.gameId)) :
                 verticalCell(getSortLabel("user-rating"), userRatingBar("", g))
               )}

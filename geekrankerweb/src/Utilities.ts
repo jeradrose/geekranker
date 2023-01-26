@@ -1,8 +1,11 @@
+export type SelectedTab = "user" | "game" | "thread" | "geeklist" | "advanced";
+
 export enum QueryParams {
+  SelectedTab = "tab",
   Usernames = "u",
   ThreadId = "t",
-  GeekListId = "l",
-  Sort = "s",
+  GeekListId = "gl",
+  Sort = "sort",
   ShowGameId = "sid",
   ShowThreadSequence = "sts",
   ShowGeekListSequence = "sgl",
@@ -31,6 +34,7 @@ export enum QueryParams {
 }
 
 export const defaultQueryValues: { [key in QueryParams]: any } = {
+  [QueryParams.SelectedTab]: "user",
   [QueryParams.Usernames]: undefined,
   [QueryParams.GameIds]: undefined,
   [QueryParams.ThreadId]: undefined,
@@ -62,31 +66,32 @@ export const defaultQueryValues: { [key in QueryParams]: any } = {
   [QueryParams.FallBackTo]: "player-rating",
 }
 
-export const queryParams = new URLSearchParams(window.location.search);
+export const getQueryParam = (queryParam: QueryParams) =>
+  (new URLSearchParams(window.location.search)).get(queryParam);
 
 export const getTypedStringQueryParam = <T>(queryParam: QueryParams): T => {
-  const param = queryParams.get(queryParam) as T;
+  const param = getQueryParam(queryParam) as T;
   return param === null ? defaultQueryValues[queryParam] as T : param;
 }
 
 export const getStringQueryParam = (queryParam: QueryParams): string => {
-  const param = queryParams.get(queryParam);
+  const param = getQueryParam(queryParam);
   return param === null ? defaultQueryValues[queryParam] as string : param;
 }
 
 export const getNumberQueryParam = (queryParam: QueryParams): number => {
-  const param = queryParams.get(queryParam);
+  const param = getQueryParam(queryParam);
   return !param ? defaultQueryValues[queryParam] as number : parseInt(param);
 }
 
 export const getNumberArrayQueryParam = (queryParam: QueryParams): number[] => {
-  const param = queryParams.get(queryParam);
+  const param = getQueryParam(queryParam);
   var arrayString = !param ? defaultQueryValues[queryParam] : param;
   return [parseInt(arrayString.split(" ")[0]), parseInt(arrayString.split(" ")[1])];
 }
 
 export const getBoolQueryParam = (queryParam: QueryParams): boolean => {
-  const param = queryParams.get(queryParam);
+  const param = getQueryParam(queryParam);
   return param === null ?
     defaultQueryValues[queryParam] as boolean :
     !(param.toLowerCase() === "false" || param.toLowerCase() === "f" || param === "0" || param === "no");
