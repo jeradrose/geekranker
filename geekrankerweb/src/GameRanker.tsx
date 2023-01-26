@@ -304,7 +304,7 @@ const IntroTipLink = styled(IntroTip)`
 `
 
 const sortOptions = ["game", "id", "gr-index", "user-rating", "player-rating", "geek-rating", "weight", "time", "thread", "geek-list"] as const;
-type SortOptions = typeof sortOptions[number] | any;
+type SortOptions = typeof sortOptions[number];
 
 type RankedScore = {
   score: number;
@@ -335,7 +335,7 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
   const idealWeightDefault = 3;
 
   // Standard options
-  const [sort, setSort] = useState<SortOptions>(getStringQueryParam(QueryParams.Sort));
+  const [sort, setSort] = useState<string>(getStringQueryParam(QueryParams.Sort));
 
   // Column visibility
   const [showGameId, setShowGameId] = useState<boolean>(getBoolQueryParam(QueryParams.ShowGameId));
@@ -578,8 +578,8 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
     switch (sortOption) {
       case "game": return "Game";
       case "id": return "ID";
-      case "thread": return "Thread #";
-      case "geek-list": return "GeekList #";
+      case "thread": return "# in Thread";
+      case "geek-list": return "# on GeekList";
       case "gr-index": return "GR Index";
       case "user-rating": return "User Rating";
       case "player-rating": return "Average Rating";
@@ -603,11 +603,13 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
   const getAvgUserRatings = (game: CollectionGame): number =>
     (usernames.length && (usernames.map(u => gameUserRating(u, game, false)[0]).reduce((a, b) => a + b) / usernames.length)) ?? 0;
 
-  const sortArrow = (thisSort: SortOptions) =>
+  const sortArrow = (thisSort: string) =>
     <ArrowDownward key={`arrow-${thisSort}`} style={{ 'color': sort === thisSort ? '#fff' : '#0475BB', 'paddingLeft': 2 }} />;
 
-  const barHeader = (thisSort: SortOptions, label?: string) =>
-    <BarHeader key={`header-${thisSort}`} onClick={() => setSort(thisSort)}>{(label || getSortLabel(thisSort))}{sortArrow(thisSort)}</BarHeader>;
+  const barHeader = (thisSort: SortOptions) => barHeaderDynamic(thisSort);
+
+  const barHeaderDynamic = (thisSort: string, label?: string) =>
+    <BarHeader key={`header-${thisSort}`} onClick={() => setSort(thisSort)}>{(label || getSortLabel(thisSort as SortOptions))}{sortArrow(thisSort)}</BarHeader>;
 
   const playerCountBar = (count: number, game: CollectionGame) => {
     const filteredStats = game.playerCountStats.filter(s => s.playerCount === count);
@@ -717,18 +719,18 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
   const avgUserRatings = getScores(g => getAvgUserRatings(g));
 
   const sortedGames =
-    (sort === 'name') ? filteredGames.sort((a, b) => a.name.localeCompare(b.name)) :
+    (sort === 'game') ? filteredGames.sort((a, b) => a.name.localeCompare(b.name)) :
       (sort === 'id') ? filteredGames.sort((a, b) => a.gameId - b.gameId) :
         (sort === 'thread') ? filteredGames.sort((a, b) => a.threadSequence - b.threadSequence) :
           (sort === 'geek-list') ? filteredGames.sort((a, b) => a.geekListSequence - b.geekListSequence) :
             (sort === 'geek-rating') ? filteredGames.sort((a, b) => b.geekRating - a.geekRating) :
               (sort === 'player-rating') ? filteredGames.sort((a, b) => b.avgPlayerRating - a.avgPlayerRating) :
                 (sort === 'weight') ? filteredGames.sort((a, b) => b.avgWeight - a.avgWeight) :
-                  ((sort as string).startsWith('playercount')) ? gamesSortedByPlayerCount(parseInt(sort.split("-")[1])) :
+                  ((sort as string).startsWith('playercount-')) ? gamesSortedByPlayerCount(parseInt(sort.split("-")[1])) :
                     (sort === 'time') ? filteredGames.sort((a, b) => b.maxPlayTime - a.maxPlayTime) :
                       (sort === 'gr-index') ? filteredGames.sort((a, b) => grIndexes[b.gameId].score - grIndexes[a.gameId].score) :
                         (sort === 'user-rating') ? filteredGames.sort((a, b) => getAvgUserRatings(b) - getAvgUserRatings(a)) :
-                          usernames.map(u => `user-${u}`).filter(s => s === sort).length === 1 ? gamesSortedByUserRatings(sort.substring(5)) :
+                          (sort as string).startsWith('user-') ? gamesSortedByUserRatings(sort.split("-")[1]) :
                             filteredGames;
 
   const getColumnWidth = (width: number, isShown: boolean) =>
@@ -906,10 +908,10 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
                 {showThreadSequence && barHeader("thread")}
                 {showGeekListSequence && barHeader("geek-list")}
                 {showGrIndex && barHeader("gr-index")}
-                {showUserRating && (showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeader(`user-${u}`, u.toUpperCase())) : barHeader(`user-rating`))}
+                {showUserRating && (showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeaderDynamic(`user-${u}`, u.toUpperCase())) : barHeader(`user-rating`))}
                 {showPlayerRating && barHeader("player-rating")}
                 {showGeekRating && barHeader("geek-rating")}
-                {showPlayerCount && playerCountArray.map(pc => barHeader(`playercount-${pc}`, `${pc}-Player`))}
+                {showPlayerCount && playerCountArray.map(pc => barHeaderDynamic(`playercount-${pc}`, `${pc}-Player`))}
                 {showWeight && barHeader("weight")}
                 {showTime && barHeader("time")}
               </>
@@ -983,19 +985,19 @@ function GameRanker({ usernames, gameIds, threadId, geekListId, setGameIds, allG
                 <GameName>{g.name}</GameName>
               </ImageAndNameVertical>
 
-              {showGameId && verticalCell("Game ID", toggleGameId(g.gameId))}
-              {showThreadSequence && verticalCell("Thread #", g.threadSequence)}
-              {showGeekListSequence && verticalCell("GeekList #", g.geekListSequence)}
-              {showGrIndex && verticalCell("GR Index", bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0))}
+              {showGameId && verticalCell(getSortLabel("game"), toggleGameId(g.gameId))}
+              {showThreadSequence && verticalCell(getSortLabel("thread"), g.threadSequence)}
+              {showGeekListSequence && verticalCell(getSortLabel("geek-list"), g.geekListSequence)}
+              {showGrIndex && verticalCell(getSortLabel("gr-index"), bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0))}
               {showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
                 usernames.map(u => verticalCell(u, userRatingBar(u, g), g.gameId)) :
-                verticalCell("User Rating", userRatingBar("", g))
+                verticalCell(getSortLabel("user-rating"), userRatingBar("", g))
               )}
-              {showPlayerRating && verticalCell("Average Rating", bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank))}
-              {showGeekRating && verticalCell("Geek Rating", bar(g.geekRating, 10, g.geekRatingRank))}
+              {showPlayerRating && verticalCell(getSortLabel("player-rating"), bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank))}
+              {showGeekRating && verticalCell(getSortLabel("geek-rating"), bar(g.geekRating, 10, g.geekRatingRank))}
               {showPlayerCount && playerCountArray.map(pc => verticalCell(`${pc}-Player Rating`, playerCountBar(pc, g), pc))}
-              {showWeight && verticalCell("Weight", bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight))}
-              {showTime && verticalCell("Play Time", timeBar(g.minPlayTime, g.maxPlayTime))}
+              {showWeight && verticalCell(getSortLabel("weight"), bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight))}
+              {showTime && verticalCell(getSortLabel("time"), timeBar(g.minPlayTime, g.maxPlayTime))}
             </GameVertically>
         );
       })}
