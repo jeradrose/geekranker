@@ -4,7 +4,7 @@ import styled, { createGlobalStyle } from "styled-components"
 import "typeface-open-sans";
 
 import { Clear } from '@mui/icons-material';
-import { TextField, Button, IconButton, Box, Tabs, Tab } from '@mui/material';
+import { TextField, Button, IconButton, Tabs, Tab, FormControl, Select, MenuItem } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material';
 
 
@@ -220,6 +220,8 @@ function App() {
     );
   }
 
+  const showMobileTabs = screenWidth < 600;
+
   renderCount.current++;
 
   return (
@@ -229,15 +231,31 @@ function App() {
         <PageHeaderContainer style={{ width: screenWidth }}>
           <PageHeader>
             <InputContainer>
-              <Box>
-                <Tabs value={tab} onChange={(_, value) => setTab(value)}>
+              {showMobileTabs ?
+                <FormControl variant="standard">
+                  <Select
+                    labelId="demo-simple-select-standard-label"
+                    id="demo-simple-select-standard"
+                    value={tab}
+                    onChange={e => setTab(e.target.value as SelectedTab)}
+                    label="Search"
+                  >
+                    <MenuItem value="user">By Username</MenuItem>
+                    <MenuItem value="game">By Game ID</MenuItem>
+                    <MenuItem value="thread">By Thread</MenuItem>
+                    <MenuItem value="geeklist">By GeekList ID</MenuItem>
+                    <MenuItem value="advanced">Advanced</MenuItem>
+                  </Select>
+                </FormControl>
+                :
+                <Tabs value={tab} onChange={(_, value) => setTab(value)} scrollButtons="auto">
                   <Tab value="user" label="By Username" />
                   <Tab value="game" label="By Game ID" />
                   <Tab value="thread" label="By Thread" />
                   <Tab value="geeklist" label="By GeekList ID" />
                   <Tab value="advanced" label="Advanced" />
                 </Tabs>
-              </Box>
+              }
               {input('user', "BGG Username(s)", QueryParams.Usernames, usernamesRef)}
               {input('game', "BGG Game ID(s)", QueryParams.GameIds, gameIdsRef)}
               {input('thread', "BGG Thread ID", QueryParams.ThreadId, threadIdRef)}
