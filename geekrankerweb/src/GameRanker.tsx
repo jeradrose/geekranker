@@ -899,17 +899,19 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
             <FiltersInnerRow>
               {toggle(preventHorizontalScroll, setPreventHorizontalScroll, "Prevent Horizontal Scrolling")}
             </FiltersInnerRow>
-            {location.href.startsWith("http://localhost") || (usernames.length === 1 && usernames[0] === "jader201") &&
-              <>
-                <FiltersHeader>
-                  Diagnostics
-                </FiltersHeader>
-                <FiltersInnerRow>
-                  renderCount: {renderCount.current}
-                </FiltersInnerRow>
               </>
             }
-          </>
+        {(tab === 'advanced' || displayMode === 'vertical') &&
+          <FormControl variant='standard' sx={{ my: 1 }}>
+            <InputLabel>Sort</InputLabel>
+            <Select
+              value={sort}
+              onChange={event => setSort(event.target.value)}
+              size="small"
+            >
+              {sortOptions.map(sort => <MenuItem key={`sort-select-${sort}`} value={sort}>{getSortLabel(sort)}</MenuItem>)}
+            </Select>
+          </FormControl>
         }
       </Filters>
       {displayMode === "horizontal" &&
@@ -977,7 +979,6 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
                 </ThumbnailContainer>
                 <GameName>{g.name}</GameName>
               </ImageAndNameHorizontal>
-
               {showGameId && <HorizontalCell>{toggleGameId(g.gameId)}</HorizontalCell>}
               {(tab === 'advanced' || tab === 'thread') && showThreadSequence && <HorizontalCell>{g.threadSequence ? g.threadSequence : ""}</HorizontalCell>}
               {(tab === 'advanced' || tab === 'geeklist') && showGeekListSequence && <HorizontalCell>{g.geekListSequence ? g.geekListSequence : ""
@@ -1000,7 +1001,6 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
                 </ThumbnailContainer>
                 <GameName>{g.name}</GameName>
               </ImageAndNameVertical>
-
               {showGameId && verticalCell(getSortLabel("game"), toggleGameId(g.gameId))}
               {(tab === 'advanced' || tab === 'thread') && showThreadSequence && verticalCell(getSortLabel("thread"), g.threadSequence)}
               {(tab === 'advanced' || tab === 'geeklist') && showGeekListSequence && verticalCell(getSortLabel("geek-list"), g.geekListSequence)}

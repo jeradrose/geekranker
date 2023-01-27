@@ -233,13 +233,7 @@ function App() {
             <InputContainer>
               {showMobileTabs ?
                 <FormControl variant="standard">
-                  <Select
-                    labelId="demo-simple-select-standard-label"
-                    id="demo-simple-select-standard"
-                    value={tab}
-                    onChange={e => setTab(e.target.value as SelectedTab)}
-                    label="Search"
-                  >
+                  <Select value={tab} onChange={e => setTab(e.target.value as SelectedTab)}>
                     <MenuItem value="user">By Username</MenuItem>
                     <MenuItem value="game">By Game ID</MenuItem>
                     <MenuItem value="thread">By Thread</MenuItem>
