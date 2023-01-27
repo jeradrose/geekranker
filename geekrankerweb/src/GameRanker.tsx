@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { CollectionGame } from './models';
 import "typeface-open-sans";
-import { ArrowDownward, ExpandLess, ExpandMore, Info } from '@mui/icons-material';
-import { Tooltip, Switch, FormControlLabel, Slider, RadioGroup, Radio, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { ArrowDownward, ExpandMore, Info } from '@mui/icons-material';
+import { Tooltip, Switch, FormControlLabel, Slider, RadioGroup, Radio, FormControl, InputLabel, Select, MenuItem, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 
 import styled from "styled-components"
 import { defaultQueryValues, QueryParams, getBoolQueryParam, getNumberArrayQueryParam, getNumberQueryParam, getStringQueryParam, getTypedStringQueryParam, SelectedTab } from './Utilities';
@@ -26,17 +26,9 @@ const FiltersInnerRow = styled.div`
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+  gap: 10px;
+  margin: 10px 0;
 `
-
-const FiltersContainer = styled(FiltersInnerRow)`
-  margin: 0 0 10px 0;
-  flex-grow: 1;
-`;
-
-const FiltersHeader = styled(FiltersInnerRow)`
-  font-weight: bold;
-  margin-top: 10px;
-`;
 
 const SliderContainer = styled.div`
   display: flex;
@@ -71,13 +63,6 @@ const FallBackContainer = styled.div`
 const FallBackInfo = styled(Info)`
  size: 14px;
  color: #348CE9;
-`;
-
-const AdvancedOptionsButton = styled.div`
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  user-select: none;
 `;
 
 const GamesHeader = styled.div`
@@ -351,8 +336,6 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
   const [showPlayerCount, setShowPlayerCount] = useState<boolean>(getBoolQueryParam(QueryParams.ShowPlayerCount));
   const [showIndividualUserRatings, setShowIndividualUserRatings] = useState<boolean>(getBoolQueryParam(QueryParams.ShowIndividualUserRatings));
   const [playerCountRange, setPlayerCountRange] = useState<number[]>(getNumberArrayQueryParam(QueryParams.PlayerCountRange));
-
-  const [showAdvancedOptions, setShowAdvancedOptions] = useState<boolean>(false);
 
   // Filter options
   const [includeOwned, setIncludeOwned] = useState<boolean>(getBoolQueryParam(QueryParams.IncludeOwned));
@@ -763,19 +746,21 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
 
   renderCount.current++;
 
+  const accordionSummarySx = { backgroundColor: 'rgba(0, 0, 0, .03)', borderBottom: 1, borderBottomColor: 'rgba(0, 0, 0, .1)', fontWeight: 'bold' };
+
   return (
     <>
       <Filters style={{ width: screenWidth }}>
-        <FiltersContainer>
-          <AdvancedOptionsButton onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}>
-            {showAdvancedOptions ? <ExpandLess style={{ color: '#348CE9' }} /> : <ExpandMore style={{ color: '#348CE9' }} />}Advanced Options
-          </AdvancedOptionsButton>
-        </FiltersContainer>
-        {showAdvancedOptions &&
-          <>
-            <FiltersHeader>
-              Columns
-            </FiltersHeader>
+        <Accordion>
+          <AccordionSummary
+            expandIcon={<ExpandMore />}
+            aria-controls="panel1a-content"
+            id="panel1a-header"
+            sx={accordionSummarySx}
+          >
+            Columns
+          </AccordionSummary>
+          <AccordionDetails>
             <FiltersInnerRow>
               {toggle(showGameId, setShowGameId, "Game ID")}
               {(tab === 'advanced' || tab === 'thread') && toggle(showThreadSequence, setShowThreadSequence, "Thread #")}
@@ -789,21 +774,6 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
               {toggle(showTime, setShowTime, "Time")}
               {(tab === 'advanced' || tab === 'user') && toggle(showIndividualUserRatings, setShowIndividualUserRatings, "Individual Users Ratings", usernames.length < 2)}
             </FiltersInnerRow>
-            {(tab === 'advanced' || displayMode === 'vertical') &&
-              < FiltersInnerRow >
-                <FormControl>
-                  <InputLabel>Sort</InputLabel>
-                  <Select
-                    value={sort}
-                    label="Sort"
-                    onChange={event => setSort(event.target.value)}
-                    size="small"
-                  >
-                    {sortOptions.map(sort => <MenuItem key={`sort-select-${sort}`} value={sort}>{getSortLabel(sort)}</MenuItem>)}
-                  </Select>
-                </FormControl>
-              </FiltersInnerRow>
-            }
             <FiltersInnerRow>
               <SliderContainer>
                 <SliderLabel>Player Counts
@@ -813,15 +783,24 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
                 <SliderValue style={{ color: (showPlayerCount ? "" : "#000"), opacity: (showPlayerCount ? 1 : .38) }}>{playerCountRange[1]}</SliderValue>
               </SliderContainer>
             </FiltersInnerRow>
-            <FiltersHeader>
-              Filters
-            </FiltersHeader>
+          </AccordionDetails>
+        </Accordion>
+        <Accordion>
+          <AccordionSummary
+            expandIcon={<ExpandMore />}
+            aria-controls="panel1a-content"
+            id="panel1a-header"
+            sx={accordionSummarySx}
+          >
+            Filters
+          </AccordionSummary>
+          <AccordionDetails>
             {(tab === 'advanced' || tab === 'user') &&
               <FiltersInnerRow>
                 <FilterLabel>Status:</FilterLabel>
-                {toggle(includeOwned, setIncludeOwned, "Owned Games")}
-                {toggle(includeWishlisted, setIncludeWishlisted, "Wishlisted Games")}
-                {toggle(includeRated, setIncludeRated, "Rated Games")}
+                {toggle(includeOwned, setIncludeOwned, "Owned")}
+                {toggle(includeWishlisted, setIncludeWishlisted, "Wishlisted")}
+                {toggle(includeRated, setIncludeRated, "Rated")}
               </FiltersInnerRow>
             }
             <FiltersInnerRow>
@@ -841,9 +820,18 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
                 </FallBackContainer>
               </FiltersInnerRow>
             )}
-            <FiltersHeader>
-              Scoring
-            </FiltersHeader>
+          </AccordionDetails>
+        </Accordion>
+        <Accordion>
+          <AccordionSummary
+            expandIcon={<ExpandMore />}
+            aria-controls="panel1a-content"
+            id="panel1a-header"
+            sx={accordionSummarySx}
+          >
+            Scoring
+          </AccordionSummary>
+          <AccordionDetails>
             <FiltersInnerRow>
               <FallBackContainer>
                 Base Rating:
@@ -893,14 +881,11 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
                 <StyledSlider disabled={!includeIdealTime} min={30} max={240} step={30} value={idealTime} onChange={(event, value) => handleSliderChange(event, () => setIdealTime(Number(value)))} />
               </SliderContainer>
             </FiltersInnerRow>
-            <FiltersHeader>
-              UI Options
-            </FiltersHeader>
-            <FiltersInnerRow>
-              {toggle(preventHorizontalScroll, setPreventHorizontalScroll, "Prevent Horizontal Scrolling")}
-            </FiltersInnerRow>
-              </>
-            }
+          </AccordionDetails>
+        </Accordion>
+        <FiltersInnerRow>
+          {toggle(preventHorizontalScroll, setPreventHorizontalScroll, "Prevent Horizontal Scrolling")}
+        </FiltersInnerRow>
         {(tab === 'advanced' || displayMode === 'vertical') &&
           <FormControl variant='standard' sx={{ my: 1 }}>
             <InputLabel>Sort</InputLabel>
