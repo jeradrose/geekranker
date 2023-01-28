@@ -356,8 +356,7 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
   const [fallBackTo, setFallBackTo] = useState<FallBackTo>(getTypedStringQueryParam<FallBackTo>(QueryParams.FallBackTo));
 
   // UI options
-  const [preventHorizontalScroll,
-    setPreventHorizontalScroll] = useState<boolean>(false);
+  const [singleColumnView, setSingleColumnView] = useState<boolean>(false);
 
   const [showTips, setShowTips] = useState<boolean>(false);
 
@@ -741,7 +740,8 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
     + getColumnWidth(200, showTime)
     ;
 
-  const displayMode: "horizontal" | "vertical" = columnWidths + 35 > screenWidth && preventHorizontalScroll ? "vertical" : "horizontal";
+  const enableSingleColumnSupport = screenWidth < 600;
+  const displayMode = columnWidths + 35 > screenWidth && singleColumnView && enableSingleColumnSupport ? "vertical" : "horizontal";
   const playerCountArray = Array.from({ length: playerCountRange[1] - playerCountRange[0] + 1 }, (v, k) => k + playerCountRange[0]);
 
   renderCount.current++;
@@ -822,7 +822,7 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
             )}
           </AccordionDetails>
         </Accordion>
-        <Accordion>
+        <Accordion sx={{ mb: 2 }}>
           <AccordionSummary
             expandIcon={<ExpandMore />}
             aria-controls="panel1a-content"
@@ -883,11 +883,13 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
             </FiltersInnerRow>
           </AccordionDetails>
         </Accordion>
-        <FiltersInnerRow>
-          {toggle(preventHorizontalScroll, setPreventHorizontalScroll, "Prevent Horizontal Scrolling")}
-        </FiltersInnerRow>
+        {enableSingleColumnSupport &&
+          <FiltersInnerRow>
+            {toggle(singleColumnView, setSingleColumnView, "Single column view (mobile)")}
+          </FiltersInnerRow>
+        }
         {(tab === 'advanced' || displayMode === 'vertical') &&
-          <FormControl variant='standard' sx={{ my: 1 }}>
+          <FormControl variant='standard' sx={{ my: 2 }}>
             <InputLabel>Sort</InputLabel>
             <Select
               value={sort}
