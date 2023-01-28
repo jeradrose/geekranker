@@ -1,5 +1,11 @@
 ﻿namespace GeekRankerApi.Models;
 
+public class GetRankingsResponse {
+    public string ThreadTitle { get; set; }
+    public string GeekListTitle { get; set; }
+    public List<CollectionGame> Games { get; set; }
+}
+
 public class CollectionGame {
     public int GameId { get; set; }
     public string Name { get; set; }

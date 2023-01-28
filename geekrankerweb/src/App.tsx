@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import styled, { createGlobalStyle } from "styled-components"
 
 import "typeface-open-sans";
@@ -8,7 +8,7 @@ import { TextField, Button, IconButton, Tabs, Tab, FormControl, Select, MenuItem
 import { createTheme, ThemeProvider } from '@mui/material';
 
 
-import { CollectionGame } from './models';
+import { Game, GetRankingsResponse } from './models';
 import { getApiUrl, getStringQueryParam, getQueryParam, QueryParams, SelectedTab } from './Utilities';
 import GameRanker from './GameRanker';
 
@@ -50,13 +50,17 @@ const PageHeader = styled.div`
   gap: 10px;
 `;
 
-const InputContainer = styled.div`
+const Form = styled.div`
   display: flex;
   flex-direction: column;
   gap: 10px;
   flex-wrap: wrap;
   margin-bottom: 10px;
   flex-grow: 1;
+`;
+
+const InputContainer = styled.div`
+  position: relative;
 `;
 
 const Input = styled(TextField)`
@@ -68,6 +72,19 @@ const Input = styled(TextField)`
 const ClearIcon = styled(Clear)`
   padding-right: -120px;
 `;
+
+const BggLink = styled.a`
+  position: absolute;
+  color: #348CE9;
+  text-decoration: none;
+  cursor: pointer;
+  top: 8.5px;
+  right: 45px;
+  max-width: calc(100% - 150px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`
 
 const FilterButton = styled(Button)`
   margin-top: 10px;
@@ -99,18 +116,29 @@ function App() {
     return isNaN(parsedId) ? undefined : parsedId;
   }
 
-  const [tab, setTab] = useState<SelectedTab>(getStringQueryParam(QueryParams.SelectedTab) as SelectedTab);
+  const [tab, setTab] =
+    useState<SelectedTab>(getStringQueryParam(QueryParams.SelectedTab) as SelectedTab);
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const [loadingGames, setLoadingGames] = useState<boolean>(false);
-  const [allGames, setAllGames] = useState<CollectionGame[]>([]);
+  const [allGames, setAllGames] = useState<Game[]>([]);
 
   const [loadCount, setLoadCount] = useState<number>(0);
 
   // Standard options
-  const [usernames, setUsernames] = useState<string[]>(getUsernamesFromString(getQueryParam(QueryParams.Usernames)));
-  const [gameIds, setGameIds] = useState<number[]>(getGameIdsFromString(getQueryParam(QueryParams.GameIds)));
-  const [threadId, setThreadId] = useState<number | undefined>(getIdFromString(getQueryParam(QueryParams.ThreadId)));
-  const [geekListId, setGeekListId] = useState<number | undefined>(getIdFromString(getQueryParam(QueryParams.GeekListId)));
+  const [usernames, setUsernames] =
+    useState<string[]>(getUsernamesFromString(getQueryParam(QueryParams.Usernames)));
+  const [gameIds, setGameIds] =
+    useState<number[]>(getGameIdsFromString(getQueryParam(QueryParams.GameIds)));
+  const [threadId, setThreadId] =
+    useState<number | undefined>(getIdFromString(getQueryParam(QueryParams.ThreadId)));
+  const [geekListId, setGeekListId] =
+    useState<number | undefined>(getIdFromString(getQueryParam(QueryParams.GeekListId)));
+
+  const [threadTitle, setThreadTitle] = useState<string>("");
+  const [geekListTitle, setGeekListTitle] = useState<string>("");
+
+  const [hideThreadLink, setHideThreadLink] = useState<boolean>(false);
+  const [hideGeekListLink, setHideGeekListLink] = useState<boolean>(false);
 
   const updateMedia = () => {
     setScreenWidth(document.documentElement.clientWidth || document.body.clientWidth);
@@ -119,6 +147,8 @@ function App() {
   const getApiData = async () => {
     if (!usernames.length && !gameIds.length && !threadId && !geekListId) {
       setAllGames([]);
+      setGeekListTitle("");
+      setThreadTitle("");
       return;
     }
 
@@ -137,7 +167,11 @@ function App() {
       );
 
       if (response.ok) {
-        setAllGames(await response.json());
+        const rankings = (await response.json()) as GetRankingsResponse;
+
+        setAllGames(rankings.games);
+        setGeekListTitle(rankings.geekListTitle);
+        setThreadTitle(rankings.threadTitle);
       }
     } catch (ex) {
       console.log(ex);
@@ -185,9 +219,9 @@ function App() {
     }
   };
 
-  const inputKeyPress = (key: string) => {
+  const inputKeyPress = (ref: React.RefObject<HTMLInputElement>, key: string) => {
     if (key === "Enter") {
-      usernamesRef.current?.blur();
+      ref.current?.blur();
       loadGames();
     }
   }
@@ -199,24 +233,38 @@ function App() {
     loadGames();
   }
 
-  const input = (inputTab: SelectedTab, placeholder: string, queryParam: QueryParams, ref: React.RefObject<HTMLInputElement>) => {
+  const input = (
+    inputTab: SelectedTab,
+    placeholder: string,
+    queryParam: QueryParams,
+    ref: React.RefObject<HTMLInputElement>,
+    linkUrl?: string,
+    linkText?: string,
+    hideLink?: React.SetStateAction<boolean>,
+    setHideLinkCallback?: (value: React.SetStateAction<boolean>) => void
+  ) => {
     return (tab === inputTab || tab === 'advanced') && (
-      <Input
-        size='small'
-        inputProps={{ autoCapitalize: "none" }}
-        onKeyDown={e => inputKeyPress(e.key)}
-        defaultValue={getQueryParam(queryParam) ?? ""}
-        inputRef={ref}
-        placeholder={placeholder}
-        InputProps={{
-          style: { paddingRight: 0 },
-          endAdornment: (
-            <IconButton disabled={!ref.current?.value} onClick={() => handleClear(ref)}>
-              <ClearIcon />
-            </IconButton>
-          )
-        }}
-      />
+      <InputContainer>
+        <Input
+          size='small'
+          inputProps={{ autoCapitalize: "none" }}
+          onKeyDown={e => inputKeyPress(ref, e.key)}
+          defaultValue={getQueryParam(queryParam) ?? ""}
+          inputRef={ref}
+          placeholder={placeholder}
+          onFocus={() => setHideLinkCallback && setHideLinkCallback(true)}
+          onBlur={() => setHideLinkCallback && setHideLinkCallback(false)}
+          InputProps={{
+            style: { paddingRight: 0 },
+            endAdornment: (
+              <IconButton disabled={!ref.current?.value} onClick={() => handleClear(ref)}>
+                <ClearIcon />
+              </IconButton>
+            )
+          }}
+        />
+        {linkText && !hideLink && <BggLink href={linkUrl} target="_blank">{linkText}</BggLink>}
+      </InputContainer>
     );
   }
 
@@ -230,7 +278,7 @@ function App() {
       <ThemeProvider theme={theme}>
         <PageHeaderContainer style={{ width: screenWidth }}>
           <PageHeader>
-            <InputContainer>
+            <Form>
               {showMobileTabs ?
                 <FormControl variant="standard">
                   <Select value={tab} onChange={e => setTab(e.target.value as SelectedTab)}>
@@ -252,16 +300,48 @@ function App() {
               }
               {input('user', "BGG Username(s)", QueryParams.Usernames, usernamesRef)}
               {input('game', "BGG Game ID(s)", QueryParams.GameIds, gameIdsRef)}
-              {input('thread', "BGG Thread ID", QueryParams.ThreadId, threadIdRef)}
-              {input('geeklist', "BGG GeekList ID", QueryParams.GeekListId, geekListIdRef)}
-              <FilterButton size='small' variant='contained' onClick={() => loadGames()} disabled={loadingGames}>
+              {input(
+                'thread',
+                "BGG Thread ID",
+                QueryParams.ThreadId,
+                threadIdRef,
+                `https://boardgamegeek.com/thread/${threadId}`,
+                threadTitle,
+                hideThreadLink,
+                setHideThreadLink
+              )}
+              {input(
+                'geeklist',
+                "BGG GeekList ID",
+                QueryParams.GeekListId,
+                geekListIdRef,
+                `https://boardgamegeek.com/geeklist/${geekListId}`,
+                geekListTitle,
+                hideGeekListLink,
+                setHideGeekListLink
+              )}
+              <FilterButton
+                size='small'
+                variant='contained'
+                onClick={() => loadGames()}
+                disabled={loadingGames}
+              >
                 {loadingGames ? "Loading Games..." : "Load Games"}
               </FilterButton>
-            </InputContainer>
+            </Form>
             <Logo src="/logo.png" alt="logo" />
           </PageHeader>
         </PageHeaderContainer>
-        <GameRanker tab={tab} usernames={usernames} gameIds={gameIds} threadId={threadId} geekListId={geekListId} setGameIds={setGameIds} allGames={allGames} screenWidth={screenWidth} />
+        <GameRanker
+          tab={tab}
+          usernames={usernames}
+          gameIds={gameIds}
+          threadId={threadId}
+          geekListId={geekListId}
+          setGameIds={setGameIds}
+          allGames={allGames}
+          screenWidth={screenWidth}
+        />
       </ThemeProvider>
     </>
   );

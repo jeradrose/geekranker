@@ -4,6 +4,7 @@ using GeekRankerApi.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace GeekRankerApi.Controllers;
 
@@ -28,7 +29,9 @@ public class BoardGameController : ControllerBase {
     }
 
     [HttpPost("GetRankings")]
-    public async Task<List<CollectionGame>> GetRankings([FromBody]GetRankingsRequest request) {
+    public async Task<GetRankingsResponse> GetRankings([FromBody]GetRankingsRequest request) {
+        var response = new GetRankingsResponse();
+
         var usernames = request.Usernames.Where(un => !string.IsNullOrEmpty(un)).Distinct().ToArray();
         var gameIds = request.GameIds.Distinct().ToList();
 
@@ -46,6 +49,8 @@ public class BoardGameController : ControllerBase {
             var thread = await _bggApi.GetThreadAsync(request.ThreadId.Value);
 
             if (thread != null) {
+                response.ThreadTitle = thread.Subject;
+
                 var regex = new Regex(@"boardgamegeek\.com\/boardgame\/([0-9]*)");
 
                 threadGameIds = thread.Articles.ArticleList.SelectMany(a =>
@@ -62,6 +67,8 @@ public class BoardGameController : ControllerBase {
             var geekList = await _bggApi.GetGeekListAsync(request.GeekListId.Value);
 
             if (geekList != null) {
+                response.GeekListTitle = geekList.Title;
+
                 geekListGameIds = geekList
                     .Items
                     .Where(i => i.ObjectType == "thing" && i.SubType == "boardgame")
@@ -162,6 +169,8 @@ public class BoardGameController : ControllerBase {
             });
         });
 
-        return collectionSet;
+        response.Games = collectionSet;
+
+        return response;
     }
 }

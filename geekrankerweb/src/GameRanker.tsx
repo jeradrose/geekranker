@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { CollectionGame } from './models';
+import { Game } from './models';
 import "typeface-open-sans";
 import { ArrowDownward, ExpandMore, Info } from '@mui/icons-material';
 import { Tooltip, Switch, FormControlLabel, Slider, RadioGroup, Radio, FormControl, InputLabel, Select, MenuItem, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
@@ -309,7 +309,7 @@ interface GameRankerProps {
   threadId: number | undefined,
   geekListId: number | undefined,
   setGameIds: (gameId: number[]) => void,
-  allGames: CollectionGame[],
+  allGames: Game[],
   screenWidth: number,
 }
 
@@ -418,7 +418,7 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
     window.history.replaceState({}, '', url);
   });
 
-  const getGrIndex = (game: CollectionGame): number => {
+  const getGrIndex = (game: Game): number => {
     let numerator = 1;
     let denominator = 1;
 
@@ -459,7 +459,7 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
     return 10 * numerator / denominator;
   }
 
-  const getScores = (scoreGetter: (game: CollectionGame) => number): RankedScores => {
+  const getScores = (scoreGetter: (game: Game) => number): RankedScores => {
     const scores: RankedScores = {};
 
     filteredGames.map(g => {
@@ -547,7 +547,7 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
     </BarContainerVertical>
   )
 
-  const gamesSortedByPlayerCount = (playerCount: number): CollectionGame[] => {
+  const gamesSortedByPlayerCount = (playerCount: number): Game[] => {
     return filteredGames.sort((a, b) => {
       const filteredA = a.playerCountStats.filter(g => g.playerCount === playerCount);
       const filteredB = b.playerCountStats.filter(g => g.playerCount === playerCount);
@@ -574,7 +574,7 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
     }
   }
 
-  const gameUserRating = (username: string, game: CollectionGame, unratedLast: boolean): [number, boolean] => {
+  const gameUserRating = (username: string, game: Game, unratedLast: boolean): [number, boolean] => {
     const filteredPlayerRating = game.userStats.filter(r => r.username === username);
 
     const hasUserRating = filteredPlayerRating.length === 1;
@@ -582,10 +582,10 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
     return [(hasUserRating && filteredPlayerRating[0].rating) || (fallBackTo === "geek-rating" ? game.geekRating : game.avgPlayerRating) - (unratedLast ? 10 : 0), hasUserRating];
   }
 
-  const gamesSortedByUserRatings = (username: string): CollectionGame[] =>
+  const gamesSortedByUserRatings = (username: string): Game[] =>
     filteredGames.sort((a, b) => gameUserRating(username, b, true)[0] - gameUserRating(username, a, true)[0]);
 
-  const getAvgUserRatings = (game: CollectionGame): number =>
+  const getAvgUserRatings = (game: Game): number =>
     (usernames.length && (usernames.map(u => gameUserRating(u, game, false)[0]).reduce((a, b) => a + b) / usernames.length)) ?? 0;
 
   const sortArrow = (thisSort: string) =>
@@ -596,7 +596,7 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
   const barHeaderDynamic = (thisSort: string, label?: string) =>
     <BarHeader key={`header-${thisSort}`} onClick={() => setSort(thisSort)}>{(label || getSortLabel(thisSort as SortOptions))}{sortArrow(thisSort)}</BarHeader>;
 
-  const playerCountBar = (count: number, game: CollectionGame) => {
+  const playerCountBar = (count: number, game: Game) => {
     const filteredStats = game.playerCountStats.filter(s => s.playerCount === count);
     if (filteredStats.length === 1) {
       return bar(filteredStats[0].score, 10, filteredStats[0].rank);
@@ -605,7 +605,7 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
     }
   }
 
-  const userRatingBar = (username: string, game: CollectionGame) => {
+  const userRatingBar = (username: string, game: Game) => {
     if (!username) {
       return bar(avgUserRatings[game.gameId].score, 10, avgUserRatings[game.gameId].rank);
     }

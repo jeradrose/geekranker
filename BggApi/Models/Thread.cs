@@ -10,6 +10,8 @@ public class Thread {
     [XmlAttribute("numarticles")]
     public int NumArticles { get; set; }
 
+    [XmlElement("subject")]
+    public string Subject { get; set; }
     [XmlElement("articles")]
     public Articles Articles { get; set; }
 }

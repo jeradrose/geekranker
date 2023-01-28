@@ -7,6 +7,9 @@ public class GeekList {
     [XmlAttribute("id")]
     public int Id { get; set; }
 
+    [XmlElement("title")]
+    public string Title { get; set; }
+
     [XmlElement("item")]
     public List<Item> Items { get; set; }
 }

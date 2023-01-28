@@ -1,4 +1,10 @@
-export interface CollectionGame {
+export interface GetRankingsResponse {
+  threadTitle: string;
+  geekListTitle: string;
+  games: Game[];
+}
+
+export interface Game {
   gameId: number;
   name: string;
   imageUrl: string;
