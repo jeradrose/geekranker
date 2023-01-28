@@ -2,9 +2,7 @@ using BggApi;
 using BggApi.Models;
 using GeekRankerApi.Models;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading;
 
 namespace GeekRankerApi.Controllers;
 
@@ -12,36 +10,37 @@ namespace GeekRankerApi.Controllers;
 [Route("[controller]")]
 public class BoardGameController : ControllerBase {
     private static readonly BggClient _bggApi = new BggClient();
-    private readonly ILogger<BoardGameController> _logger;
-
-    public BoardGameController(ILogger<BoardGameController> logger) {
-        _logger = logger;
-    }
 
     [HttpGet("GetGame")]
     public async Task<List<BoardGame>> GetGame(int id) {
-        return await _bggApi.GetBoardGamesAsync(new []{ id });
+        return await _bggApi.GetBoardGamesAsync(new []{ id }) ?? new List<BoardGame>();
     }
 
     [HttpGet("GetCollection")]
     public async Task<List<CollectionItem>> GetCollection(string username) {
-        return await _bggApi.GetCollectionAsync(username);
+        return await _bggApi.GetCollectionAsync(username) ?? new List<CollectionItem>();
     }
 
     [HttpPost("GetRankings")]
     public async Task<GetRankingsResponse> GetRankings([FromBody]GetRankingsRequest request) {
         var response = new GetRankingsResponse();
 
-        var usernames = request.Usernames.Where(un => !string.IsNullOrEmpty(un)).Distinct().ToArray();
-        var gameIds = request.GameIds.Distinct().ToList();
+        var usernames = request.Usernames?.Where(un => !string.IsNullOrEmpty(un)).Distinct().ToArray();
+        var gameIds = (request.GameIds?.Distinct().ToList()) ?? new List<int>();
 
         var collections = new Dictionary<string, List<CollectionItem>>();
 
+        if (usernames != null) {
         foreach (var username in usernames) { 
-            collections.Add(username, await _bggApi.GetCollectionAsync(username));
+                var collection = await _bggApi.GetCollectionAsync(username);
+
+                if (collection != null) {
+                    collections.Add(username, collection);
+                }
         }
 
         gameIds.AddRange(collections.SelectMany(s => s.Value.Select(g => g.Id)).Distinct());
+        }
 
         var threadGameIds = new List<int>();
 
@@ -83,6 +82,10 @@ public class BoardGameController : ControllerBase {
         gameIds = gameIds.Distinct().Order().ToList();
 
         var games = await _bggApi.GetBoardGamesAsync(gameIds);
+
+        if (games == null) {
+            return new GetRankingsResponse { Games = new List<CollectionGame>() };
+        }
 
         var collectionSet = games
             .Select(g => new CollectionGame {
@@ -156,7 +159,7 @@ public class BoardGameController : ControllerBase {
             });
         });
 
-        usernames.ToList().ForEach(username => {
+        usernames?.ToList().ForEach(username => {
             var userRanks = collectionSet
                 .Where(g => g.UserStats.Any(r => r.Username == username && r.Rating.HasValue))
                 .OrderByDescending(g => g.UserStats.Single(r => r.Username == username).Rating)
