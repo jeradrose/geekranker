@@ -347,7 +347,6 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
 
   // Scoring options
   const [scorePlayerCount, setScorePlayerCount] = useState<boolean>(getBoolQueryParam(QueryParams.ScorePlayerCount));
-  const [playerCount, setPlayerCount] = useState<number>(getNumberQueryParam(QueryParams.PlayerCount));
   const [includeIdealWeight, setIncludeIdealWeight] = useState<boolean>(getBoolQueryParam(QueryParams.IdealWieght));
   const [idealWeight, setIdealWeight] = useState<number>(getNumberQueryParam(QueryParams.IdealWieght) || idealWeightDefault);
   const [includeIdealTime, setIncludeIdealTime] = useState<boolean>(getBoolQueryParam(QueryParams.IdealTime));
@@ -385,7 +384,6 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
     [QueryParams.IncludeExpansion]: includeExpansion,
     [QueryParams.GameIdFilter]: gameIdFilter,
     [QueryParams.ScorePlayerCount]: scorePlayerCount,
-    [QueryParams.PlayerCount]: playerCount,
     [QueryParams.PlayerCountRange]: `${playerCountRange[0]} ${playerCountRange[1]}`,
     [QueryParams.IdealWieght]: includeIdealWeight ? idealWeight : null,
     [QueryParams.IdealTime]: includeIdealTime ? idealTime : null,
@@ -435,13 +433,14 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
     denominator *= 10;
 
     if (scorePlayerCount) {
-      const playerCountStats = game.playerCountStats.filter(s => s.playerCount === playerCount);
+      const playerCountStats = game.playerCountStats.filter(s => s.playerCount >= playerCountRange[0] && s.playerCount <= playerCountRange[1]);
 
-      if (playerCountStats.length !== 1) {
+      if (!playerCountStats.length) {
         return 0;
       }
 
-      numerator *= playerCountStats[0].score;
+      numerator *= playerCountStats.map(s => s.score).reduce((a, b) => a + b) / (playerCountRange[1] - playerCountRange[0] + 1);
+      console.log(`game: ${game.name}, ${playerCountStats.map(s => s.score).reduce((a, b) => a + b)} / ${playerCountRange[1] - playerCountRange[0] + 1} = ${playerCountStats.map(s => s.score).reduce((a, b) => a + b) / (playerCountRange[1] - playerCountRange[0] + 1)}`);
       denominator *= 10;
     }
 
@@ -859,8 +858,9 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
                 <SliderLabel>
                   {toggle(scorePlayerCount, setScorePlayerCount, "Player Count")}
                 </SliderLabel>
-                <SliderValue>{playerCount}</SliderValue>
-                <StyledSlider min={1} max={8} step={1} value={playerCount} onChange={(event, value) => handleSliderChange(event, () => setPlayerCount(Number(value)))} />
+                <SliderValue style={{ color: (showPlayerCount ? "" : "#000"), opacity: (showPlayerCount ? 1 : .38) }}>{playerCountRange[0]}</SliderValue>
+                <StyledSlider min={1} max={10} step={1} value={playerCountRange} onChange={(event, value) => handleSliderChange(event, () => setPlayerCountRange(value as number[]))} />
+                <SliderValue style={{ color: (showPlayerCount ? "" : "#000"), opacity: (showPlayerCount ? 1 : .38) }}>{playerCountRange[1]}</SliderValue>
               </SliderContainer>
             </FiltersInnerRow>
             <FiltersInnerRow>
