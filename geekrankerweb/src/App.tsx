@@ -7,7 +7,6 @@ import { Clear } from '@mui/icons-material';
 import { TextField, Button, IconButton, Tabs, Tab, FormControl, Select, MenuItem } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material';
 
-
 import { Game, GetRankingsResponse } from './models';
 import { getApiUrl, getStringQueryParam, getQueryParam, QueryParams, SelectedTab } from './Utilities';
 import GameRanker from './GameRanker';
@@ -69,6 +68,16 @@ const Input = styled(TextField)`
   background-color: #fff;
 `;
 
+const SpinButtonCover = styled.div`
+  height: 20px;
+  width: 20px;
+  background-color: #fff;
+  position: absolute;
+  z-index: 10;
+  top: 10px;
+  right: 40px;
+`;
+
 const ClearIcon = styled(Clear)`
   padding-right: -120px;
 `;
@@ -84,6 +93,7 @@ const BggLink = styled.a`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  z-index: 20;
 `
 
 const FilterButton = styled(Button)`
@@ -241,11 +251,13 @@ function App() {
     linkUrl?: string,
     linkText?: string,
     hideLink?: React.SetStateAction<boolean>,
-    setHideLinkCallback?: (value: React.SetStateAction<boolean>) => void
+    setHideLinkCallback?: (value: React.SetStateAction<boolean>) => void,
+    isNumber?: boolean,
   ) => {
     return (tab === inputTab || tab === 'advanced') && (
       <InputContainer>
         <Input
+          type={isNumber ? "number" : "text"}
           size='small'
           inputProps={{ autoCapitalize: "none" }}
           onKeyDown={e => inputKeyPress(ref, e.key)}
@@ -255,6 +267,9 @@ function App() {
           onFocus={() => setHideLinkCallback && setHideLinkCallback(true)}
           onBlur={() => setHideLinkCallback && setHideLinkCallback(false)}
           InputProps={{
+            inputProps: {
+              inputMode: isNumber ? 'numeric' : 'none'
+            },
             style: { paddingRight: 0 },
             endAdornment: (
               <IconButton disabled={!ref.current?.value} onClick={() => handleClear(ref)}>
@@ -264,6 +279,7 @@ function App() {
           }}
         />
         {linkText && !hideLink && <BggLink href={linkUrl} target="_blank">{linkText}</BggLink>}
+        {isNumber && <SpinButtonCover />}
       </InputContainer>
     );
   }
@@ -308,7 +324,8 @@ function App() {
                 `https://boardgamegeek.com/thread/${threadId}`,
                 threadTitle,
                 hideThreadLink,
-                setHideThreadLink
+                setHideThreadLink,
+                true,
               )}
               {input(
                 'geeklist',
@@ -318,7 +335,8 @@ function App() {
                 `https://boardgamegeek.com/geeklist/${geekListId}`,
                 geekListTitle,
                 hideGeekListLink,
-                setHideGeekListLink
+                setHideGeekListLink,
+                true,
               )}
               <FilterButton
                 size='small'
