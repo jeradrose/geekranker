@@ -1,45 +1,49 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Game } from './models';
 import "typeface-open-sans";
-import { ArrowDownward, ExpandMore, Info } from '@mui/icons-material';
-import { Tooltip, Switch, FormControlLabel, Slider, RadioGroup, Radio, FormControl, InputLabel, Select, MenuItem, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
+import { ArrowDownward, Info } from '@mui/icons-material';
+import { Tooltip, Switch, FormControlLabel, Slider, RadioGroup, Radio, FormControl, Select, MenuItem, Drawer, InputLabel } from '@mui/material';
 
 import styled from "styled-components"
 import { defaultQueryValues, QueryParams, getBoolQueryParam, getNumberArrayQueryParam, getNumberQueryParam, getStringQueryParam, getTypedStringQueryParam, SelectedTab } from './Utilities';
 
-const Filters = styled.div`
+const Settings = styled.div`
+  max-width: 270px;
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
-  position: sticky;
-  left: 0;
-
   user-select: none;
-  padding: 0 15px;
+`;
+
+const SettingsHeader = styled.div`
+  font-weight: bold;
+  background-color: #348CE9;
+  color: #fff;
+  padding: 10px 15px;
+`;
+
+const SettingsContent = styled.div`
+  margin: 15px;
+  display: flex;
+  flex-direction: column;
 `;
 
 const FilterLabel = styled.div`
-  padding-right: 15px;
-`;
-
-const FiltersInnerRow = styled.div`
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 10px 0;
-`
-
-const SliderContainer = styled.div`
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 320px;
+  gap: 5px;
+  font-weight: bold;
+  padding-bottom: 5px;
+  :not(:first-child) {
+    padding-top: 15px;
+  } 
 `;
 
-const SliderLabel = styled.div`
-  flex-basis: 170px;
-  justify-items: center;
+const SliderContainer = styled.div`
+  display: flex;
+  align-items: center;
+  margin-left: 30px;
 `;
 
 const StyledSlider = styled(Slider)`
@@ -52,12 +56,6 @@ const SliderValue = styled.div`
   padding-right: 5px;
   font-weight: bold;
   color: #348CE9;
-`;
-
-const FallBackContainer = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
 `;
 
 const FallBackInfo = styled(Info)`
@@ -311,9 +309,11 @@ interface GameRankerProps {
   setGameIds: (gameId: number[]) => void,
   allGames: Game[],
   screenWidth: number,
+  showDrawer: boolean,
+  setShowDrawer: (value: boolean) => void,
 }
 
-function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds, allGames, screenWidth }: GameRankerProps) {
+function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds, allGames, screenWidth, showDrawer, setShowDrawer }: GameRankerProps) {
   const renderCount = useRef<number>(0);
 
   // User option nullable defaults
@@ -491,7 +491,7 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
   const bar = (value: number, maxValue: number, rank: number, idealValue?: number | false) =>
     value === 0 ? displayMode === "horizontal" ? <BarContainerHorizontal /> : <BarContainerVertical /> :
       rank === 0 ?
-        <Tooltip title={rank === 0 && "Not rated; Falling back to avg. player rating"}>
+        <Tooltip title={rank === 0 && `Not rated; Falling back to ${fallBackTo === 'player-rating' ? "avg. player rating" : "Geek rating"}`}>
           {displayMode === "horizontal" ?
             <BarContainerFadedHorizontal>
               {innerBar(value, maxValue, rank, idealValue)}
@@ -745,162 +745,16 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
 
   renderCount.current++;
 
-  const accordionSummarySx = { backgroundColor: 'rgba(0, 0, 0, .03)', borderBottom: 1, borderBottomColor: 'rgba(0, 0, 0, .1)', fontWeight: 'bold' };
+  const getShowGameId = () => (tab === 'advanced' && showGameId);
+  const getShowThreadSequence = () => ((tab === 'advanced' && showThreadSequence) || tab === 'thread');
+  const getShowGeekListSequence = () => ((tab === 'advanced' && showGeekListSequence) || tab === 'geeklist');
+  const getShowGrIndex = () => (tab !== 'advanced' || showGrIndex);
+  const getShowUserRating = () => ((tab === 'advanced' && showUserRating) || tab === 'user');
+  const getShowPlayerRating = () => ((tab === 'advanced' && showPlayerRating) || tab !== 'user');
+  const getShowGeekRating = () => (tab === 'advanced' && showGeekRating);
 
   return (
     <>
-      <Filters style={{ width: screenWidth }}>
-        <Accordion>
-          <AccordionSummary
-            expandIcon={<ExpandMore />}
-            aria-controls="panel1a-content"
-            id="panel1a-header"
-            sx={accordionSummarySx}
-          >
-            Columns
-          </AccordionSummary>
-          <AccordionDetails>
-            <FiltersInnerRow>
-              {toggle(showGameId, setShowGameId, "Game ID")}
-              {(tab === 'advanced' || tab === 'thread') && toggle(showThreadSequence, setShowThreadSequence, "Thread #")}
-              {(tab === 'advanced' || tab === 'geeklist') && toggle(showGeekListSequence, setShowGeekListSequence, "GeekList #")}
-              {toggle(showGrIndex, setShowGrIndex, "GR Index")}
-              {(tab === 'advanced' || tab === 'user') && toggle(showUserRating, setShowUserRating, "User Rating")}
-              {toggle(showPlayerRating, setShowPlayerRating, "Average Rating")}
-              {toggle(showGeekRating, setShowGeekRating, "Geek Rating")}
-              {toggle(showPlayerCount, setShowPlayerCount, `Player Count Rating(s)`)}
-              {toggle(showWeight, setShowWeight, "Weight")}
-              {toggle(showTime, setShowTime, "Time")}
-              {(tab === 'advanced' || tab === 'user') && toggle(showIndividualUserRatings, setShowIndividualUserRatings, "Individual Users Ratings", usernames.length < 2)}
-            </FiltersInnerRow>
-            <FiltersInnerRow>
-              <SliderContainer>
-                <SliderLabel>Player Counts
-                </SliderLabel>
-                <SliderValue style={{ color: (showPlayerCount ? "" : "#000"), opacity: (showPlayerCount ? 1 : .38) }}>{playerCountRange[0]}</SliderValue>
-                <StyledSlider min={1} max={10} step={1} value={playerCountRange} onChange={(event, value) => handleSliderChange(event, () => setPlayerCountRange(value as number[]))} />
-                <SliderValue style={{ color: (showPlayerCount ? "" : "#000"), opacity: (showPlayerCount ? 1 : .38) }}>{playerCountRange[1]}</SliderValue>
-              </SliderContainer>
-            </FiltersInnerRow>
-          </AccordionDetails>
-        </Accordion>
-        <Accordion>
-          <AccordionSummary
-            expandIcon={<ExpandMore />}
-            aria-controls="panel1a-content"
-            id="panel1a-header"
-            sx={accordionSummarySx}
-          >
-            Filters
-          </AccordionSummary>
-          <AccordionDetails>
-            {(tab === 'advanced' || tab === 'user') &&
-              <FiltersInnerRow>
-                <FilterLabel>Status:</FilterLabel>
-                {toggle(includeOwned, setIncludeOwned, "Owned")}
-                {toggle(includeWishlisted, setIncludeWishlisted, "Wishlisted")}
-                {toggle(includeRated, setIncludeRated, "Rated")}
-              </FiltersInnerRow>
-            }
-            <FiltersInnerRow>
-              <FilterLabel>Type:</FilterLabel>
-              {toggle(includeBase, setIncludeBase, "Base Games")}
-              {toggle(includeExpansion, setIncludeExpansion, "Expansions")}
-            </FiltersInnerRow>
-            {(tab !== 'game' &&
-              <FiltersInnerRow>
-                <FallBackContainer>
-                  Filter Game IDs:
-                  <RadioGroup value={gameIdFilter} onChange={handleGameIdFilterChange} row>
-                    <FormControlLabel value="all" control={<Radio />} label="All" />
-                    <FormControlLabel value="only-selected" control={<Radio />} label="Only Selected" />
-                    <FormControlLabel value="hide-selected" control={<Radio />} label="Hide Selected" />
-                  </RadioGroup>
-                </FallBackContainer>
-              </FiltersInnerRow>
-            )}
-          </AccordionDetails>
-        </Accordion>
-        <Accordion sx={{ mb: 2 }}>
-          <AccordionSummary
-            expandIcon={<ExpandMore />}
-            aria-controls="panel1a-content"
-            id="panel1a-header"
-            sx={accordionSummarySx}
-          >
-            Scoring
-          </AccordionSummary>
-          <AccordionDetails>
-            <FiltersInnerRow>
-              <FallBackContainer>
-                Base Rating:
-                <RadioGroup value={baseRating} onChange={handleBaseRatingChange} row>
-                  <FormControlLabel value="user-rating" control={<Radio />} label="User" />
-                  <FormControlLabel value="player-rating" control={<Radio />} label="Average" />
-                  <FormControlLabel value="geek-rating" control={<Radio />} label="Geek" />
-                </RadioGroup>
-              </FallBackContainer>
-            </FiltersInnerRow>
-            {(tab === 'advanced' || tab === 'user') &&
-              <FiltersInnerRow>
-                <FallBackContainer>
-                  Fallback Rating:
-                  <RadioGroup value={fallBackTo} onChange={handleFallBackToChange} row>
-                    <FormControlLabel value="player-rating" control={<Radio />} label="Average" />
-                    <FormControlLabel value="geek-rating" control={<Radio />} label="Geek" />
-                  </RadioGroup>
-                  <Tooltip title="When a user rating isn't set, use this instead."><FallBackInfo /></Tooltip>
-                </FallBackContainer>
-              </FiltersInnerRow>
-            }
-            <FiltersInnerRow>
-              <SliderContainer>
-                <SliderLabel>
-                  {toggle(scorePlayerCount, setScorePlayerCount, "Player Count")}
-                </SliderLabel>
-                <SliderValue style={{ color: (showPlayerCount ? "" : "#000"), opacity: (showPlayerCount ? 1 : .38) }}>{playerCountRange[0]}</SliderValue>
-                <StyledSlider min={1} max={10} step={1} value={playerCountRange} onChange={(event, value) => handleSliderChange(event, () => setPlayerCountRange(value as number[]))} />
-                <SliderValue style={{ color: (showPlayerCount ? "" : "#000"), opacity: (showPlayerCount ? 1 : .38) }}>{playerCountRange[1]}</SliderValue>
-              </SliderContainer>
-            </FiltersInnerRow>
-            <FiltersInnerRow>
-              <SliderContainer>
-                <SliderLabel>
-                  {toggle(includeIdealWeight, setIncludeIdealWeight, "Ideal Weight")}
-                </SliderLabel>
-                <SliderValue style={{ color: (includeIdealWeight ? "" : "#000"), opacity: (includeIdealWeight ? 1 : .38) }}>{idealWeight}</SliderValue>
-                <StyledSlider disabled={!includeIdealWeight} min={1} max={5} step={0.5} value={idealWeight} onChange={(event, value) => handleSliderChange(event, () => setIdealWeight(Number(value)))} />
-              </SliderContainer>
-            </FiltersInnerRow>
-            <FiltersInnerRow>
-              <SliderContainer>
-                <SliderLabel>
-                  {toggle(includeIdealTime, setIncludeIdealTime, "Ideal Time")}
-                </SliderLabel>
-                <SliderValue style={{ color: (includeIdealTime ? "" : "#000"), opacity: (includeIdealTime ? 1 : .38) }}>{idealTime}</SliderValue>
-                <StyledSlider disabled={!includeIdealTime} min={30} max={240} step={30} value={idealTime} onChange={(event, value) => handleSliderChange(event, () => setIdealTime(Number(value)))} />
-              </SliderContainer>
-            </FiltersInnerRow>
-          </AccordionDetails>
-        </Accordion>
-        {enableSingleColumnSupport &&
-          <FiltersInnerRow>
-            {toggle(singleColumnView, setSingleColumnView, "Single column view (mobile)")}
-          </FiltersInnerRow>
-        }
-        {(tab === 'advanced' || displayMode === 'vertical') &&
-          <FormControl variant='standard' sx={{ my: 2 }}>
-            <InputLabel>Sort</InputLabel>
-            <Select
-              value={sort}
-              onChange={event => setSort(event.target.value)}
-              size="small"
-            >
-              {sortOptions.map(sort => <MenuItem key={`sort-select-${sort}`} value={sort}>{getSortLabel(sort)}</MenuItem>)}
-            </Select>
-          </FormControl>
-        }
-      </Filters>
       {displayMode === "horizontal" &&
         <GamesHeader>
           <HeaderRow style={{ minWidth: screenWidth }}>
@@ -909,13 +763,13 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
                 <ImageAndNameHeader onClick={() => setSort("game")}>
                   Game{sortArrow("game")}
                 </ImageAndNameHeader>
-                {showGameId && barHeader("id")}
-                {(tab === 'advanced' || tab === 'thread') && showThreadSequence && barHeader("thread")}
-                {(tab === 'advanced' || tab === 'geeklist') && showGeekListSequence && barHeader("geek-list")}
-                {showGrIndex && barHeader("gr-index")}
-                {(tab === 'advanced' || tab === 'user') && showUserRating && (showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeaderDynamic(`user-${u}`, u.toUpperCase())) : barHeader(`user-rating`))}
-                {showPlayerRating && barHeader("player-rating")}
-                {showGeekRating && barHeader("geek-rating")}
+                {getShowGameId() && barHeader("id")}
+                {getShowThreadSequence() && barHeader("thread")}
+                {getShowGeekListSequence() && barHeader("geek-list")}
+                {getShowGrIndex() && barHeader("gr-index")}
+                {getShowUserRating() && (showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeaderDynamic(`user-${u}`, u.toUpperCase())) : barHeader(`user-rating`))}
+                {getShowPlayerRating() && barHeader("player-rating")}
+                {getShowGeekRating() && barHeader("geek-rating")}
                 {showPlayerCount && playerCountArray.map(pc => barHeaderDynamic(`playercount-${pc}`, `${pc}-Player`))}
                 {showWeight && barHeader("weight")}
                 {showTime && barHeader("time")}
@@ -966,17 +820,18 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
                 </ThumbnailContainer>
                 <GameName>{g.name}</GameName>
               </ImageAndNameHorizontal>
-              {showGameId && <HorizontalCell>{toggleGameId(g.gameId)}</HorizontalCell>}
-              {(tab === 'advanced' || tab === 'thread') && showThreadSequence && <HorizontalCell>{g.threadSequence ? g.threadSequence : ""}</HorizontalCell>}
-              {(tab === 'advanced' || tab === 'geeklist') && showGeekListSequence && <HorizontalCell>{g.geekListSequence ? g.geekListSequence : ""
+
+              {getShowGameId() && <HorizontalCell>{toggleGameId(g.gameId)}</HorizontalCell>}
+              {getShowThreadSequence() && <HorizontalCell>{g.threadSequence ? g.threadSequence : ""}</HorizontalCell>}
+              {getShowGeekListSequence() && <HorizontalCell>{g.geekListSequence ? g.geekListSequence : ""
               }</HorizontalCell>}
-              {showGrIndex && <HorizontalCell>{bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}</HorizontalCell>}
-              {(tab === 'advanced' || tab === 'user') && showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
+              {getShowGrIndex() && <HorizontalCell>{bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}</HorizontalCell>}
+              {getShowUserRating() && (showIndividualUserRatings || usernames.length < 2 ?
                 usernames.map(u => <HorizontalCell key={`userRating-${g.gameId}-${u}`}>{userRatingBar(u, g)}</HorizontalCell>) :
                 <HorizontalCell>{userRatingBar("", g)}</HorizontalCell>
               )}
-              {showPlayerRating && <HorizontalCell>{bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}</HorizontalCell>}
-              {showGeekRating && <HorizontalCell>{bar(g.geekRating, 10, g.geekRatingRank)}</HorizontalCell>}
+              {getShowPlayerRating() && <HorizontalCell>{bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}</HorizontalCell>}
+              {getShowGeekRating() && <HorizontalCell>{bar(g.geekRating, 10, g.geekRatingRank)}</HorizontalCell>}
               {showPlayerCount && playerCountArray.map(pc => <HorizontalCell key={`h-pc-${pc}`}>{playerCountBar(pc, g)}</HorizontalCell>)}
               {showWeight && <HorizontalCell>{bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight)}</HorizontalCell>}
               {showTime && <HorizontalCell>{timeBar(g.minPlayTime, g.maxPlayTime)}</HorizontalCell>}
@@ -988,23 +843,142 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
                 </ThumbnailContainer>
                 <GameName>{g.name}</GameName>
               </ImageAndNameVertical>
-              {showGameId && verticalCell(getSortLabel("game"), toggleGameId(g.gameId))}
-              {(tab === 'advanced' || tab === 'thread') && showThreadSequence && verticalCell(getSortLabel("thread"), g.threadSequence)}
-              {(tab === 'advanced' || tab === 'geeklist') && showGeekListSequence && verticalCell(getSortLabel("geek-list"), g.geekListSequence)}
-              {showGrIndex && verticalCell(getSortLabel("gr-index"), bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0))}
-              {(tab === 'advanced' || tab === 'user') && showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
+              {getShowGameId() && verticalCell(getSortLabel("game"), toggleGameId(g.gameId))}
+              {getShowThreadSequence() && showThreadSequence && verticalCell(getSortLabel("thread"), g.threadSequence)}
+              {getShowGeekListSequence() && showGeekListSequence && verticalCell(getSortLabel("geek-list"), g.geekListSequence)}
+              {getShowGrIndex() && verticalCell(getSortLabel("gr-index"), bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0))}
+              {getShowUserRating() && showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
                 usernames.map(u => verticalCell(u, userRatingBar(u, g), g.gameId)) :
                 verticalCell(getSortLabel("user-rating"), userRatingBar("", g))
               )}
-              {showPlayerRating && verticalCell(getSortLabel("player-rating"), bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank))}
-              {showGeekRating && verticalCell(getSortLabel("geek-rating"), bar(g.geekRating, 10, g.geekRatingRank))}
+              {getShowPlayerRating() && verticalCell(getSortLabel("player-rating"), bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank))}
+              {getShowGeekRating() && verticalCell(getSortLabel("geek-rating"), bar(g.geekRating, 10, g.geekRatingRank))}
               {showPlayerCount && playerCountArray.map(pc => verticalCell(`${pc}-Player Rating`, playerCountBar(pc, g), pc))}
               {showWeight && verticalCell(getSortLabel("weight"), bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight))}
               {showTime && verticalCell(getSortLabel("time"), timeBar(g.minPlayTime, g.maxPlayTime))}
             </GameVertically>
         );
       })}
-    </>
+      <React.Fragment>
+        <Drawer
+          anchor='right'
+          open={showDrawer}
+          onClose={() => setShowDrawer(false)}
+        >
+          <Settings>
+            <SettingsHeader>
+              Columns
+            </SettingsHeader>
+            <SettingsContent>
+              {(tab === 'advanced' || displayMode === 'vertical') &&
+                <FormControl variant='standard' sx={{ mb: 2 }}>
+                  <InputLabel>Sort</InputLabel>
+                  <Select
+                    value={sort}
+                    onChange={event => setSort(event.target.value)}
+                    size="small"
+                  >
+                    {sortOptions.map(sort => <MenuItem key={`sort-select-${sort}`} value={sort}>{getSortLabel(sort)}</MenuItem>)}
+                  </Select>
+                </FormControl>
+              }
+              {tab === 'advanced' && <>
+                {toggle(showGameId, setShowGameId, "Game ID")}
+                {toggle(showThreadSequence, setShowThreadSequence, "Thread #")}
+                {toggle(showGeekListSequence, setShowGeekListSequence, "GeekList #")}
+                {toggle(showGrIndex, setShowGrIndex, "GR Index")}
+                {toggle(showUserRating, setShowUserRating, "User Rating")}
+                {toggle(showPlayerRating, setShowPlayerRating, "Average Rating")}
+                {toggle(showGeekRating, setShowGeekRating, "Geek Rating")}
+              </>}
+              {toggle(showPlayerCount, setShowPlayerCount, `Player Count Rating(s)`)}
+              <SliderContainer>
+                <SliderValue style={{ color: (showPlayerCount ? "" : "#000"), opacity: (showPlayerCount ? 1 : .38) }}>{playerCountRange[0]}</SliderValue>
+                <StyledSlider min={1} max={10} step={1} value={playerCountRange} onChange={(event, value) => handleSliderChange(event, () => setPlayerCountRange(value as number[]))} />
+                <SliderValue style={{ color: (showPlayerCount ? "" : "#000"), opacity: (showPlayerCount ? 1 : .38) }}>{playerCountRange[1]}</SliderValue>
+              </SliderContainer>
+              {toggle(showWeight, setShowWeight, "Weight")}
+              {toggle(showTime, setShowTime, "Time")}
+              {(tab === 'advanced' || tab === 'user') && toggle(showIndividualUserRatings, setShowIndividualUserRatings, "Individual Users Ratings", usernames.length < 2)}
+            </SettingsContent>
+            {(tab === 'advanced' || tab === 'user') &&
+              <>
+                <SettingsHeader>
+                  Filters
+                </SettingsHeader>
+                <SettingsContent>
+                  <FilterLabel>Status:</FilterLabel>
+                  {toggle(includeOwned, setIncludeOwned, "Owned")}
+                  {toggle(includeWishlisted, setIncludeWishlisted, "Wishlisted")}
+                  {toggle(includeRated, setIncludeRated, "Rated")}
+                  {tab === 'advanced' &&
+                    <>
+                      <FilterLabel>Type:</FilterLabel>
+                      {toggle(includeBase, setIncludeBase, "Base Games")}
+                      {toggle(includeExpansion, setIncludeExpansion, "Expansions")}
+                    </>
+                  }
+                  {(tab === 'advanced' &&
+                    <>
+                      <FilterLabel>Filter Game IDs:</FilterLabel>
+                      <RadioGroup value={gameIdFilter} onChange={handleGameIdFilterChange}>
+                        <FormControlLabel value="all" control={<Radio />} label="All" />
+                        <FormControlLabel value="only-selected" control={<Radio />} label="Only Selected" />
+                        <FormControlLabel value="hide-selected" control={<Radio />} label="Hide Selected" />
+                      </RadioGroup>
+                    </>
+                  )}
+                </SettingsContent>
+              </>
+            }
+            <SettingsHeader>
+              Scoring
+            </SettingsHeader>
+            <SettingsContent>
+              {toggle(scorePlayerCount, setScorePlayerCount, "Player Count")}
+              {toggle(includeIdealWeight, setIncludeIdealWeight, "Ideal Weight")}
+              <SliderContainer>
+                <SliderValue style={{ color: (includeIdealWeight ? "" : "#000"), opacity: (includeIdealWeight ? 1 : .38) }}>{idealWeight}</SliderValue>
+                <StyledSlider disabled={!includeIdealWeight} min={1} max={5} step={0.5} value={idealWeight} onChange={(event, value) => handleSliderChange(event, () => setIdealWeight(Number(value)))} />
+              </SliderContainer>
+              {toggle(includeIdealTime, setIncludeIdealTime, "Ideal Time")}
+              <SliderContainer>
+                <SliderValue style={{ color: (includeIdealTime ? "" : "#000"), opacity: (includeIdealTime ? 1 : .38) }}>{idealTime}</SliderValue>
+                <StyledSlider disabled={!includeIdealTime} min={30} max={240} step={30} value={idealTime} onChange={(event, value) => handleSliderChange(event, () => setIdealTime(Number(value)))} />
+              </SliderContainer>
+              {(tab === 'advanced') &&
+                <>
+                  <FilterLabel>Base Rating:</FilterLabel>
+                  <RadioGroup value={baseRating} onChange={handleBaseRatingChange}>
+                    <FormControlLabel value="user-rating" control={<Radio />} label="User" />
+                    <FormControlLabel value="player-rating" control={<Radio />} label="Average" />
+                    <FormControlLabel value="geek-rating" control={<Radio />} label="Geek" />
+                  </RadioGroup>
+                </>
+              }
+              {(tab === 'advanced') &&
+                <>
+                  <FilterLabel>Fallback Rating: <Tooltip title="When a user rating isn't set, use this instead."><FallBackInfo /></Tooltip></FilterLabel>
+                  <RadioGroup value={fallBackTo} onChange={handleFallBackToChange}>
+                    <FormControlLabel value="player-rating" control={<Radio />} label="Average" />
+                    <FormControlLabel value="geek-rating" control={<Radio />} label="Geek" />
+                  </RadioGroup>
+                </>
+              }
+            </SettingsContent>
+            {enableSingleColumnSupport &&
+              <>
+                <SettingsHeader>
+                  Mobile Support
+                </SettingsHeader>
+                <SettingsContent>
+                  {toggle(singleColumnView, setSingleColumnView, "Single column view")}
+                </SettingsContent>
+              </>
+            }
+          </Settings>
+        </Drawer>
+      </React.Fragment>    </>
   );
 }
 

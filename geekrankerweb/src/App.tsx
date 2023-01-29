@@ -3,7 +3,7 @@ import styled, { createGlobalStyle } from "styled-components"
 
 import "typeface-open-sans";
 
-import { Clear } from '@mui/icons-material';
+import { Clear, Settings } from '@mui/icons-material';
 import { TextField, Button, IconButton, Tabs, Tab, FormControl, Select, MenuItem } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material';
 
@@ -16,6 +16,18 @@ const theme = createTheme({
     fontFamily: 'Open Sans',
     fontWeightRegular: 600,
   },
+  components: {
+    MuiRadio: {
+      styleOverrides: {
+        root: {
+          paddingLeft: 9,
+          paddingRight: 9,
+          paddingTop: 5,
+          paddingBottom: 5,
+        }
+      }
+    }
+  }
 });
 
 const GlobalStyle = createGlobalStyle`
@@ -56,6 +68,7 @@ const Form = styled.div`
   flex-wrap: wrap;
   margin-bottom: 10px;
   flex-grow: 1;
+  max-width: 700px;
 `;
 
 const InputContainer = styled.div`
@@ -65,16 +78,15 @@ const InputContainer = styled.div`
 const Input = styled(TextField)`
   box-sizing: border-box;
   width: 100%;
-  background-color: #fff;
+  // background-color: #fff;
 `;
 
 const SpinButtonCover = styled.div`
   height: 20px;
   width: 20px;
-  background-color: #fff;
+  background-color: #eee;
   position: absolute;
   z-index: 10;
-  top: 10px;
   right: 40px;
 `;
 
@@ -87,14 +99,19 @@ const BggLink = styled.a`
   color: #348CE9;
   text-decoration: none;
   cursor: pointer;
-  top: 8.5px;
   right: 45px;
   max-width: calc(100% - 150px);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   z-index: 20;
-`
+`;
+
+const Buttons = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 20px;
+`;
 
 const FilterButton = styled(Button)`
   margin-top: 10px;
@@ -149,6 +166,8 @@ function App() {
 
   const [hideThreadLink, setHideThreadLink] = useState<boolean>(false);
   const [hideGeekListLink, setHideGeekListLink] = useState<boolean>(false);
+
+  const [showDrawer, setShowDrawer] = useState<boolean>(false);
 
   const updateMedia = () => {
     setScreenWidth(document.documentElement.clientWidth || document.body.clientWidth);
@@ -259,16 +278,19 @@ function App() {
         <Input
           type={isNumber ? "number" : "text"}
           size='small'
+          variant='standard'
+          label={tab === 'advanced' ? placeholder : undefined}
+          placeholder={tab !== 'advanced' ? placeholder : undefined}
           inputProps={{ autoCapitalize: "none" }}
           onKeyDown={e => inputKeyPress(ref, e.key)}
           defaultValue={getQueryParam(queryParam) ?? ""}
           inputRef={ref}
-          placeholder={placeholder}
           onFocus={() => setHideLinkCallback && setHideLinkCallback(true)}
           onBlur={() => setHideLinkCallback && setHideLinkCallback(false)}
           InputProps={{
             inputProps: {
-              inputMode: isNumber ? 'numeric' : 'none'
+              autoCapitalize: 'none',
+              inputMode: isNumber ? 'numeric' : 'text'
             },
             style: { paddingRight: 0 },
             endAdornment: (
@@ -278,8 +300,8 @@ function App() {
             )
           }}
         />
-        {linkText && !hideLink && <BggLink href={linkUrl} target="_blank">{linkText}</BggLink>}
-        {isNumber && <SpinButtonCover />}
+        {linkText && !hideLink && <BggLink href={linkUrl} target="_blank" style={{ top: tab === 'advanced' ? 22.5 : 6.5 }}>{linkText}</BggLink>}
+        {isNumber && <SpinButtonCover style={{ top: tab === 'advanced' ? 25 : 10 }} />}
       </InputContainer>
     );
   }
@@ -338,16 +360,20 @@ function App() {
                 setHideGeekListLink,
                 true,
               )}
-              <FilterButton
-                size='small'
-                variant='contained'
-                onClick={() => loadGames()}
-                disabled={loadingGames}
-              >
-                {loadingGames ? "Loading Games..." : "Load Games"}
-              </FilterButton>
+              <Buttons>
+                <FilterButton
+                  size='small'
+                  variant='contained'
+                  onClick={() => loadGames()}
+                  disabled={loadingGames}
+                >
+                  {loadingGames ? "Loading Games..." : "Load Games"}
+                </FilterButton>
+                <Settings onClick={() => setShowDrawer(true)} style={{ color: '#348CE9', cursor: 'pointer' }} />
+
+              </Buttons>
             </Form>
-            <Logo src="/logo.png" alt="logo" />
+            <Logo src="/logo-only.png" alt="logo" />
           </PageHeader>
         </PageHeaderContainer>
         <GameRanker
@@ -359,6 +385,8 @@ function App() {
           setGameIds={setGameIds}
           allGames={allGames}
           screenWidth={screenWidth}
+          showDrawer={showDrawer}
+          setShowDrawer={setShowDrawer}
         />
       </ThemeProvider>
     </>
