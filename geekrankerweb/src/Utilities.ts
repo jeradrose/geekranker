@@ -1,4 +1,13 @@
+import { Game } from "./models";
+
 export type SelectedTab = "user" | "game" | "thread" | "geeklist" | "advanced";
+
+export const sortOptions = ["game", "id", "gr-index", "user-rating", "player-rating", "geek-rating", "weight", "time", "thread", "geek-list"] as const;
+export type SortOptions = typeof sortOptions[number];
+
+export type DisplayMode = "vertical" | "horizontal";
+export type FallBackTo = "player-rating" | "geek-rating";
+export type BaseRating = FallBackTo | "user-rating";
 
 export enum QueryParams {
   SelectedTab = "tab",
@@ -32,7 +41,7 @@ export enum QueryParams {
   GameIds = "g",
 }
 
-export const defaultQueryValues: { [key in QueryParams]: any } = {
+export const defaultQueryValues: { [key in QueryParams]: number | string | boolean | undefined } = {
   [QueryParams.SelectedTab]: "user",
   [QueryParams.Usernames]: undefined,
   [QueryParams.GameIds]: undefined,
@@ -58,8 +67,8 @@ export const defaultQueryValues: { [key in QueryParams]: any } = {
   [QueryParams.GameIdFilter]: "all",
   [QueryParams.ScorePlayerCount]: true,
   [QueryParams.PlayerCountRange]: "2 4",
-  [QueryParams.IdealWieght]: null,
-  [QueryParams.IdealTime]: null,
+  [QueryParams.IdealWieght]: undefined,
+  [QueryParams.IdealTime]: undefined,
   [QueryParams.BaseRating]: "user-rating",
   [QueryParams.FallBackTo]: "player-rating",
 }
@@ -84,7 +93,7 @@ export const getNumberQueryParam = (queryParam: QueryParams): number => {
 
 export const getNumberArrayQueryParam = (queryParam: QueryParams): number[] => {
   const param = getQueryParam(queryParam);
-  var arrayString = !param ? defaultQueryValues[queryParam] : param;
+  const arrayString = !param ? defaultQueryValues[queryParam] as string : param;
   return [parseInt(arrayString.split(" ")[0]), parseInt(arrayString.split(" ")[1])];
 }
 
@@ -97,3 +106,50 @@ export const getBoolQueryParam = (queryParam: QueryParams): boolean => {
 
 export const getApiUrl = (url: string): string =>
   (process.env.NODE_ENV === "production" ? "https://api.geekranker.com" : "") + url;
+
+export const getSortLabel = (sortOption: SortOptions) => {
+  switch (sortOption) {
+    case "game": return "Game";
+    case "id": return "ID";
+    case "thread": return "# in Thread";
+    case "geek-list": return "# on GeekList";
+    case "gr-index": return "GR Index";
+    case "user-rating": return "User Rating";
+    case "player-rating": return "Average Rating";
+    case "geek-rating": return "Geek Rating";
+    case "weight": return "Weight";
+    case "time": return "Time";
+  }
+}
+
+export const getUsernamesFromString = (usernamesString: string | undefined | null): string[] =>
+  usernamesString?.split(/[^a-zA-Z0-9_]/).filter(u => u.length) ?? [];
+
+export const getGameIdsFromString = (gameIdsString: string | undefined | null): number[] =>
+  gameIdsString?.split(/[^0-9]/).filter(id => id.length).map(id => parseInt(id)) ?? [];
+
+export const getIdFromString = (idString: string | undefined | null): number | undefined => {
+  const parsedId = parseInt(idString?.split(/[^0-9]/).find(id => id.length) || "");
+  return isNaN(parsedId) ? undefined : parsedId;
+}
+
+export const updateRanks = <T>(
+  list: T[],
+  scoreGetter: (item: T) => number | undefined,
+  idGetter: (item: T) => number,
+  rankSetter: (item: T, rank: number | undefined) => void
+) => {
+  const ranks = list
+    .sort((a, b) => (scoreGetter(b) || 0) - (scoreGetter(a) || 0))
+    .map(i => idGetter(i));
+
+  list.map(i => rankSetter(i, scoreGetter(i) && ranks.indexOf(idGetter(i)) + 1));
+}
+
+export const getGameUserRating = (username: string, game: Game, fallBackTo: FallBackTo, unratedLast: boolean): [number, boolean] => {
+  const filteredPlayerRating = game.userStats.filter(r => r.username === username);
+
+  const hasUserRating = filteredPlayerRating.length === 1;
+
+  return [(hasUserRating && filteredPlayerRating[0].rating) || (fallBackTo === "geek-rating" ? game.geekRating : game.avgPlayerRating) - (unratedLast ? 10 : 0), hasUserRating];
+}

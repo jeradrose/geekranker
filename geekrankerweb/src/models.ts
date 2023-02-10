@@ -10,11 +10,15 @@ export interface Game {
   imageUrl: string;
   playerCountStats: PlayerCountStats[];
   userStats: UserStats[];
+  grIndex: number;
+  grIndexRank: number;
   avgWeight: number;
-  avgPlayerRating: number;
-  geekRating: number;
   avgWeightRank: number;
+  avgPlayerRating: number;
   avgPlayerRatingRank: number;
+  avgUserRating: number;
+  avgUserRatingRank: number;
+  geekRating: number;
   geekRatingRank: number;
   minPlayTime: number;
   maxPlayTime: number;
@@ -39,9 +43,10 @@ export interface PlayerCountStats {
 
 export interface UserStats {
   username: string;
-  rating: number | null;
-  rank: number | null;
+  gameId: number;
+  rating: number | undefined;
+  rank: number | undefined;
   isOwned: boolean;
   isWishlisted: boolean;
-  cacheDate: Date | null;
+  cacheDate: Date | undefined;
 }

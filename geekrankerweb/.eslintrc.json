@@ -3,8 +3,18 @@
   // can control the strictness of the linter, the plugins to use, and more.
   // For more information about configuring ESLint, visit https://eslint.org/docs/user-guide/configuring/
   "root": true,
-  "extends": "eslint:recommended",
-  "rules": {},
+  "parser": "@typescript-eslint/parser",
+  "plugins": [
+    "@typescript-eslint"
+  ],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "rules": {
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": "error"
+  },
   "overrides": [
     {
       "files": [

@@ -1,67 +1,11 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Game } from './models';
 import "typeface-open-sans";
-import { ArrowDownward, Info } from '@mui/icons-material';
-import { Tooltip, Switch, FormControlLabel, Slider, RadioGroup, Radio, FormControl, Select, MenuItem, Drawer, InputLabel } from '@mui/material';
+import { ArrowDownward } from '@mui/icons-material';
+import { Tooltip, Switch, FormControlLabel } from '@mui/material';
 
 import styled from "styled-components"
-import { defaultQueryValues, QueryParams, getBoolQueryParam, getNumberArrayQueryParam, getNumberQueryParam, getStringQueryParam, getTypedStringQueryParam, SelectedTab } from './Utilities';
-
-const Settings = styled.div`
-  max-width: 270px;
-  display: flex;
-  flex-direction: column;
-  user-select: none;
-`;
-
-const SettingsHeader = styled.div`
-  font-weight: bold;
-  background-color: #348CE9;
-  color: #fff;
-  padding: 10px 15px;
-`;
-
-const SettingsContent = styled.div`
-  margin: 15px;
-  display: flex;
-  flex-direction: column;
-`;
-
-const FilterLabel = styled.div`
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 5px;
-  font-weight: bold;
-  padding-bottom: 5px;
-  :not(:first-child) {
-    padding-top: 15px;
-  } 
-`;
-
-const SliderContainer = styled.div`
-  display: flex;
-  align-items: center;
-  margin-left: 30px;
-`;
-
-const StyledSlider = styled(Slider)`
-  flex-basis: 100px;
-`;
-
-const SliderValue = styled.div`
-  text-align: center;
-  flex-basis: 50px;
-  padding-right: 5px;
-  font-weight: bold;
-  color: #348CE9;
-`;
-
-const FallBackInfo = styled(Info)`
- size: 14px;
- color: #348CE9;
-`;
+import { SelectedTab, getSortLabel, DisplayMode, FallBackTo, SortOptions, getGameUserRating } from './Utilities';
 
 const GamesHeader = styled.div`
   display: inline-block;
@@ -286,192 +230,67 @@ const IntroTipLink = styled(IntroTip)`
   cursor: pointer;
 `
 
-const sortOptions = ["game", "id", "gr-index", "user-rating", "player-rating", "geek-rating", "weight", "time", "thread", "geek-list"] as const;
-type SortOptions = typeof sortOptions[number];
-
-type RankedScore = {
-  score: number;
-  rank: number;
-}
-
-type RankedScores = Record<number, RankedScore>;
-
-type GameIdFilter = "all" | "only-selected" | "hide-selected";
-type FallBackTo = "player-rating" | "geek-rating";
-type BaseRating = FallBackTo | "user-rating";
-
 interface GameRankerProps {
   tab: SelectedTab,
   usernames: string[],
   gameIds: number[],
-  threadId: number | undefined,
-  geekListId: number | undefined,
   setGameIds: (gameId: number[]) => void,
-  allGames: Game[],
+  games: Game[],
+  fallBackTo: FallBackTo,
+  includeIdealTime: boolean,
+  idealTime: number,
+  includeIdealWeight: boolean,
+  idealWeight: number,
+  playerCountRange: number[],
+  sort: string,
+  setSort: (value: string) => void,
+  showGameId: boolean,
+  showThreadSequence: boolean,
+  showGeekListSequence: boolean,
+  showGrIndex: boolean,
+  showUserRating: boolean,
+  showPlayerRating: boolean,
+  showGeekRating: boolean,
+  showPlayerCount: boolean,
+  showWeight: boolean,
+  showTime: boolean,
+  showIndividualUserRatings: boolean,
+  displayMode: DisplayMode,
   screenWidth: number,
-  showDrawer: boolean,
-  setShowDrawer: (value: boolean) => void,
 }
 
-function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds, allGames, screenWidth, showDrawer, setShowDrawer }: GameRankerProps) {
+function GameRanker({
+  tab,
+  usernames,
+  gameIds,
+  setGameIds,
+  games,
+  fallBackTo,
+  includeIdealTime,
+  idealTime,
+  includeIdealWeight,
+  idealWeight,
+  playerCountRange,
+  sort,
+  setSort,
+  showGameId,
+  showThreadSequence,
+  showGeekListSequence,
+  showGrIndex,
+  showUserRating,
+  showPlayerRating,
+  showGeekRating,
+  showPlayerCount,
+  showWeight,
+  showTime,
+  showIndividualUserRatings,
+  displayMode,
+  screenWidth,
+}: GameRankerProps) {
   const renderCount = useRef<number>(0);
-
-  // User option nullable defaults
-  const idealTimeDefault = 60;
-  const idealWeightDefault = 3;
-
-  // Standard options
-  const [sort, setSort] = useState<string>(getStringQueryParam(QueryParams.Sort));
-
-  // Column visibility
-  const [showGameId, setShowGameId] = useState<boolean>(getBoolQueryParam(QueryParams.ShowGameId));
-  const [showThreadSequence, setShowThreadSequence] = useState<boolean>(getBoolQueryParam(QueryParams.ShowThreadSequence));
-  const [showGeekListSequence, setShowGeekListSequence] = useState<boolean>(getBoolQueryParam(QueryParams.ShowGeekListSequence));
-  const [showGrIndex, setShowGrIndex] = useState<boolean>(getBoolQueryParam(QueryParams.ShowGrIndex));
-  const [showGeekRating, setShowGeekRating] = useState<boolean>(getBoolQueryParam(QueryParams.ShowGeekRating));
-  const [showPlayerRating, setShowPlayerRating] = useState<boolean>(getBoolQueryParam(QueryParams.ShowPlayerRating));
-  const [showUserRating, setShowUserRating] = useState<boolean>(getBoolQueryParam(QueryParams.ShowUserRating));
-  const [showTime, setShowTime] = useState<boolean>(getBoolQueryParam(QueryParams.ShowTime));
-  const [showWeight, setShowWeight] = useState<boolean>(getBoolQueryParam(QueryParams.ShowWeight));
-  const [showPlayerCount, setShowPlayerCount] = useState<boolean>(getBoolQueryParam(QueryParams.ShowPlayerCount));
-  const [showIndividualUserRatings, setShowIndividualUserRatings] = useState<boolean>(getBoolQueryParam(QueryParams.ShowIndividualUserRatings));
-  const [playerCountRange, setPlayerCountRange] = useState<number[]>(getNumberArrayQueryParam(QueryParams.PlayerCountRange));
-
-  // Filter options
-  const [includeOwned, setIncludeOwned] = useState<boolean>(getBoolQueryParam(QueryParams.IncludeOwned));
-  const [includeWishlisted, setIncludeWishlisted] = useState<boolean>(getBoolQueryParam(QueryParams.IncludeWishlisted));
-  const [includeRated, setIncludeRated] = useState<boolean>(getBoolQueryParam(QueryParams.IncludeRated));
-  const [includeBase, setIncludeBase] = useState<boolean>(getBoolQueryParam(QueryParams.IncludeBase));
-  const [includeExpansion, setIncludeExpansion] = useState<boolean>(getBoolQueryParam(QueryParams.IncludeExpansion));
-  const [gameIdFilter, setGameIdFilter] = useState<GameIdFilter>(getTypedStringQueryParam<GameIdFilter>(QueryParams.GameIdFilter));
-
-  // Scoring options
-  const [scorePlayerCount, setScorePlayerCount] = useState<boolean>(getBoolQueryParam(QueryParams.ScorePlayerCount));
-  const [includeIdealWeight, setIncludeIdealWeight] = useState<boolean>(getBoolQueryParam(QueryParams.IdealWieght));
-  const [idealWeight, setIdealWeight] = useState<number>(getNumberQueryParam(QueryParams.IdealWieght) || idealWeightDefault);
-  const [includeIdealTime, setIncludeIdealTime] = useState<boolean>(getBoolQueryParam(QueryParams.IdealTime));
-  const [idealTime, setIdealTime] = useState<number>(getNumberQueryParam(QueryParams.IdealTime) || idealTimeDefault);
-  const [baseRating, setBaseRating] = useState<BaseRating>(getTypedStringQueryParam<BaseRating>(QueryParams.BaseRating));
-  const [fallBackTo, setFallBackTo] = useState<FallBackTo>(getTypedStringQueryParam<FallBackTo>(QueryParams.FallBackTo));
-
-  // UI options
-  const [singleColumnView, setSingleColumnView] = useState<boolean>(false);
-
   const [showTips, setShowTips] = useState<boolean>(false);
 
-  const queryValues: { [key in QueryParams]: any } = {
-    [QueryParams.SelectedTab]: tab,
-    [QueryParams.Usernames]: usernames.length ? usernames.join(' ') : undefined,
-    [QueryParams.GameIds]: gameIds.length ? gameIds.join(' ') : undefined,
-    [QueryParams.ThreadId]: threadId,
-    [QueryParams.GeekListId]: geekListId,
-    [QueryParams.Sort]: sort,
-    [QueryParams.ShowGameId]: showGameId,
-    [QueryParams.ShowThreadSequence]: showThreadSequence,
-    [QueryParams.ShowGeekListSequence]: showGeekListSequence,
-    [QueryParams.ShowGrIndex]: showGrIndex,
-    [QueryParams.ShowUserRating]: showUserRating,
-    [QueryParams.ShowPlayerRating]: showPlayerRating,
-    [QueryParams.ShowGeekRating]: showGeekRating,
-    [QueryParams.ShowPlayerCount]: showPlayerCount,
-    [QueryParams.ShowWeight]: showWeight,
-    [QueryParams.ShowTime]: showTime,
-    [QueryParams.ShowIndividualUserRatings]: showIndividualUserRatings,
-    [QueryParams.IncludeOwned]: includeOwned,
-    [QueryParams.IncludeWishlisted]: includeWishlisted,
-    [QueryParams.IncludeRated]: includeRated,
-    [QueryParams.IncludeBase]: includeBase,
-    [QueryParams.IncludeExpansion]: includeExpansion,
-    [QueryParams.GameIdFilter]: gameIdFilter,
-    [QueryParams.ScorePlayerCount]: scorePlayerCount,
-    [QueryParams.PlayerCountRange]: `${playerCountRange[0]} ${playerCountRange[1]}`,
-    [QueryParams.IdealWieght]: includeIdealWeight ? idealWeight : null,
-    [QueryParams.IdealTime]: includeIdealTime ? idealTime : null,
-    [QueryParams.BaseRating]: baseRating,
-    [QueryParams.FallBackTo]: fallBackTo,
-  }
-
-  useEffect(() => {
-    const params = new URLSearchParams();
-
-    Object.values(QueryParams).forEach(queryParam => {
-      if (JSON.stringify(queryValues[queryParam]) === JSON.stringify(defaultQueryValues[queryParam])) {
-        params.delete(queryParam);
-      } else {
-        if (typeof queryValues[queryParam] === "boolean") {
-          params.set(queryParam, queryValues[queryParam] ? "1" : "0");
-        } else {
-          params.set(queryParam, queryValues[queryParam]);
-        }
-      }
-    });
-
-    let url = location.pathname;
-
-    if (params.toString()) {
-      url += `?${params}`;
-    }
-
-    window.history.replaceState({}, '', url);
-  });
-
-  const getGrIndex = (game: Game): number => {
-    let numerator = 1;
-    let denominator = 1;
-
-    if (baseRating === "user-rating" && usernames.length) {
-      const userRatings = usernames.map(username => gameUserRating(username, game, false)[0]);
-      const avgUserRating = (userRatings.reduce((a, b) => a + b) / userRatings.length);
-
-      numerator *= avgUserRating;
-    } else if (baseRating === "player-rating" || (baseRating === "user-rating" && !usernames.length && fallBackTo === "player-rating")) {
-      numerator *= game.avgPlayerRating;
-    } else {
-      numerator *= game.geekRating;
-    }
-
-    denominator *= 10;
-
-    if (scorePlayerCount) {
-      const playerCountStats = game.playerCountStats.filter(s => s.playerCount >= playerCountRange[0] && s.playerCount <= playerCountRange[1]);
-
-      if (!playerCountStats.length) {
-        return 0;
-      }
-
-      numerator *= playerCountStats.map(s => s.score).reduce((a, b) => a + b) / (playerCountRange[1] - playerCountRange[0] + 1);
-      console.log(`game: ${game.name}, ${playerCountStats.map(s => s.score).reduce((a, b) => a + b)} / ${playerCountRange[1] - playerCountRange[0] + 1} = ${playerCountStats.map(s => s.score).reduce((a, b) => a + b) / (playerCountRange[1] - playerCountRange[0] + 1)}`);
-      denominator *= 10;
-    }
-
-    if (includeIdealWeight) {
-      numerator *= 5 - Math.abs(game.avgWeight - idealWeight);
-      denominator *= 5;
-    }
-
-    if (includeIdealTime) {
-      numerator *= Math.max(150 - Math.abs(game.maxPlayTime - idealTime), 0);
-      denominator *= 150;
-    }
-
-    return 10 * numerator / denominator;
-  }
-
-  const getScores = (scoreGetter: (game: Game) => number): RankedScores => {
-    const scores: RankedScores = {};
-
-    filteredGames.map(g => {
-      scores[g.gameId] = {
-        score: scoreGetter(g),
-        rank: 1,
-      };
-    });
-
-    const sorted = Object.entries(scores).sort(([, a], [, b]) => b.score - a.score).map(([gameId,]) => gameId);
-    Object.entries(scores).map(s => scores[parseInt(s[0])].rank = sorted.indexOf(s[0]) + 1);
-
-    return scores;
-  }
+  const playerCountArray = Array.from({ length: playerCountRange[1] - playerCountRange[0] + 1 }, (v, k) => k + playerCountRange[0]);
 
   const innerBar = (value: number, maxValue: number, rank: number, idealValue?: number | false) =>
     value > 0 &&
@@ -536,55 +355,13 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
   }
 
   const timeBar = (min: number, max: number) =>
-  (displayMode === "horizontal" ?
-    <BarContainerHorizontal>
-      {innerTimeBar(min, max, includeIdealTime && idealTime)}
-    </BarContainerHorizontal> :
-    <BarContainerVertical>
-      {innerTimeBar(min, max, includeIdealTime && idealTime)}
-    </BarContainerVertical>
-  )
-
-  const gamesSortedByPlayerCount = (playerCount: number): Game[] => {
-    return filteredGames.sort((a, b) => {
-      const filteredA = a.playerCountStats.filter(g => g.playerCount === playerCount);
-      const filteredB = b.playerCountStats.filter(g => g.playerCount === playerCount);
-
-      const aValue = filteredA.length !== 1 ? 0 : filteredA[0].score;
-      const bValue = filteredB.length !== 1 ? 0 : filteredB[0].score;
-
-      return bValue - aValue;
-    });
-  };
-
-  const getSortLabel = (sortOption: SortOptions) => {
-    switch (sortOption) {
-      case "game": return "Game";
-      case "id": return "ID";
-      case "thread": return "# in Thread";
-      case "geek-list": return "# on GeekList";
-      case "gr-index": return "GR Index";
-      case "user-rating": return "User Rating";
-      case "player-rating": return "Average Rating";
-      case "geek-rating": return "Geek Rating";
-      case "weight": return "Weight";
-      case "time": return "Time";
-    }
-  }
-
-  const gameUserRating = (username: string, game: Game, unratedLast: boolean): [number, boolean] => {
-    const filteredPlayerRating = game.userStats.filter(r => r.username === username);
-
-    const hasUserRating = filteredPlayerRating.length === 1;
-
-    return [(hasUserRating && filteredPlayerRating[0].rating) || (fallBackTo === "geek-rating" ? game.geekRating : game.avgPlayerRating) - (unratedLast ? 10 : 0), hasUserRating];
-  }
-
-  const gamesSortedByUserRatings = (username: string): Game[] =>
-    filteredGames.sort((a, b) => gameUserRating(username, b, true)[0] - gameUserRating(username, a, true)[0]);
-
-  const getAvgUserRatings = (game: Game): number =>
-    (usernames.length && (usernames.map(u => gameUserRating(u, game, false)[0]).reduce((a, b) => a + b) / usernames.length)) ?? 0;
+    displayMode === "horizontal" ?
+      <BarContainerHorizontal>
+        {innerTimeBar(min, max, includeIdealTime && idealTime)}
+      </BarContainerHorizontal> :
+      <BarContainerVertical>
+        {innerTimeBar(min, max, includeIdealTime && idealTime)}
+      </BarContainerVertical>
 
   const sortArrow = (thisSort: string) =>
     <ArrowDownward key={`arrow-${thisSort}`} style={{ 'color': sort === thisSort ? '#fff' : '#0475BB', 'paddingLeft': 2 }} />;
@@ -596,6 +373,7 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
 
   const playerCountBar = (count: number, game: Game) => {
     const filteredStats = game.playerCountStats.filter(s => s.playerCount === count);
+
     if (filteredStats.length === 1) {
       return bar(filteredStats[0].score, 10, filteredStats[0].rank);
     } else {
@@ -605,25 +383,14 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
 
   const userRatingBar = (username: string, game: Game) => {
     if (!username) {
-      return bar(avgUserRatings[game.gameId].score, 10, avgUserRatings[game.gameId].rank);
+      return bar(game.avgUserRating, 10, game.avgUserRatingRank);
     }
 
-    const [rating, hasUserRating] = gameUserRating(username, game, false);
+    const [rating, hasUserRating] = getGameUserRating(username, game, fallBackTo, false);
     const ratings = game.userStats.filter(r => r.username === username);
 
     return bar(rating, 10, hasUserRating ? ratings[0].rank ?? 0 : 0);
   }
-
-  const toggle = (value: boolean, setter: (value: React.SetStateAction<boolean>) => void, label: string, disabled?: boolean) =>
-    <FormControlLabel
-      style={{ userSelect: 'none', font: 'inherit' }}
-      control={
-        <Switch
-          checked={value}
-          disabled={disabled}
-          onChange={() => setter(!value)} />
-      }
-      label={label} />
 
   const toggleGameId = (gameId: number) => {
     const isSelected = gameIds.filter(id => id === gameId).length > 0;
@@ -653,96 +420,6 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
       {component}
     </VerticalCell>
 
-  const isIos = () => {
-    return [
-      'iPad Simulator',
-      'iPhone Simulator',
-      'iPod Simulator',
-      'iPad',
-      'iPhone',
-      'iPod'
-    ].includes(navigator.platform)
-      // iPad on iOS 13 detection
-      || (navigator.userAgent.includes("Mac") && "ontouchend" in document)
-  }
-
-  const handleGameIdFilterChange = (event: React.ChangeEvent<HTMLInputElement>) =>
-    setGameIdFilter((event.target as HTMLInputElement).value as GameIdFilter);
-
-  const handleFallBackToChange = (event: React.ChangeEvent<HTMLInputElement>) =>
-    setFallBackTo((event.target as HTMLInputElement).value as FallBackTo);
-
-  const handleBaseRatingChange = (event: React.ChangeEvent<HTMLInputElement>) =>
-    setBaseRating((event.target as HTMLInputElement).value as BaseRating);
-
-  const handleSliderChange = (event: Event, callback: () => void) => {
-    if (isIos() && event.type === 'mousedown') {
-      return;
-    }
-
-    callback();
-  }
-
-  const filteredGames = allGames.filter(g =>
-    (
-      (
-        (
-          (tab === 'advanced' || tab === 'user') &&
-          (
-            g.userStats.filter(us => (includeOwned && us.isOwned) || (includeWishlisted && us.isWishlisted) || (includeRated && us.rating)).length &&
-            ((includeBase && !g.isExpansion) || (includeExpansion && g.isExpansion))
-          )
-        ) ||
-        ((tab === 'advanced' || tab === 'thread') && g.threadSequence) ||
-        ((tab === 'advanced' || tab === 'geeklist') && g.geekListSequence)
-      ) &&
-      (
-        (gameIdFilter === "all") ||
-        (gameIdFilter === "hide-selected" && gameIds.indexOf(g.gameId) === -1) ||
-        (gameIdFilter === "only-selected" && gameIds.indexOf(g.gameId) > -1)
-      )
-    ) || (tab === 'game' && gameIds.indexOf(g.gameId) > -1)
-  );
-
-  const grIndexes = getScores(g => getGrIndex(g));
-  const avgUserRatings = getScores(g => getAvgUserRatings(g));
-
-  const sortedGames =
-    (sort === 'game') ? filteredGames.sort((a, b) => a.name.localeCompare(b.name)) :
-      (sort === 'id') ? filteredGames.sort((a, b) => a.gameId - b.gameId) :
-        (sort === 'thread') ? filteredGames.sort((a, b) => (a.threadSequence || Number.MAX_VALUE) - (b.threadSequence || Number.MAX_VALUE)) :
-          (sort === 'geek-list') ? filteredGames.sort((a, b) => (a.geekListSequence || Number.MAX_VALUE) - (b.geekListSequence || Number.MAX_VALUE)) :
-            (sort === 'geek-rating') ? filteredGames.sort((a, b) => b.geekRating - a.geekRating) :
-              (sort === 'player-rating') ? filteredGames.sort((a, b) => b.avgPlayerRating - a.avgPlayerRating) :
-                (sort === 'weight') ? filteredGames.sort((a, b) => b.avgWeight - a.avgWeight) :
-                  ((sort as string).startsWith('playercount-')) ? gamesSortedByPlayerCount(parseInt(sort.split("-")[1])) :
-                    (sort === 'time') ? filteredGames.sort((a, b) => b.maxPlayTime - a.maxPlayTime) :
-                      (sort === 'gr-index') ? filteredGames.sort((a, b) => grIndexes[b.gameId].score - grIndexes[a.gameId].score) :
-                        (sort === 'user-rating') ? filteredGames.sort((a, b) => getAvgUserRatings(b) - getAvgUserRatings(a)) :
-                          (sort as string).startsWith('user-') ? gamesSortedByUserRatings(sort.split("-")[1]) :
-                            filteredGames;
-
-  const getColumnWidth = (width: number, isShown: boolean) =>
-    width * (isShown ? 1 : 0);
-
-  const columnWidths =
-    getColumnWidth(200, true) // name
-    + getColumnWidth(200, showGameId)
-    + getColumnWidth(200, showThreadSequence)
-    + getColumnWidth(200, showGeekListSequence)
-    + getColumnWidth(200, showGrIndex)
-    + getColumnWidth(200 * (showIndividualUserRatings ? usernames.length : 1), showUserRating) // user rating(s)
-    + getColumnWidth(200, showPlayerRating)
-    + getColumnWidth(200, showGeekRating)
-    + getColumnWidth(200 * (playerCountRange[1] - playerCountRange[0] + 1), showPlayerCount) // player count rating
-    + getColumnWidth(200, showWeight)
-    + getColumnWidth(200, showTime)
-    ;
-
-  const enableSingleColumnSupport = screenWidth < 600;
-  const displayMode = columnWidths + 35 > screenWidth && singleColumnView && enableSingleColumnSupport ? "vertical" : "horizontal";
-  const playerCountArray = Array.from({ length: playerCountRange[1] - playerCountRange[0] + 1 }, (v, k) => k + playerCountRange[0]);
-
   renderCount.current++;
 
   const getShowGameId = () => (tab === 'advanced' && showGameId);
@@ -758,7 +435,7 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
       {displayMode === "horizontal" &&
         <GamesHeader>
           <HeaderRow style={{ minWidth: screenWidth }}>
-            {sortedGames.length > 0 &&
+            {games.length > 0 &&
               <>
                 <ImageAndNameHeader onClick={() => setSort("game")}>
                   Game{sortArrow("game")}
@@ -778,7 +455,7 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
           </HeaderRow>
         </GamesHeader>
       }
-      {sortedGames.length === 0 &&
+      {games.length === 0 &&
         <EmptyState style={{ width: screenWidth }}>
           <Intro>
             <IntroHeader>Geek Ranker can be used to:</IntroHeader>
@@ -810,7 +487,7 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
           </Intro>
         </EmptyState>
       }
-      {sortedGames.map(g => {
+      {games.map(g => {
         return (
           displayMode === "horizontal" ?
             <GameHorizontally key={`game-horizontal-${g.gameId}`} style={{ minWidth: screenWidth }}>
@@ -825,7 +502,7 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
               {getShowThreadSequence() && <HorizontalCell>{g.threadSequence ? g.threadSequence : ""}</HorizontalCell>}
               {getShowGeekListSequence() && <HorizontalCell>{g.geekListSequence ? g.geekListSequence : ""
               }</HorizontalCell>}
-              {getShowGrIndex() && <HorizontalCell>{bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0)}</HorizontalCell>}
+              {getShowGrIndex() && <HorizontalCell>{bar(g.grIndex ?? 0, 10, g.grIndexRank ?? 0)}</HorizontalCell>}
               {getShowUserRating() && (showIndividualUserRatings || usernames.length < 2 ?
                 usernames.map(u => <HorizontalCell key={`userRating-${g.gameId}-${u}`}>{userRatingBar(u, g)}</HorizontalCell>) :
                 <HorizontalCell>{userRatingBar("", g)}</HorizontalCell>
@@ -846,7 +523,7 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
               {getShowGameId() && verticalCell(getSortLabel("game"), toggleGameId(g.gameId))}
               {getShowThreadSequence() && showThreadSequence && verticalCell(getSortLabel("thread"), g.threadSequence)}
               {getShowGeekListSequence() && showGeekListSequence && verticalCell(getSortLabel("geek-list"), g.geekListSequence)}
-              {getShowGrIndex() && verticalCell(getSortLabel("gr-index"), bar(grIndexes[g.gameId].score ?? 0, 10, grIndexes[g.gameId].rank ?? 0))}
+              {getShowGrIndex() && verticalCell(getSortLabel("gr-index"), bar(g.grIndex ?? 0, 10, g.grIndexRank ?? 0))}
               {getShowUserRating() && showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
                 usernames.map(u => verticalCell(u, userRatingBar(u, g), g.gameId)) :
                 verticalCell(getSortLabel("user-rating"), userRatingBar("", g))
@@ -859,126 +536,7 @@ function GameRanker({ tab, usernames, gameIds, threadId, geekListId, setGameIds,
             </GameVertically>
         );
       })}
-      <React.Fragment>
-        <Drawer
-          anchor='right'
-          open={showDrawer}
-          onClose={() => setShowDrawer(false)}
-        >
-          <Settings>
-            <SettingsHeader>
-              Columns
-            </SettingsHeader>
-            <SettingsContent>
-              {(tab === 'advanced' || displayMode === 'vertical') &&
-                <FormControl variant='standard' sx={{ mb: 2 }}>
-                  <InputLabel>Sort</InputLabel>
-                  <Select
-                    value={sort}
-                    onChange={event => setSort(event.target.value)}
-                    size="small"
-                  >
-                    {sortOptions.map(sort => <MenuItem key={`sort-select-${sort}`} value={sort}>{getSortLabel(sort)}</MenuItem>)}
-                  </Select>
-                </FormControl>
-              }
-              {tab === 'advanced' && <>
-                {toggle(showGameId, setShowGameId, "Game ID")}
-                {toggle(showThreadSequence, setShowThreadSequence, "Thread #")}
-                {toggle(showGeekListSequence, setShowGeekListSequence, "GeekList #")}
-                {toggle(showGrIndex, setShowGrIndex, "GR Index")}
-                {toggle(showUserRating, setShowUserRating, "User Rating")}
-                {toggle(showPlayerRating, setShowPlayerRating, "Average Rating")}
-                {toggle(showGeekRating, setShowGeekRating, "Geek Rating")}
-              </>}
-              {toggle(showPlayerCount, setShowPlayerCount, `Player Count Rating(s)`)}
-              <SliderContainer>
-                <SliderValue style={{ color: (showPlayerCount ? "" : "#000"), opacity: (showPlayerCount ? 1 : .38) }}>{playerCountRange[0]}</SliderValue>
-                <StyledSlider min={1} max={10} step={1} value={playerCountRange} onChange={(event, value) => handleSliderChange(event, () => setPlayerCountRange(value as number[]))} />
-                <SliderValue style={{ color: (showPlayerCount ? "" : "#000"), opacity: (showPlayerCount ? 1 : .38) }}>{playerCountRange[1]}</SliderValue>
-              </SliderContainer>
-              {toggle(showWeight, setShowWeight, "Weight")}
-              {toggle(showTime, setShowTime, "Time")}
-              {(tab === 'advanced' || tab === 'user') && toggle(showIndividualUserRatings, setShowIndividualUserRatings, "Individual Users Ratings", usernames.length < 2)}
-            </SettingsContent>
-            {(tab === 'advanced' || tab === 'user') &&
-              <>
-                <SettingsHeader>
-                  Filters
-                </SettingsHeader>
-                <SettingsContent>
-                  <FilterLabel>Status:</FilterLabel>
-                  {toggle(includeOwned, setIncludeOwned, "Owned")}
-                  {toggle(includeWishlisted, setIncludeWishlisted, "Wishlisted")}
-                  {toggle(includeRated, setIncludeRated, "Rated")}
-                  {tab === 'advanced' &&
-                    <>
-                      <FilterLabel>Type:</FilterLabel>
-                      {toggle(includeBase, setIncludeBase, "Base Games")}
-                      {toggle(includeExpansion, setIncludeExpansion, "Expansions")}
-                    </>
-                  }
-                  {(tab === 'advanced' &&
-                    <>
-                      <FilterLabel>Filter Game IDs:</FilterLabel>
-                      <RadioGroup value={gameIdFilter} onChange={handleGameIdFilterChange}>
-                        <FormControlLabel value="all" control={<Radio />} label="All" />
-                        <FormControlLabel value="only-selected" control={<Radio />} label="Only Selected" />
-                        <FormControlLabel value="hide-selected" control={<Radio />} label="Hide Selected" />
-                      </RadioGroup>
-                    </>
-                  )}
-                </SettingsContent>
-              </>
-            }
-            <SettingsHeader>
-              Scoring
-            </SettingsHeader>
-            <SettingsContent>
-              {toggle(scorePlayerCount, setScorePlayerCount, "Player Count")}
-              {toggle(includeIdealWeight, setIncludeIdealWeight, "Ideal Weight")}
-              <SliderContainer>
-                <SliderValue style={{ color: (includeIdealWeight ? "" : "#000"), opacity: (includeIdealWeight ? 1 : .38) }}>{idealWeight}</SliderValue>
-                <StyledSlider disabled={!includeIdealWeight} min={1} max={5} step={0.5} value={idealWeight} onChange={(event, value) => handleSliderChange(event, () => setIdealWeight(Number(value)))} />
-              </SliderContainer>
-              {toggle(includeIdealTime, setIncludeIdealTime, "Ideal Time")}
-              <SliderContainer>
-                <SliderValue style={{ color: (includeIdealTime ? "" : "#000"), opacity: (includeIdealTime ? 1 : .38) }}>{idealTime}</SliderValue>
-                <StyledSlider disabled={!includeIdealTime} min={30} max={240} step={30} value={idealTime} onChange={(event, value) => handleSliderChange(event, () => setIdealTime(Number(value)))} />
-              </SliderContainer>
-              {(tab === 'advanced') &&
-                <>
-                  <FilterLabel>Base Rating:</FilterLabel>
-                  <RadioGroup value={baseRating} onChange={handleBaseRatingChange}>
-                    <FormControlLabel value="user-rating" control={<Radio />} label="User" />
-                    <FormControlLabel value="player-rating" control={<Radio />} label="Average" />
-                    <FormControlLabel value="geek-rating" control={<Radio />} label="Geek" />
-                  </RadioGroup>
-                </>
-              }
-              {(tab === 'advanced') &&
-                <>
-                  <FilterLabel>Fallback Rating: <Tooltip title="When a user rating isn't set, use this instead."><FallBackInfo /></Tooltip></FilterLabel>
-                  <RadioGroup value={fallBackTo} onChange={handleFallBackToChange}>
-                    <FormControlLabel value="player-rating" control={<Radio />} label="Average" />
-                    <FormControlLabel value="geek-rating" control={<Radio />} label="Geek" />
-                  </RadioGroup>
-                </>
-              }
-            </SettingsContent>
-            {enableSingleColumnSupport &&
-              <>
-                <SettingsHeader>
-                  Mobile Support
-                </SettingsHeader>
-                <SettingsContent>
-                  {toggle(singleColumnView, setSingleColumnView, "Single column view")}
-                </SettingsContent>
-              </>
-            }
-          </Settings>
-        </Drawer>
-      </React.Fragment>    </>
+    </>
   );
 }
 
