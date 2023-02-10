@@ -19,6 +19,8 @@ export const getRankings = async (
 
   const stats = await getUsers(usernames);
 
+  const userGameIds: number[] = stats.map(s => s.gameId);
+
   const threadGameIds: number[] = [];
 
   if (threadId) {
@@ -51,7 +53,7 @@ export const getRankings = async (
 
   const gameIdsToLoad = [...new Set([
     ...gameIds,
-    ...stats.map(s => s.gameId),
+    ...userGameIds,
     ...threadGameIds,
     ...geekListGameIds,
   ])];

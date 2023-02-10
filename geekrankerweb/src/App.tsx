@@ -544,18 +544,21 @@ function App() {
     return () => window.removeEventListener("resize", updateMedia);
   });
 
-  const loadGames = () => {
+  useEffect(() => {
+    getApiData();
+  }, [usernames, gameIds, threadId, geekListId]);
+
+  const setTextFieldStateValues = () => {
     usernamesRef.current && setUsernames(getUsernamesFromString(usernamesRef.current.value));
     gameIdsRef.current && setGameIds(getGameIdsFromString(gameIdsRef.current.value))
     threadIdRef.current && setThreadId(getIdFromString(threadIdRef.current.value));
     geekListIdRef.current && setGeekListId(getIdFromString(geekListIdRef.current.value));
-    getApiData();
   };
 
   const inputKeyPress = (ref: React.RefObject<HTMLInputElement>, key: string) => {
     if (key === "Enter") {
       ref.current?.blur();
-      loadGames();
+      setTextFieldStateValues();
     }
   }
 
@@ -563,7 +566,7 @@ function App() {
     if (ref.current) {
       ref.current.value = "";
     }
-    loadGames();
+    setTextFieldStateValues();
   }
 
   const input = (
@@ -679,7 +682,7 @@ function App() {
                 <FilterButton
                   size='small'
                   variant='contained'
-                  onClick={() => loadGames()}
+                  onClick={() => setTextFieldStateValues()}
                   disabled={loadingGames}
                 >
                   {loadingGames ? "Loading Games..." : "Load Games"}
