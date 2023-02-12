@@ -3,7 +3,7 @@ import styled, { createGlobalStyle } from "styled-components"
 
 import "typeface-open-sans";
 
-import { Clear, Info, Settings as SettingsIcon } from '@mui/icons-material';
+import { Clear, Close, Info, Settings as SettingsIcon } from '@mui/icons-material';
 import { TextField, Button, IconButton, Tabs, Tab, FormControl, Select, MenuItem, Drawer, Slider, InputLabel, FormControlLabel, Switch, RadioGroup, Radio, Tooltip } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material';
 
@@ -131,6 +131,12 @@ const Settings = styled.div`
   display: flex;
   flex-direction: column;
   user-select: none;
+`;
+
+const SettingsHeaderContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  background-color: #348CE9;
 `;
 
 const SettingsHeader = styled.div`
@@ -730,9 +736,14 @@ function App() {
           onClose={() => setShowDrawer(false)}
         >
           <Settings>
-            <SettingsHeader>
-              Columns
-            </SettingsHeader>
+            <SettingsHeaderContainer>
+              <SettingsHeader>
+                Columns
+              </SettingsHeader>
+              <SettingsHeader>
+                <Close fontSize='small' style={{ cursor: "pointer" }} onClick={() => setShowDrawer(false)} />
+              </SettingsHeader>
+            </SettingsHeaderContainer>
             <SettingsContent>
               {(tab === 'advanced' || displayMode === 'vertical') &&
                 <FormControl variant='standard' sx={{ mb: 2 }}>
