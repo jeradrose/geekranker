@@ -111,9 +111,17 @@ const BggLink = styled.a`
 const Buttons = styled.div`
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 20px;
   padding: 10px 0;
+  padding-right: 8px;  
 `;
+
+const ButtonsList = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 20px;
+`
 
 const Logo = styled.img`
   max-width: 100%;
@@ -768,27 +776,31 @@ function App() {
                 true,
               )}
               <Buttons>
-                <Button
-                  size='small'
-                  variant='contained'
-                  onClick={() => setTextFieldStateValues()}
-                  disabled={loadingGames}
-                  sx={{ width: 160 }}
-                >
-                  {loadingGames ? "Loading Games..." : "Load Games"}
-                </Button>
-                <Tooltip title="Change column visibility, game filters, scoring options, and other settings">
-                  <SettingsIcon onClick={() => setShowDrawer(true)} style={{ color: '#348CE9', cursor: 'pointer' }} />
-                </Tooltip>
-                <Tooltip title="Download a CSV of the current view">
-                  <Download onClick={() => downloadCsv()} style={{ color: '#348CE9', cursor: 'pointer' }} />
-                </Tooltip>
-                <Tooltip title="Copy a link to this view to share with others">
-                  <Link onClick={() => copyUrlToClipboard()} style={{ color: '#348CE9', cursor: 'pointer' }} />
-                </Tooltip>
-                <Tooltip title="Copy a list of thing links to the games below to share on BGG forums">
-                  <pre onClick={() => copyThingLinkListToClipboard()} style={{ color: '#348CE9', cursor: 'pointer' }} >[thing]</pre>
-                </Tooltip>
+                <ButtonsList>
+                  <Button
+                    size='small'
+                    variant='contained'
+                    onClick={() => setTextFieldStateValues()}
+                    disabled={loadingGames}
+                    sx={{ width: 160 }}
+                  >
+                    {loadingGames ? "Loading Games..." : "Load Games"}
+                  </Button>
+                  <Tooltip title="Change column visibility, game filters, scoring options, and other settings">
+                    <SettingsIcon onClick={() => setShowDrawer(true)} style={{ color: '#348CE9', cursor: 'pointer' }} />
+                  </Tooltip>
+                </ButtonsList>
+                <ButtonsList>
+                  <Tooltip title="Copy a list of thing links to the games below to share on BGG forums">
+                    <pre onClick={() => copyThingLinkListToClipboard()} style={{ color: '#348CE9', cursor: 'pointer' }} >[thing]</pre>
+                  </Tooltip>
+                  <Tooltip title="Copy a link to this view to share with others">
+                    <Link onClick={() => copyUrlToClipboard()} style={{ color: '#348CE9', cursor: 'pointer' }} />
+                  </Tooltip>
+                  <Tooltip title="Download a CSV of the current view">
+                    <Download onClick={() => downloadCsv()} style={{ color: '#348CE9', cursor: 'pointer' }} />
+                  </Tooltip>
+                </ButtonsList>
               </Buttons>
             </Form>
             <Logo src="/logo-only.png" alt="logo" />
