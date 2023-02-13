@@ -2,10 +2,10 @@ import React, { useState, useRef } from 'react';
 import { Game } from './models';
 import "typeface-open-sans";
 import { ArrowDownward } from '@mui/icons-material';
-import { Tooltip, Switch, FormControlLabel } from '@mui/material';
+import { Tooltip, Switch, FormControlLabel, Pagination, Select, MenuItem } from '@mui/material';
 
 import styled from "styled-components"
-import { getSortLabel, DisplayMode, FallBackTo, SortOptions, getGameUserRating, getBggGameUrl, getGamePlayerCountStats } from './Utilities';
+import { getSortLabel, DisplayMode, FallBackTo, SortOptions, getGameUserRating, getBggGameUrl, getGamePlayerCountStats, getIsMobileView } from './Utilities';
 
 const GamesHeader = styled.div`
   display: inline-block;
@@ -28,6 +28,21 @@ const HeaderRow = styled(RowBase)`
   font-weight: bold;
   color: #fff;
   padding: 0 15px;
+`;
+
+const FooterRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  background-color: #eee;
+  z-index: 20;
+  height: 50px;
+  gap: 40px;
+  box-sizing: border-box;
+  padding: 0 10px;
 `;
 
 const GameHorizontally = styled(RowBase)`
@@ -256,6 +271,8 @@ interface GameRankerProps {
   showIndividualUserRatings: boolean,
   displayMode: DisplayMode,
   screenWidth: number,
+  gamesPerPage: number,
+  setGamesPerPage: (value: number) => void,
 }
 
 function GameRanker({
@@ -284,9 +301,12 @@ function GameRanker({
   showIndividualUserRatings,
   displayMode,
   screenWidth,
+  gamesPerPage,
+  setGamesPerPage,
 }: GameRankerProps) {
   const renderCount = useRef<number>(0);
   const [showTips, setShowTips] = useState<boolean>(false);
+  const [page, setPage] = useState<number>(1);
 
   const innerBar = (value: number, maxValue: number, rank: number, idealValue?: number | false) =>
     value > 0 &&
@@ -417,6 +437,9 @@ function GameRanker({
 
   renderCount.current++;
 
+  const startGame = ((page - 1) * gamesPerPage) + 1;
+  const endGame = Math.min(page * gamesPerPage, games.length);
+
   return (
     <>
       {displayMode === "horizontal" &&
@@ -474,55 +497,82 @@ function GameRanker({
           </Intro>
         </EmptyState>
       }
-      {games.map(g => {
-        return (
-          displayMode === "horizontal" ?
-            <GameHorizontally key={`game-horizontal-${g.gameId}`} style={{ minWidth: screenWidth }}>
-              <ImageAndNameHorizontal href={getBggGameUrl(g.gameId)} target="_balnk">
-                <ThumbnailContainer>
-                  <Thumbnail src={g.imageUrl} />
-                </ThumbnailContainer>
-                <GameName>{g.name}</GameName>
-              </ImageAndNameHorizontal>
+      {games.slice(startGame, endGame).map(g =>
+        displayMode === "horizontal" ?
+          <GameHorizontally key={`game-horizontal-${g.gameId}`} style={{ minWidth: screenWidth }}>
+            <ImageAndNameHorizontal href={getBggGameUrl(g.gameId)} target="_balnk">
+              <ThumbnailContainer>
+                <Thumbnail src={g.imageUrl} />
+              </ThumbnailContainer>
+              <GameName>{g.name}</GameName>
+            </ImageAndNameHorizontal>
 
-              {showGameId && <HorizontalCell>{toggleGameId(g.gameId)}</HorizontalCell>}
-              {showThreadSequence && <HorizontalCell>{g.threadSequence ? g.threadSequence : ""}</HorizontalCell>}
-              {showGeekListSequence && <HorizontalCell>{g.geekListSequence ? g.geekListSequence : ""
-              }</HorizontalCell>}
-              {showGrIndex && <HorizontalCell>{bar(g.grIndex ?? 0, 10, g.grIndexRank ?? 0)}</HorizontalCell>}
-              {showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
-                usernames.map(u => <HorizontalCell key={`userRating-${g.gameId}-${u}`}>{userRatingBar(u, g)}</HorizontalCell>) :
-                <HorizontalCell>{userRatingBar("", g)}</HorizontalCell>
-              )}
-              {showPlayerRating && <HorizontalCell>{bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}</HorizontalCell>}
-              {showGeekRating && <HorizontalCell>{bar(g.geekRating, 10, g.geekRatingRank)}</HorizontalCell>}
-              {showPlayerCount && playerCountArray.map(pc => <HorizontalCell key={`h-pc-${pc}`}>{playerCountBar(pc, g)}</HorizontalCell>)}
-              {showWeight && <HorizontalCell>{bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight)}</HorizontalCell>}
-              {showTime && <HorizontalCell>{timeBar(g.minPlayTime, g.maxPlayTime)}</HorizontalCell>}
-            </GameHorizontally> :
-            <GameVertically key={`game-vertical-${g.gameId}`} style={{ width: screenWidth }}>
-              <ImageAndNameVertical href={getBggGameUrl(g.gameId)} target="_balnk">
-                <ThumbnailContainer>
-                  <Thumbnail src={g.imageUrl} />
-                </ThumbnailContainer>
-                <GameName>{g.name}</GameName>
-              </ImageAndNameVertical>
-              {showGameId && verticalCell(getSortLabel("game"), toggleGameId(g.gameId))}
-              {showThreadSequence && showThreadSequence && verticalCell(getSortLabel("thread"), g.threadSequence)}
-              {showGeekListSequence && showGeekListSequence && verticalCell(getSortLabel("geek-list"), g.geekListSequence)}
-              {showGrIndex && verticalCell(getSortLabel("gr-index"), bar(g.grIndex ?? 0, 10, g.grIndexRank ?? 0))}
-              {showUserRating && showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
-                usernames.map(u => verticalCell(u, userRatingBar(u, g), g.gameId)) :
-                verticalCell(getSortLabel("user-rating"), userRatingBar("", g))
-              )}
-              {showPlayerRating && verticalCell(getSortLabel("player-rating"), bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank))}
-              {showGeekRating && verticalCell(getSortLabel("geek-rating"), bar(g.geekRating, 10, g.geekRatingRank))}
-              {showPlayerCount && playerCountArray.map(pc => verticalCell(`${pc}-Player Rating`, playerCountBar(pc, g), pc))}
-              {showWeight && verticalCell(getSortLabel("weight"), bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight))}
-              {showTime && verticalCell(getSortLabel("time"), timeBar(g.minPlayTime, g.maxPlayTime))}
-            </GameVertically>
-        );
-      })}
+            {showGameId && <HorizontalCell>{toggleGameId(g.gameId)}</HorizontalCell>}
+            {showThreadSequence && <HorizontalCell>{g.threadSequence ? g.threadSequence : ""}</HorizontalCell>}
+            {showGeekListSequence && <HorizontalCell>{g.geekListSequence ? g.geekListSequence : ""
+            }</HorizontalCell>}
+            {showGrIndex && <HorizontalCell>{bar(g.grIndex ?? 0, 10, g.grIndexRank ?? 0)}</HorizontalCell>}
+            {showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
+              usernames.map(u => <HorizontalCell key={`userRating-${g.gameId}-${u}`}>{userRatingBar(u, g)}</HorizontalCell>) :
+              <HorizontalCell>{userRatingBar("", g)}</HorizontalCell>
+            )}
+            {showPlayerRating && <HorizontalCell>{bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}</HorizontalCell>}
+            {showGeekRating && <HorizontalCell>{bar(g.geekRating, 10, g.geekRatingRank)}</HorizontalCell>}
+            {showPlayerCount && playerCountArray.map(pc => <HorizontalCell key={`h-pc-${pc}`}>{playerCountBar(pc, g)}</HorizontalCell>)}
+            {showWeight && <HorizontalCell>{bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight)}</HorizontalCell>}
+            {showTime && <HorizontalCell>{timeBar(g.minPlayTime, g.maxPlayTime)}</HorizontalCell>}
+          </GameHorizontally> :
+          <GameVertically key={`game-vertical-${g.gameId}`} style={{ width: screenWidth }}>
+            <ImageAndNameVertical href={getBggGameUrl(g.gameId)} target="_balnk">
+              <ThumbnailContainer>
+                <Thumbnail src={g.imageUrl} />
+              </ThumbnailContainer>
+              <GameName>{g.name}</GameName>
+            </ImageAndNameVertical>
+            {showGameId && verticalCell(getSortLabel("game"), toggleGameId(g.gameId))}
+            {showThreadSequence && showThreadSequence && verticalCell(getSortLabel("thread"), g.threadSequence)}
+            {showGeekListSequence && showGeekListSequence && verticalCell(getSortLabel("geek-list"), g.geekListSequence)}
+            {showGrIndex && verticalCell(getSortLabel("gr-index"), bar(g.grIndex ?? 0, 10, g.grIndexRank ?? 0))}
+            {showUserRating && showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
+              usernames.map(u => verticalCell(u, userRatingBar(u, g), g.gameId)) :
+              verticalCell(getSortLabel("user-rating"), userRatingBar("", g))
+            )}
+            {showPlayerRating && verticalCell(getSortLabel("player-rating"), bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank))}
+            {showGeekRating && verticalCell(getSortLabel("geek-rating"), bar(g.geekRating, 10, g.geekRatingRank))}
+            {showPlayerCount && playerCountArray.map(pc => verticalCell(`${pc}-Player Rating`, playerCountBar(pc, g), pc))}
+            {showWeight && verticalCell(getSortLabel("weight"), bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight))}
+            {showTime && verticalCell(getSortLabel("time"), timeBar(g.minPlayTime, g.maxPlayTime))}
+          </GameVertically>
+      )}
+      <FooterRow style={{ width: screenWidth }}>
+        <div style={{ width: !getIsMobileView(screenWidth) ? 130 : undefined, textAlign: "left" }}>
+          {!getIsMobileView(screenWidth) ?
+            <>{startGame} - {endGame} (of {games.length})</>
+            :
+            games.length
+          }
+        </div>
+        <Pagination
+          count={Math.trunc(games.length / gamesPerPage) + 1}
+          color="primary"
+          page={page}
+          onChange={(_, value) => setPage(value)}
+        />
+        {!getIsMobileView(screenWidth) &&
+          <div style={{ width: 130, textAlign: "right" }}>
+            <Select
+              variant='standard'
+              value={gamesPerPage.toString()}
+              onChange={event => setGamesPerPage(parseInt(event.target.value))}
+              size="small"
+              sx={{ mr: 1 }}
+            >
+              {["25", "50", "100", "200", "500", "1000"].map(x => <MenuItem key={`games-per-page-select-${x}`} value={x}>{x}</MenuItem>)}
+            </Select>
+            per page
+          </div>
+        }
+      </FooterRow>
     </>
   );
 }

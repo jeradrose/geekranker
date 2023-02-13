@@ -158,4 +158,6 @@ export const getGamePlayerCountStats = (count: number, game: Game): PlayerCountS
   game.playerCountStats.find(s => s.playerCount === count);
 
 export const getBggGameUrl = (gameId: number) =>
-  `https://www.boardgamegeek.com/boardgame/${gameId}`;  
+  `https://www.boardgamegeek.com/boardgame/${gameId}`;
+
+export const getIsMobileView = (screenWidth: number) => screenWidth < 600;

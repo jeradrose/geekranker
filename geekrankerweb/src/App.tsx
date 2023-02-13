@@ -8,7 +8,7 @@ import { TextField, Button, IconButton, Tabs, Tab, FormControl, Select, MenuItem
 import { createTheme, ThemeProvider } from '@mui/material';
 
 import { Game, PlayerCountStats, UserStats } from './models';
-import { getStringQueryParam, getQueryParam, QueryParams, SelectedTab, getBoolQueryParam, getNumberArrayQueryParam, getTypedStringQueryParam, getNumberQueryParam, defaultQueryValues, sortOptions, getSortLabel, DisplayMode, FallBackTo, BaseRating, SortOptions, getUsernamesFromString, getGameIdsFromString, getIdFromString, updateRanks, getGameUserRating, getBggGameUrl, getGamePlayerCountStats } from './Utilities';
+import { getStringQueryParam, getQueryParam, QueryParams, SelectedTab, getBoolQueryParam, getNumberArrayQueryParam, getTypedStringQueryParam, getNumberQueryParam, defaultQueryValues, sortOptions, getSortLabel, DisplayMode, FallBackTo, BaseRating, SortOptions, getUsernamesFromString, getGameIdsFromString, getIdFromString, updateRanks, getGameUserRating, getBggGameUrl, getGamePlayerCountStats, getIsMobileView } from './Utilities';
 import GameRanker from './GameRanker';
 import { getRankings } from './GrApi';
 
@@ -156,6 +156,11 @@ const SettingsContent = styled.div`
   flex-direction: column;
 `;
 
+const SettingsRow = styled.div`
+  display: flex;
+  font-weight: 400;
+`;
+
 const FilterLabel = styled.div`
   width: 100%;
   display: flex;
@@ -260,6 +265,7 @@ function App() {
 
   // UI options
   const [singleColumnView, setSingleColumnView] = useState<boolean>(false);
+  const [gamesPerPage, setGamesPerPage] = useState<number>(100);
 
   // Snackbar states
   const [openSnackbar, setOpenSnackbar] = useState<boolean>(false);
@@ -510,8 +516,7 @@ function App() {
     + getColumnWidth(200, showTime)
     ;
 
-  const enableSingleColumnSupport = screenWidth < 600;
-  const displayMode: DisplayMode = columnWidths + 35 > screenWidth && singleColumnView && enableSingleColumnSupport ? "vertical" : "horizontal";
+  const displayMode: DisplayMode = columnWidths + 35 > screenWidth && singleColumnView && getIsMobileView(screenWidth) ? "vertical" : "horizontal";
 
   const getApiData = async () => {
     if (!usernames.length && !gameIds.length && !threadId && !geekListId) {
@@ -721,8 +726,6 @@ function App() {
       }
       label={label} />
 
-  const showMobileTabs = screenWidth < 600;
-
   renderCount.current++;
 
   return (
@@ -732,7 +735,7 @@ function App() {
         <PageHeaderContainer style={{ width: screenWidth }}>
           <PageHeader>
             <Form>
-              {showMobileTabs ?
+              {getIsMobileView(screenWidth) ?
                 <FormControl variant="standard">
                   <Select value={tab} onChange={e => setTab(e.target.value as SelectedTab)}>
                     <MenuItem value="user">By Username</MenuItem>
@@ -832,6 +835,8 @@ function App() {
           idealWeight={idealWeight}
           includeIdealWeight={includeIdealWeight}
           playerCountArray={getPlayerCountArray()}
+          gamesPerPage={gamesPerPage}
+          setGamesPerPage={setGamesPerPage}
         />
       </ThemeProvider>
       <Snackbar
@@ -953,12 +958,26 @@ function App() {
                 </>
               }
             </SettingsContent>
-            {enableSingleColumnSupport &&
+            {getIsMobileView(screenWidth) &&
               <>
                 <SettingsHeader>
-                  Mobile Support
+                  UI
                 </SettingsHeader>
                 <SettingsContent>
+                  <SettingsRow>
+                    <Select
+                      variant='standard'
+                      fullWidth={false}
+                      value={gamesPerPage.toString()}
+                      onChange={event => setGamesPerPage(parseInt(event.target.value))}
+                      size="small"
+                      sx={{ mr: 1, mb: 1 }}
+                      label="Games per page"
+                    >
+                      {["25", "50", "100", "200", "500", "1000"].map(x => <MenuItem key={`games-per-page-select-${x}`} value={x}>{x}</MenuItem>)}
+                    </Select>
+                    games per page
+                  </SettingsRow>
                   {toggle(singleColumnView, setSingleColumnView, "Single column view")}
                 </SettingsContent>
               </>
