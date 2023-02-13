@@ -3,8 +3,8 @@ import styled, { createGlobalStyle } from "styled-components"
 
 import "typeface-open-sans";
 
-import { Clear, Close, Download, Info, Settings as SettingsIcon } from '@mui/icons-material';
-import { TextField, Button, IconButton, Tabs, Tab, FormControl, Select, MenuItem, Drawer, Slider, InputLabel, FormControlLabel, Switch, RadioGroup, Radio, Tooltip } from '@mui/material';
+import { Clear, Close, Download, Info, Link, Settings as SettingsIcon } from '@mui/icons-material';
+import { TextField, Button, IconButton, Tabs, Tab, FormControl, Select, MenuItem, Drawer, Slider, InputLabel, FormControlLabel, Switch, RadioGroup, Radio, Tooltip, Snackbar } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material';
 
 import { Game, PlayerCountStats, UserStats } from './models';
@@ -252,6 +252,10 @@ function App() {
 
   // UI options
   const [singleColumnView, setSingleColumnView] = useState<boolean>(false);
+
+  // Snackbar states
+  const [openSnackbar, setOpenSnackbar] = useState<boolean>(false);
+  const [snackbarMessage, setSnackbarMessage] = useState<string>("");
 
   const queryValues: { [key in QueryParams]: SelectedTab | string | number | string[] | boolean | undefined } = {
     [QueryParams.SelectedTab]: tab,
@@ -595,6 +599,12 @@ function App() {
     link.click();
   }
 
+  const copyUrlToClipboard = () => {
+    setSnackbarMessage("Link copied to clipboard");
+    setOpenSnackbar(true);
+    navigator.clipboard.writeText(window.location.toString());
+  }
+
   useMemo(() => {
     updateAllCalculatedScores();
     updateAllRanks();
@@ -762,6 +772,7 @@ function App() {
                 </Button>
                 <SettingsIcon onClick={() => setShowDrawer(true)} style={{ color: '#348CE9', cursor: 'pointer' }} />
                 <Download onClick={() => downloadCsv()} style={{ color: '#348CE9', cursor: 'pointer' }} />
+                <Link onClick={() => copyUrlToClipboard()} style={{ color: '#348CE9', cursor: 'pointer' }} />
               </Buttons>
             </Form>
             <Logo src="/logo-only.png" alt="logo" />
@@ -795,6 +806,13 @@ function App() {
           playerCountArray={getPlayerCountArray()}
         />
       </ThemeProvider>
+      <Snackbar
+        message={snackbarMessage}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        autoHideDuration={2000}
+        onClose={() => setOpenSnackbar(false)}
+        open={openSnackbar}
+      />
       <React.Fragment>
         <Drawer
           anchor='right'
