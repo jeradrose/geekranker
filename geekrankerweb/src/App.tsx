@@ -3,12 +3,12 @@ import styled, { createGlobalStyle } from "styled-components"
 
 import "typeface-open-sans";
 
-import { Clear, Close, Info, Settings as SettingsIcon } from '@mui/icons-material';
+import { Clear, Close, Download, Info, Settings as SettingsIcon } from '@mui/icons-material';
 import { TextField, Button, IconButton, Tabs, Tab, FormControl, Select, MenuItem, Drawer, Slider, InputLabel, FormControlLabel, Switch, RadioGroup, Radio, Tooltip } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material';
 
 import { Game, PlayerCountStats, UserStats } from './models';
-import { getStringQueryParam, getQueryParam, QueryParams, SelectedTab, getBoolQueryParam, getNumberArrayQueryParam, getTypedStringQueryParam, getNumberQueryParam, defaultQueryValues, sortOptions, getSortLabel, DisplayMode, FallBackTo, BaseRating, SortOptions, getUsernamesFromString, getGameIdsFromString, getIdFromString, updateRanks, getGameUserRating } from './Utilities';
+import { getStringQueryParam, getQueryParam, QueryParams, SelectedTab, getBoolQueryParam, getNumberArrayQueryParam, getTypedStringQueryParam, getNumberQueryParam, defaultQueryValues, sortOptions, getSortLabel, DisplayMode, FallBackTo, BaseRating, SortOptions, getUsernamesFromString, getGameIdsFromString, getIdFromString, updateRanks, getGameUserRating, getBggGameUrl, getGamePlayerCountStats } from './Utilities';
 import GameRanker from './GameRanker';
 import { getRankings } from './GrApi';
 
@@ -112,11 +112,7 @@ const Buttons = styled.div`
   display: flex;
   align-items: center;
   gap: 20px;
-`;
-
-const FilterButton = styled(Button)`
-  margin-top: 10px;
-  width: 160px;
+  padding: 10px 0;
 `;
 
 const Logo = styled.img`
@@ -288,6 +284,14 @@ function App() {
     [QueryParams.BaseRating]: baseRating,
     [QueryParams.FallBackTo]: fallBackTo,
   }
+
+  const getShowGameId = () => (tab === 'advanced' && showGameId);
+  const getShowThreadSequence = () => ((tab === 'advanced' && showThreadSequence) || tab === 'thread');
+  const getShowGeekListSequence = () => ((tab === 'advanced' && showGeekListSequence) || tab === 'geeklist');
+  const getShowGrIndex = () => (tab !== 'advanced' || showGrIndex);
+  const getShowUserRating = () => ((tab === 'advanced' && showUserRating) || tab === 'user');
+  const getShowPlayerRating = () => ((tab === 'advanced' && showPlayerRating) || tab !== 'user');
+  const getShowGeekRating = () => (tab === 'advanced' && showGeekRating);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -529,6 +533,68 @@ function App() {
     });
   }
 
+  const getPlayerCountArray = () => Array.from({ length: playerCountRange[1] - playerCountRange[0] + 1 }, (v, k) => k + playerCountRange[0]);
+
+  const getCsvFromGames = (): string => {
+    const rows: (string | null)[][] = [];
+
+    const userRatingsHeader =
+      showIndividualUserRatings || usernames.length < 2 ?
+        [...usernames.map(u => u.toUpperCase())] : [getSortLabel("user-rating")]
+
+    rows.push([
+      getSortLabel("game"),
+      "BGG Link",
+      (getShowGameId() && getSortLabel("id")) || null,
+      (getShowThreadSequence() && getSortLabel("thread")) || null,
+      (getShowGeekListSequence() && getSortLabel("geek-list")) || null,
+      (getShowGrIndex() && getSortLabel("gr-index")) || null,
+      ...((getShowUserRating() && userRatingsHeader) || [null]),
+      (getShowPlayerRating() && getSortLabel("player-rating")) || null,
+      (getShowGeekRating() && getSortLabel("geek-rating")) || null,
+      ...(showPlayerCount && getPlayerCountArray().map(pc => `${pc}-Player`) || [null]),
+      (showWeight && getSortLabel("weight")) || null,
+      (showTime && "Min Playtime") || null,
+      (showTime && "Min Playtime") || null,
+    ].filter(v => v));
+
+    getFilteredGames().map(g => rows.push([
+      `"${g.name.toString()}"`,
+      getBggGameUrl(g.gameId),
+      (getShowGameId() && g.gameId.toString()) || null,
+      (getShowThreadSequence() && g.threadSequence.toString()) || null,
+      (getShowGeekListSequence() && g.geekListSequence.toString()) || null,
+      (getShowGrIndex() && g.grIndex.toString()) || null,
+      ...(getShowUserRating() &&
+        (showIndividualUserRatings || usernames.length < 2 ?
+          usernames.map(u => getGameUserRating(u, g, fallBackTo, true)[0].toString()) :
+          g.avgUserRating.toString()) || [null]),
+      (getShowPlayerRating() && g.avgPlayerRating.toString()) || null,
+      (getShowGeekRating() && g.geekRating.toString()) || null,
+      ...((showPlayerCount &&
+        getPlayerCountArray().map(pc => getGamePlayerCountStats(pc, g)?.score.toString() || " "))
+        || [null]),
+      (showWeight && g.avgWeight.toString()) || null,
+      (showTime && g.minPlayTime.toString()) || null,
+      (showTime && g.maxPlayTime.toString()) || null,
+    ].filter(v => v)));
+
+    const csv = rows.map(r => r.join(',')).join('\n');
+
+    return csv;
+  }
+
+  const downloadCsv = () => {
+    const blob = new Blob([getCsvFromGames()], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = `GeekRankerGames.csv`
+    document.body.appendChild(link);
+    link.click();
+  }
+
   useMemo(() => {
     updateAllCalculatedScores();
     updateAllRanks();
@@ -685,23 +751,23 @@ function App() {
                 true,
               )}
               <Buttons>
-                <FilterButton
+                <Button
                   size='small'
                   variant='contained'
                   onClick={() => setTextFieldStateValues()}
                   disabled={loadingGames}
+                  sx={{ width: 160 }}
                 >
                   {loadingGames ? "Loading Games..." : "Load Games"}
-                </FilterButton>
+                </Button>
                 <SettingsIcon onClick={() => setShowDrawer(true)} style={{ color: '#348CE9', cursor: 'pointer' }} />
-
+                <Download onClick={() => downloadCsv()} style={{ color: '#348CE9', cursor: 'pointer' }} />
               </Buttons>
             </Form>
             <Logo src="/logo-only.png" alt="logo" />
           </PageHeader>
         </PageHeaderContainer>
         <GameRanker
-          tab={tab}
           usernames={usernames}
           gameIds={gameIds}
           setGameIds={setGameIds}
@@ -713,20 +779,20 @@ function App() {
           idealTime={idealTime}
           sort={sort}
           setSort={setSort}
-          showGameId={showGameId}
-          showThreadSequence={showThreadSequence}
-          showGeekListSequence={showGeekListSequence}
-          showGrIndex={showGrIndex}
-          showUserRating={showUserRating}
-          showPlayerRating={showPlayerRating}
-          showGeekRating={showGeekRating}
+          showGameId={getShowGameId()}
+          showThreadSequence={getShowThreadSequence()}
+          showGeekListSequence={getShowGeekListSequence()}
+          showGrIndex={getShowGrIndex()}
+          showUserRating={getShowUserRating()}
+          showPlayerRating={getShowPlayerRating()}
+          showGeekRating={getShowGeekRating()}
           showPlayerCount={showPlayerCount}
           showWeight={showWeight}
           showTime={showTime}
           showIndividualUserRatings={showIndividualUserRatings}
           idealWeight={idealWeight}
           includeIdealWeight={includeIdealWeight}
-          playerCountRange={playerCountRange}
+          playerCountArray={getPlayerCountArray()}
         />
       </ThemeProvider>
       <React.Fragment>

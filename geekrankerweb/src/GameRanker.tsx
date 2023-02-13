@@ -5,7 +5,7 @@ import { ArrowDownward } from '@mui/icons-material';
 import { Tooltip, Switch, FormControlLabel } from '@mui/material';
 
 import styled from "styled-components"
-import { SelectedTab, getSortLabel, DisplayMode, FallBackTo, SortOptions, getGameUserRating } from './Utilities';
+import { getSortLabel, DisplayMode, FallBackTo, SortOptions, getGameUserRating, getBggGameUrl, getGamePlayerCountStats } from './Utilities';
 
 const GamesHeader = styled.div`
   display: inline-block;
@@ -231,7 +231,6 @@ const IntroTipLink = styled(IntroTip)`
 `
 
 interface GameRankerProps {
-  tab: SelectedTab,
   usernames: string[],
   gameIds: number[],
   setGameIds: (gameId: number[]) => void,
@@ -241,7 +240,7 @@ interface GameRankerProps {
   idealTime: number,
   includeIdealWeight: boolean,
   idealWeight: number,
-  playerCountRange: number[],
+  playerCountArray: number[],
   sort: string,
   setSort: (value: string) => void,
   showGameId: boolean,
@@ -260,7 +259,6 @@ interface GameRankerProps {
 }
 
 function GameRanker({
-  tab,
   usernames,
   gameIds,
   setGameIds,
@@ -270,7 +268,7 @@ function GameRanker({
   idealTime,
   includeIdealWeight,
   idealWeight,
-  playerCountRange,
+  playerCountArray,
   sort,
   setSort,
   showGameId,
@@ -289,8 +287,6 @@ function GameRanker({
 }: GameRankerProps) {
   const renderCount = useRef<number>(0);
   const [showTips, setShowTips] = useState<boolean>(false);
-
-  const playerCountArray = Array.from({ length: playerCountRange[1] - playerCountRange[0] + 1 }, (v, k) => k + playerCountRange[0]);
 
   const innerBar = (value: number, maxValue: number, rank: number, idealValue?: number | false) =>
     value > 0 &&
@@ -372,10 +368,9 @@ function GameRanker({
     <BarHeader key={`header-${thisSort}`} onClick={() => setSort(thisSort)}>{(label || getSortLabel(thisSort as SortOptions))}{sortArrow(thisSort)}</BarHeader>;
 
   const playerCountBar = (count: number, game: Game) => {
-    const filteredStats = game.playerCountStats.filter(s => s.playerCount === count);
-
-    if (filteredStats.length === 1) {
-      return bar(filteredStats[0].score, 10, filteredStats[0].rank);
+    const pcStats = getGamePlayerCountStats(count, game);
+    if (pcStats) {
+      return bar(pcStats.score, 10, pcStats.rank);
     } else {
       return displayMode === "horizontal" ? <BarContainerHorizontal /> : <BarContainerVertical />;
     }
@@ -422,14 +417,6 @@ function GameRanker({
 
   renderCount.current++;
 
-  const getShowGameId = () => (tab === 'advanced' && showGameId);
-  const getShowThreadSequence = () => ((tab === 'advanced' && showThreadSequence) || tab === 'thread');
-  const getShowGeekListSequence = () => ((tab === 'advanced' && showGeekListSequence) || tab === 'geeklist');
-  const getShowGrIndex = () => (tab !== 'advanced' || showGrIndex);
-  const getShowUserRating = () => ((tab === 'advanced' && showUserRating) || tab === 'user');
-  const getShowPlayerRating = () => ((tab === 'advanced' && showPlayerRating) || tab !== 'user');
-  const getShowGeekRating = () => (tab === 'advanced' && showGeekRating);
-
   return (
     <>
       {displayMode === "horizontal" &&
@@ -440,13 +427,13 @@ function GameRanker({
                 <ImageAndNameHeader onClick={() => setSort("game")}>
                   Game{sortArrow("game")}
                 </ImageAndNameHeader>
-                {getShowGameId() && barHeader("id")}
-                {getShowThreadSequence() && barHeader("thread")}
-                {getShowGeekListSequence() && barHeader("geek-list")}
-                {getShowGrIndex() && barHeader("gr-index")}
-                {getShowUserRating() && (showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeaderDynamic(`user-${u}`, u.toUpperCase())) : barHeader(`user-rating`))}
-                {getShowPlayerRating() && barHeader("player-rating")}
-                {getShowGeekRating() && barHeader("geek-rating")}
+                {showGameId && barHeader("id")}
+                {showThreadSequence && barHeader("thread")}
+                {showGeekListSequence && barHeader("geek-list")}
+                {showGrIndex && barHeader("gr-index")}
+                {showUserRating && (showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeaderDynamic(`user-${u}`, u.toUpperCase())) : barHeader(`user-rating`))}
+                {showPlayerRating && barHeader("player-rating")}
+                {showGeekRating && barHeader("geek-rating")}
                 {showPlayerCount && playerCountArray.map(pc => barHeaderDynamic(`playercount-${pc}`, `${pc}-Player`))}
                 {showWeight && barHeader("weight")}
                 {showTime && barHeader("time")}
@@ -491,45 +478,45 @@ function GameRanker({
         return (
           displayMode === "horizontal" ?
             <GameHorizontally key={`game-horizontal-${g.gameId}`} style={{ minWidth: screenWidth }}>
-              <ImageAndNameHorizontal href={`https://www.boardgamegeek.com/boardgame/${g.gameId}`} target="_balnk">
+              <ImageAndNameHorizontal href={getBggGameUrl(g.gameId)} target="_balnk">
                 <ThumbnailContainer>
                   <Thumbnail src={g.imageUrl} />
                 </ThumbnailContainer>
                 <GameName>{g.name}</GameName>
               </ImageAndNameHorizontal>
 
-              {getShowGameId() && <HorizontalCell>{toggleGameId(g.gameId)}</HorizontalCell>}
-              {getShowThreadSequence() && <HorizontalCell>{g.threadSequence ? g.threadSequence : ""}</HorizontalCell>}
-              {getShowGeekListSequence() && <HorizontalCell>{g.geekListSequence ? g.geekListSequence : ""
+              {showGameId && <HorizontalCell>{toggleGameId(g.gameId)}</HorizontalCell>}
+              {showThreadSequence && <HorizontalCell>{g.threadSequence ? g.threadSequence : ""}</HorizontalCell>}
+              {showGeekListSequence && <HorizontalCell>{g.geekListSequence ? g.geekListSequence : ""
               }</HorizontalCell>}
-              {getShowGrIndex() && <HorizontalCell>{bar(g.grIndex ?? 0, 10, g.grIndexRank ?? 0)}</HorizontalCell>}
-              {getShowUserRating() && (showIndividualUserRatings || usernames.length < 2 ?
+              {showGrIndex && <HorizontalCell>{bar(g.grIndex ?? 0, 10, g.grIndexRank ?? 0)}</HorizontalCell>}
+              {showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
                 usernames.map(u => <HorizontalCell key={`userRating-${g.gameId}-${u}`}>{userRatingBar(u, g)}</HorizontalCell>) :
                 <HorizontalCell>{userRatingBar("", g)}</HorizontalCell>
               )}
-              {getShowPlayerRating() && <HorizontalCell>{bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}</HorizontalCell>}
-              {getShowGeekRating() && <HorizontalCell>{bar(g.geekRating, 10, g.geekRatingRank)}</HorizontalCell>}
+              {showPlayerRating && <HorizontalCell>{bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}</HorizontalCell>}
+              {showGeekRating && <HorizontalCell>{bar(g.geekRating, 10, g.geekRatingRank)}</HorizontalCell>}
               {showPlayerCount && playerCountArray.map(pc => <HorizontalCell key={`h-pc-${pc}`}>{playerCountBar(pc, g)}</HorizontalCell>)}
               {showWeight && <HorizontalCell>{bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight)}</HorizontalCell>}
               {showTime && <HorizontalCell>{timeBar(g.minPlayTime, g.maxPlayTime)}</HorizontalCell>}
             </GameHorizontally> :
             <GameVertically key={`game-vertical-${g.gameId}`} style={{ width: screenWidth }}>
-              <ImageAndNameVertical href={`https://www.boardgamegeek.com/boardgame/${g.gameId}`} target="_balnk">
+              <ImageAndNameVertical href={getBggGameUrl(g.gameId)} target="_balnk">
                 <ThumbnailContainer>
                   <Thumbnail src={g.imageUrl} />
                 </ThumbnailContainer>
                 <GameName>{g.name}</GameName>
               </ImageAndNameVertical>
-              {getShowGameId() && verticalCell(getSortLabel("game"), toggleGameId(g.gameId))}
-              {getShowThreadSequence() && showThreadSequence && verticalCell(getSortLabel("thread"), g.threadSequence)}
-              {getShowGeekListSequence() && showGeekListSequence && verticalCell(getSortLabel("geek-list"), g.geekListSequence)}
-              {getShowGrIndex() && verticalCell(getSortLabel("gr-index"), bar(g.grIndex ?? 0, 10, g.grIndexRank ?? 0))}
-              {getShowUserRating() && showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
+              {showGameId && verticalCell(getSortLabel("game"), toggleGameId(g.gameId))}
+              {showThreadSequence && showThreadSequence && verticalCell(getSortLabel("thread"), g.threadSequence)}
+              {showGeekListSequence && showGeekListSequence && verticalCell(getSortLabel("geek-list"), g.geekListSequence)}
+              {showGrIndex && verticalCell(getSortLabel("gr-index"), bar(g.grIndex ?? 0, 10, g.grIndexRank ?? 0))}
+              {showUserRating && showUserRating && (showIndividualUserRatings || usernames.length < 2 ?
                 usernames.map(u => verticalCell(u, userRatingBar(u, g), g.gameId)) :
                 verticalCell(getSortLabel("user-rating"), userRatingBar("", g))
               )}
-              {getShowPlayerRating() && verticalCell(getSortLabel("player-rating"), bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank))}
-              {getShowGeekRating() && verticalCell(getSortLabel("geek-rating"), bar(g.geekRating, 10, g.geekRatingRank))}
+              {showPlayerRating && verticalCell(getSortLabel("player-rating"), bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank))}
+              {showGeekRating && verticalCell(getSortLabel("geek-rating"), bar(g.geekRating, 10, g.geekRatingRank))}
               {showPlayerCount && playerCountArray.map(pc => verticalCell(`${pc}-Player Rating`, playerCountBar(pc, g), pc))}
               {showWeight && verticalCell(getSortLabel("weight"), bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight))}
               {showTime && verticalCell(getSortLabel("time"), timeBar(g.minPlayTime, g.maxPlayTime))}

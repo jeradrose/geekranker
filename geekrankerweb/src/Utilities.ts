@@ -1,4 +1,4 @@
-import { Game } from "./models";
+import { Game, PlayerCountStats } from "./models";
 
 export type SelectedTab = "user" | "game" | "thread" | "geeklist" | "advanced";
 
@@ -153,3 +153,9 @@ export const getGameUserRating = (username: string, game: Game, fallBackTo: Fall
 
   return [(hasUserRating && filteredPlayerRating[0].rating) || (fallBackTo === "geek-rating" ? game.geekRating : game.avgPlayerRating) - (unratedLast ? 10 : 0), hasUserRating];
 }
+
+export const getGamePlayerCountStats = (count: number, game: Game): PlayerCountStats | undefined =>
+  game.playerCountStats.find(s => s.playerCount === count);
+
+export const getBggGameUrl = (gameId: number) =>
+  `https://www.boardgamegeek.com/boardgame/${gameId}`;  
