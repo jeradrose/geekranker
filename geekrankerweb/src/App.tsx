@@ -600,9 +600,16 @@ function App() {
   }
 
   const copyUrlToClipboard = () => {
-    setSnackbarMessage("Link copied to clipboard");
+    setSnackbarMessage("Link to your Geek Ranker view copied to clipboard");
     setOpenSnackbar(true);
     navigator.clipboard.writeText(window.location.toString());
+  }
+
+  const copyThingLinkListToClipboard = () => {
+    setSnackbarMessage("BGG Thing links copied to clipboard")
+    setOpenSnackbar(true);
+    const bggThingLinks = getFilteredGames().map(g => `[thing=${g.gameId}]${g.name}[/thing]`).join('\n');
+    navigator.clipboard.writeText(bggThingLinks);
   }
 
   useMemo(() => {
@@ -770,9 +777,18 @@ function App() {
                 >
                   {loadingGames ? "Loading Games..." : "Load Games"}
                 </Button>
-                <SettingsIcon onClick={() => setShowDrawer(true)} style={{ color: '#348CE9', cursor: 'pointer' }} />
-                <Download onClick={() => downloadCsv()} style={{ color: '#348CE9', cursor: 'pointer' }} />
-                <Link onClick={() => copyUrlToClipboard()} style={{ color: '#348CE9', cursor: 'pointer' }} />
+                <Tooltip title="Change column visibility, game filters, scoring options, and other settings">
+                  <SettingsIcon onClick={() => setShowDrawer(true)} style={{ color: '#348CE9', cursor: 'pointer' }} />
+                </Tooltip>
+                <Tooltip title="Download a CSV of the current view">
+                  <Download onClick={() => downloadCsv()} style={{ color: '#348CE9', cursor: 'pointer' }} />
+                </Tooltip>
+                <Tooltip title="Copy a link to this view to share with others">
+                  <Link onClick={() => copyUrlToClipboard()} style={{ color: '#348CE9', cursor: 'pointer' }} />
+                </Tooltip>
+                <Tooltip title="Copy a list of thing links to the games below to share on BGG forums">
+                  <pre onClick={() => copyThingLinkListToClipboard()} style={{ color: '#348CE9', cursor: 'pointer' }} >[thing]</pre>
+                </Tooltip>
               </Buttons>
             </Form>
             <Logo src="/logo-only.png" alt="logo" />
@@ -809,7 +825,7 @@ function App() {
       <Snackbar
         message={snackbarMessage}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
-        autoHideDuration={2000}
+        autoHideDuration={3000}
         onClose={() => setOpenSnackbar(false)}
         open={openSnackbar}
       />
