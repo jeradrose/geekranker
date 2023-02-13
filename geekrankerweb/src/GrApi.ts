@@ -29,9 +29,11 @@ export const getRankings = async (
       response.threadTitle = thread.subject;
       const regexp = /boardgamegeek\.com\/boardgame\/([0-9]*)/g;
       threadGameIds.push(...new Set(
-        [...thread.articles[0].article.flatMap(a =>
-          [...a.body[0].matchAll(regexp)].map(m => parseInt(m[1]))
-        )]
+        ...new Set([
+          [...thread.articles[0].article.flatMap(a =>
+            [...a.body[0].matchAll(regexp)].map(m => parseInt(m[1]))
+          )]
+        ])
       ));
     }
   }
@@ -44,9 +46,11 @@ export const getRankings = async (
       response.geekListTitle = geekList.title;
 
       geekListGameIds.push(
-        ...geekList.item
-          .filter(i => i.$.objecttype === "thing" && i.$.subtype === "boardgame")
-          .map(i => parseInt(i.$.objectid))
+        ...new Set([
+          ...geekList.item
+            .filter(i => i.$.objecttype === "thing" && i.$.subtype === "boardgame")
+            .map(i => parseInt(i.$.objectid))
+        ])
       );
     }
   }

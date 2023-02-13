@@ -498,7 +498,7 @@ function GameRanker({
           </Intro>
         </EmptyState>
       }
-      {games.slice(startGame, endGame).map(g =>
+      {games.slice(startGame - 1, endGame).map(g =>
         displayMode === "horizontal" ?
           <GameHorizontally key={`game-horizontal-${g.gameId}`} style={{ minWidth: screenWidth }}>
             <ImageAndNameHorizontal href={getBggGameUrl(g.gameId)} target="_balnk">
@@ -558,6 +558,7 @@ function GameRanker({
           color="primary"
           page={page}
           onChange={(_, value) => setPage(value)}
+          size="small"
         />
         {!getIsMobileView(screenWidth) &&
           <div style={{ width: 130, textAlign: "right" }}>
