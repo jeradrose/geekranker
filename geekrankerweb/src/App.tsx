@@ -353,6 +353,8 @@ function App() {
       ) &&
       (
         (gameIdFilter === "all") ||
+        (tab === 'user') ||
+        (tab === 'thread') ||
         (gameIdFilter === "hide-selected" && gameIds.indexOf(g.gameId) === -1) ||
         (gameIdFilter === "only-selected" && gameIds.indexOf(g.gameId) > -1)
       )
