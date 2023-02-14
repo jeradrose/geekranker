@@ -25,7 +25,6 @@ export interface Game {
   isExpansion: boolean;
   threadSequence: number;
   geekListSequence: number;
-  cacheDate: Date;
 }
 
 export interface PlayerCountStats {
@@ -48,5 +47,12 @@ export interface UserStats {
   rank: number | undefined;
   isOwned: boolean;
   isWishlisted: boolean;
-  cacheDate: Date | undefined;
+  cacheDate: Date;
+  accessDate: Date;
+}
+
+export interface GameExpiration {
+  gameId: number;
+  cacheDate: Date;
+  accessDate: Date;
 }

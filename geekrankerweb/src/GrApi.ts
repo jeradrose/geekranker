@@ -1,7 +1,7 @@
 import { getBggGames, getBggCollection, getBggThread, getBggGeekList } from "./BggApi";
 import { BggGame } from "./BggApiGames";
 import { BggCollection } from "./BggApiCollection";
-import { Game, GetRankingsResponse, PlayerCountStats, UserStats } from "./models";
+import { Game, GameExpiration, GetRankingsResponse, PlayerCountStats, UserStats } from "./models";
 
 export const getRankings = async (
   usernames: string[],
@@ -17,7 +17,7 @@ export const getRankings = async (
 
   usernames = [...new Set(usernames)].sort();
 
-  const stats = await getUsers(usernames);
+  const stats = await getUsers(usernames, getGameExpirations());
 
   const userGameIds: number[] = stats.map(s => s.gameId);
 
@@ -28,13 +28,13 @@ export const getRankings = async (
     if (thread) {
       response.threadTitle = thread.subject;
       const regexp = /boardgamegeek\.com\/boardgame\/([0-9]*)/g;
-      threadGameIds.push(...new Set(
-        ...new Set([
+      threadGameIds.push(
+        ...new Set(
           [...thread.articles[0].article.flatMap(a =>
             [...a.body[0].matchAll(regexp)].map(m => parseInt(m[1]))
           )]
-        ])
-      ));
+        )
+      );
     }
   }
 
@@ -75,6 +75,9 @@ export const getRankings = async (
   return response;
 }
 
+const getGameExpirations = (): GameExpiration[] =>
+  JSON.parse(localStorage.getItem('game-expirations') || '[]');
+
 export const getGames = async (gameIds: number[]): Promise<Game[]> => {
   const games: Game[] = gameIds
     .map(id => localStorage.getItem(`game-${id}`))
@@ -84,25 +87,83 @@ export const getGames = async (gameIds: number[]): Promise<Game[]> => {
   const missingGameIds = gameIds.filter(id => !games.find(g => g.gameId === id));
 
   if (missingGameIds.length) {
-    const bggGames = await getBggGames(missingGameIds);
+    const gamesPerPage = 250;
+    const totalPages = Math.trunc(missingGameIds.length / gamesPerPage) + 1;
 
-    const newGames = bggGames.map(bggGameToGrGame);
+    const gameExpirations = getGameExpirations();
 
-    newGames.map(g => localStorage.setItem(`game-${g.gameId}`, JSON.stringify(g)));
+    for (let page = 0; page < totalPages; page++) {
+      const startGame = (page * gamesPerPage);
+      const endGame = Math.min(((page + 1) * gamesPerPage), missingGameIds.length);
+      const gameIdsToLoad = missingGameIds.slice(startGame, endGame);
 
-    games.push(...newGames);
+      const bggGames = await getBggGames(gameIdsToLoad);
+
+      const newGames = bggGames.map(bggGameToGrGame);
+
+      newGames.map(g => cacheGame(g, gameExpirations));
+
+      games.push(...newGames);
+    }
+
+    setLocalStorageSafely('game-expirations', gameExpirations, gameExpirations);
   }
 
   return games;
 }
 
-export const getUsers = async (usernames: string[]): Promise<UserStats[]> => {
-  const userStats: UserStats[] = usernames
-    .map(u => localStorage.getItem(`userstats-${u}`))
-    .filter((s): s is string => Boolean(s))
-    .map(s => JSON.parse(s));
+const setLocalStorageSafely = (key: string, object: any, gameExpirations: GameExpiration[]) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(object));
+  } catch {
+    const oldestGames = gameExpirations
+      .sort((a, b) =>
+        new Date(a.accessDate > a.cacheDate ? a.cacheDate : a.accessDate).getTime() -
+        new Date(b.accessDate > b.cacheDate ? b.cacheDate : b.accessDate).getTime())
+      .slice(0, 100)
+      .map(g => g.gameId);
 
-  const missingUsernames = usernames.filter(u => !userStats.find(us => us.username === u));
+    oldestGames.map(id => {
+      localStorage.removeItem(`game-${id}`);
+
+      const gameExpiration = gameExpirations.find(ge => ge.gameId === id);
+      const index = gameExpiration && gameExpirations.indexOf(gameExpiration);
+      if (index && index > -1) {
+        gameExpirations.splice(index, 1);
+      }
+    });
+    setLocalStorageSafely(key, object, gameExpirations);
+  }
+}
+
+const cacheGame = (game: Game, gameExpirations: GameExpiration[]) => {
+  let gameExpiration = gameExpirations.find(ge => ge.gameId === game.gameId);
+  if (!gameExpiration) {
+    gameExpiration = {
+      gameId: game.gameId,
+      accessDate: new Date(),
+      cacheDate: new Date(),
+    };
+
+    gameExpirations.push(gameExpiration);
+  }
+  setLocalStorageSafely(`game-${game.gameId}`, game, gameExpirations);
+}
+
+const getDateHasExpired = (cacheDate: Date): boolean => {
+  const now = new Date();
+  const cacheDateDate = new Date(cacheDate);
+  const expirationDate = new Date(cacheDateDate.getTime() + 86400000);
+  return now.getTime() - expirationDate.getTime() > 0;
+}
+
+export const getUsers = async (usernames: string[], gameExpirations: GameExpiration[]): Promise<UserStats[]> => {
+  const userStats: UserStats[] = usernames
+    .map(u => localStorage.getItem(`user-${u}`))
+    .filter((s): s is string => Boolean(s))
+    .flatMap(s => [...JSON.parse(s)]);
+
+  const missingUsernames = usernames.filter(u => !userStats.find(us => us.username === u && !getDateHasExpired(us.cacheDate)));
 
   if (missingUsernames.length) {
     const newUserStats = (await Promise.all(
@@ -111,7 +172,7 @@ export const getUsers = async (usernames: string[]): Promise<UserStats[]> => {
       )
     )).flat();
 
-    newUserStats.map(us => localStorage.setItem(`user-${us.username}`, JSON.stringify(us)));
+    missingUsernames.map(u => setLocalStorageSafely(`user-${u}`, newUserStats.filter(us => us.username === u), gameExpirations))
 
     userStats.push(...newUserStats);
   }
@@ -169,7 +230,6 @@ const bggGameToGrGame = (bggGame: BggGame): Game => {
     userStats: [],
     threadSequence: 0,
     geekListSequence: 0,
-    cacheDate: new Date(),
   };
 
   return game;
@@ -185,6 +245,7 @@ const bggCollectionToUserStats = (bggCollection: BggCollection, username: string
       rating: g.stats[0].rating[0].$.value === "N/A" ? undefined : parseFloat(g.stats[0].rating[0].$.value),
       rank: undefined,
       cacheDate: new Date(),
+      accessDate: new Date(),
     };
 
     return userStats;

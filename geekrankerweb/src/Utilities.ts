@@ -161,3 +161,5 @@ export const getBggGameUrl = (gameId: number) =>
   `https://www.boardgamegeek.com/boardgame/${gameId}`;
 
 export const getIsMobileView = (screenWidth: number) => screenWidth < 600;
+
+export const getShowCondensedFooter = (screenWidth: number) => screenWidth < 800;
