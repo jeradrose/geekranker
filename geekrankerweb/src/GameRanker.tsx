@@ -5,7 +5,7 @@ import { ArrowDownward } from '@mui/icons-material';
 import { Tooltip, Switch, FormControlLabel, Pagination, Select, MenuItem } from '@mui/material';
 
 import styled from "styled-components"
-import { getSortLabel, DisplayMode, FallBackTo, SortOptions, getGameUserRating, getBggGameUrl, getGamePlayerCountStats, getIsMobileView } from './Utilities';
+import { getSortLabel, DisplayMode, FallBackTo, SortOptions, getGameUserRating, getBggGameUrl, getGamePlayerCountStats, getShowCondensedFooter } from './Utilities';
 
 const GamesHeader = styled.div`
   display: inline-block;
@@ -546,11 +546,11 @@ function GameRanker({
           </GameVertically>
       )}
       <FooterRow style={{ width: screenWidth }}>
-        <div style={{ width: !getIsMobileView(screenWidth) ? 130 : undefined, textAlign: "left" }}>
-          {!getIsMobileView(screenWidth) ?
+        <div style={{ width: !getShowCondensedFooter(screenWidth) ? 200 : undefined, textAlign: "left" }}>
+          {!getShowCondensedFooter(screenWidth) ?
             <>{startGame} - {endGame} (of {games.length})</>
             :
-            games.length
+            <>{games.length} games</>
           }
         </div>
         <Pagination
@@ -560,8 +560,8 @@ function GameRanker({
           onChange={(_, value) => setPage(value)}
           size="small"
         />
-        {!getIsMobileView(screenWidth) &&
-          <div style={{ width: 130, textAlign: "right" }}>
+        {!getShowCondensedFooter(screenWidth) &&
+          <div style={{ width: 200, textAlign: "right" }}>
             <Select
               variant='standard'
               value={gamesPerPage.toString()}
