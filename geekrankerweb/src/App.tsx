@@ -41,6 +41,7 @@ const GlobalStyle = createGlobalStyle`
     padding: 0;
     background-color: #eee;
     display: inline-flex;
+    margin-bottom: 50px;
   }
 `;
 
@@ -266,6 +267,7 @@ function App() {
   // UI options
   const [singleColumnView, setSingleColumnView] = useState<boolean>(false);
   const [gamesPerPage, setGamesPerPage] = useState<number>(100);
+  const [page, setPage] = useState<number>(1);
 
   // Snackbar states
   const [openSnackbar, setOpenSnackbar] = useState<boolean>(false);
@@ -650,6 +652,13 @@ function App() {
     getApiData();
   }, [usernames, gameIds, threadId, geekListId]);
 
+  useEffect(() => {
+    const maxPage = Math.trunc(getFilteredGames().length / gamesPerPage) + 1;
+    if (page > maxPage) {
+      setPage(maxPage);
+    }
+  }, [gamesPerPage]);
+
   const setTextFieldStateValues = () => {
     usernamesRef.current && setUsernames(getUsernamesFromString(usernamesRef.current.value));
     gameIdsRef.current && setGameIds(getGameIdsFromString(gameIdsRef.current.value))
@@ -837,6 +846,8 @@ function App() {
           playerCountArray={getPlayerCountArray()}
           gamesPerPage={gamesPerPage}
           setGamesPerPage={setGamesPerPage}
+          page={page}
+          setPage={setPage}
         />
       </ThemeProvider>
       <Snackbar
@@ -973,6 +984,7 @@ function App() {
                       size="small"
                       sx={{ mr: 1, mb: 1 }}
                       label="Games per page"
+                      MenuProps={{ disableScrollLock: true }}
                     >
                       {["25", "50", "100", "200", "500", "1000"].map(x => <MenuItem key={`games-per-page-select-${x}`} value={x}>{x}</MenuItem>)}
                     </Select>

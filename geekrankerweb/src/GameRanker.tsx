@@ -35,7 +35,7 @@ const FooterRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: sticky;
+  position: fixed;
   bottom: 0;
   left: 0;
   background-color: #eee;
@@ -274,6 +274,8 @@ interface GameRankerProps {
   screenWidth: number,
   gamesPerPage: number,
   setGamesPerPage: (value: number) => void,
+  page: number,
+  setPage: (value: number) => void,
 }
 
 function GameRanker({
@@ -304,10 +306,11 @@ function GameRanker({
   screenWidth,
   gamesPerPage,
   setGamesPerPage,
+  page,
+  setPage,
 }: GameRankerProps) {
   const renderCount = useRef<number>(0);
   const [showTips, setShowTips] = useState<boolean>(false);
-  const [page, setPage] = useState<number>(1);
 
   const innerBar = (value: number, maxValue: number, rank: number, idealValue?: number | false) =>
     value > 0 &&
