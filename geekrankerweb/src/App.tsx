@@ -691,6 +691,18 @@ function App() {
   }, [gameIds]);
 
   useEffect(() => {
+    if (threadIdRef.current) {
+      threadIdRef.current.value = threadId?.toString() || threadIdRef.current.value;
+    }
+  }, [threadId]);
+
+  useEffect(() => {
+    if (geekListIdRef.current) {
+      geekListIdRef.current.value = geekListId?.toString() || geekListIdRef.current.value;
+    }
+  }, [geekListId]);
+
+  useEffect(() => {
     updateMedia();
     window.addEventListener("resize", updateMedia);
     return () => window.removeEventListener("resize", updateMedia);
@@ -736,6 +748,23 @@ function App() {
     setTextFieldStateValues();
   }
 
+  const filterPaste = (e: React.ClipboardEvent) => {
+    const text = e.clipboardData.getData('Text');
+
+    const threadRegexp = /https:\/\/boardgamegeek.com\/thread\/([0-9]*)\//;
+    const geeklistRegexp = /https:\/\/boardgamegeek.com\/geeklist\/([0-9]*)\//;
+
+    if (text.match(threadRegexp) != null) {
+      setThreadId(parseInt(text.match(threadRegexp)![1]));
+    }
+
+    if (text.match(geeklistRegexp)) {
+      setGeekListId(parseInt(text.match(geeklistRegexp)![1]));
+    }
+
+    e.preventDefault();
+  }
+
   const input = (
     inputTab: SelectedTab,
     placeholder: string,
@@ -761,6 +790,7 @@ function App() {
           inputRef={ref}
           onFocus={() => setHideLinkCallback && setHideLinkCallback(true)}
           onBlur={() => setHideLinkCallback && setHideLinkCallback(false)}
+          onPaste={filterPaste}
           InputProps={{
             inputProps: {
               autoCapitalize: 'none',
