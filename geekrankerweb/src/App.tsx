@@ -3,7 +3,7 @@ import styled, { createGlobalStyle } from "styled-components"
 
 import "typeface-open-sans";
 
-import { Clear, Close, Download, Info, Link, Settings as SettingsIcon } from '@mui/icons-material';
+import { Cached, Clear, Close, Download, Info, Link, Settings as SettingsIcon } from '@mui/icons-material';
 import { TextField, Button, IconButton, Tabs, Tab, FormControl, Select, MenuItem, Drawer, Slider, InputLabel, FormControlLabel, Switch, RadioGroup, Radio, Tooltip, Snackbar } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material';
 
@@ -155,11 +155,11 @@ const SettingsContent = styled.div`
   margin: 15px;
   display: flex;
   flex-direction: column;
+  font-weight: 400;
 `;
 
 const SettingsRow = styled.div`
   display: flex;
-  font-weight: 400;
 `;
 
 const FilterLabel = styled.div`
@@ -660,10 +660,19 @@ function App() {
   }
 
   const copyThingLinkListToClipboard = () => {
-    setSnackbarMessage("BGG Thing links copied to clipboard")
+    setSnackbarMessage("BGG Thing links copied to clipboard");
     setOpenSnackbar(true);
     const bggThingLinks = getFilteredGames().map(g => `[thing=${g.gameId}]${g.name}[/thing]`).join('\n');
     navigator.clipboard.writeText(bggThingLinks);
+  }
+
+  const clearCache = () => {
+    setSnackbarMessage(`${localStorage.length - 2} items have been removed from cache`);
+    setOpenSnackbar(true);
+    localStorage.clear();
+
+    localStorage.setItem("singleColumnView", singleColumnView.toString());
+    localStorage.setItem("gamesPerPage", gamesPerPage.toString());
   }
 
   useMemo(() => {
@@ -1038,6 +1047,21 @@ function App() {
                     games per page
                   </SettingsRow>
                   {toggle(singleColumnView, setSingleColumnView, "Single column view")}
+                </SettingsContent>
+              </>
+            }
+            {(tab === 'advanced') &&
+              <>
+                <SettingsHeader>
+                  Cache
+                </SettingsHeader>
+                <SettingsContent>
+                  <SettingsRow style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 14 }}>Clearing cache can refresh out-of-date game & user data.</div>
+                  </SettingsRow>
+                  <SettingsRow>
+                    <Button onClick={() => clearCache()}><Cached sx={{ mr: 1 }} /> Clear Cache</Button>
+                  </SettingsRow>
                 </SettingsContent>
               </>
             }
