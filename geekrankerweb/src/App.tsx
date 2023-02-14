@@ -314,11 +314,47 @@ function App() {
   const getShowPlayerRating = () => ((tab === 'advanced' && showPlayerRating) || tab !== 'user');
   const getShowGeekRating = () => (tab === 'advanced' && showGeekRating);
 
+  const getShouldIncludeQueryParam = (queryParam: QueryParams): boolean => {
+    if (tab === 'advanced') return true;
+
+    switch (queryParam) {
+      case QueryParams.SelectedTab: return true;
+      case QueryParams.Usernames: return tab === 'user';
+      case QueryParams.GameIds: return tab === 'game';
+      case QueryParams.ThreadId: return tab === 'thread';
+      case QueryParams.GeekListId: return tab === 'geeklist';
+      case QueryParams.Sort: return true;
+      case QueryParams.ShowGameId: return false;
+      case QueryParams.ShowThreadSequence: return false;
+      case QueryParams.ShowGeekListSequence: return false;
+      case QueryParams.ShowGrIndex: return false;
+      case QueryParams.ShowUserRating: return false;
+      case QueryParams.ShowPlayerRating: return false;
+      case QueryParams.ShowGeekRating: return false;
+      case QueryParams.ShowPlayerCount: return true;
+      case QueryParams.ShowWeight: return true;
+      case QueryParams.ShowTime: return true;
+      case QueryParams.ShowIndividualUserRatings: return false;
+      case QueryParams.IncludeOwned: return tab === 'user';
+      case QueryParams.IncludeWishlisted: return tab === 'user';
+      case QueryParams.IncludeRated: return tab === 'user';
+      case QueryParams.IncludeBase: return tab === 'user';
+      case QueryParams.IncludeExpansion: return tab === 'user';
+      case QueryParams.GameIdFilter: return tab === 'game';
+      case QueryParams.ScorePlayerCount: return true;
+      case QueryParams.PlayerCountRange: return true;
+      case QueryParams.IdealWieght: return true;
+      case QueryParams.IdealTime: return true;
+      case QueryParams.BaseRating: return false;
+      case QueryParams.FallBackTo: return false;
+    }
+  }
+
   useEffect(() => {
     const params = new URLSearchParams();
 
     Object.values(QueryParams).forEach(queryParam => {
-      if (JSON.stringify(queryValues[queryParam]) === JSON.stringify(defaultQueryValues[queryParam]) || queryValues[queryParam] === undefined) {
+      if (JSON.stringify(queryValues[queryParam]) === JSON.stringify(defaultQueryValues[queryParam]) || queryValues[queryParam] === undefined || !getShouldIncludeQueryParam(queryParam)) {
         params.delete(queryParam);
       } else {
         if (typeof queryValues[queryParam] === "boolean") {
