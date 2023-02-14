@@ -264,9 +264,10 @@ function App() {
   const [baseRating, setBaseRating] = useState<BaseRating>(getTypedStringQueryParam<BaseRating>(QueryParams.BaseRating));
   const [fallBackTo, setFallBackTo] = useState<FallBackTo>(getTypedStringQueryParam<FallBackTo>(QueryParams.FallBackTo));
 
+
   // UI options
-  const [singleColumnView, setSingleColumnView] = useState<boolean>(false);
-  const [gamesPerPage, setGamesPerPage] = useState<number>(100);
+  const [singleColumnView, setSingleColumnView] = useState<boolean>(localStorage.getItem("singleColumnView") === "true");
+  const [gamesPerPage, setGamesPerPage] = useState<number>(parseInt(localStorage.getItem("gamesPerPage") || "100"));
   const [page, setPage] = useState<number>(1);
 
   // Snackbar states
@@ -658,6 +659,14 @@ function App() {
       setPage(maxPage);
     }
   }, [gamesPerPage]);
+
+  useEffect(() => {
+    localStorage.setItem("singleColumnView", singleColumnView.toString());
+  }, [singleColumnView])
+
+  useEffect(() => {
+    localStorage.setItem("gamesPerPage", gamesPerPage.toString());
+  }, [gamesPerPage])
 
   const setTextFieldStateValues = () => {
     usernamesRef.current && setUsernames(getUsernamesFromString(usernamesRef.current.value));
