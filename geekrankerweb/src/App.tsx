@@ -731,7 +731,10 @@ function App() {
   }, [gamesPerPage])
 
   useEffect(() => {
-    setTextFieldStateValues();
+    if (!usernamesInput && usernames.length) setUsernames([]);
+    if (!gameIdsInput && gameIds.length) setGameIds([]);
+    if (!threadIdInput && threadId) setThreadId(undefined);
+    if (!geekListIdInput && geekListId) setGeekListId(undefined);
   }, [usernamesInput, gameIdsInput, threadIdInput, geekListIdInput])
 
   const setTextFieldStateValues = () => {
