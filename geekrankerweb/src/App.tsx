@@ -261,9 +261,9 @@ function App() {
 
   // Scoring options
   const [scorePlayerCount, setScorePlayerCount] = useState<boolean>(getBoolQueryParam(QueryParams.ScorePlayerCount));
-  const [includeIdealWeight, setIncludeIdealWeight] = useState<boolean>(getBoolQueryParam(QueryParams.IdealWieght));
+  const [scoreIdealWeight, setScoreIdealWeight] = useState<boolean>(getBoolQueryParam(QueryParams.IdealWieght));
   const [idealWeight, setIdealWeight] = useState<number>(getNumberQueryParam(QueryParams.IdealWieght) || idealWeightDefault);
-  const [includeIdealTime, setIncludeIdealTime] = useState<boolean>(getBoolQueryParam(QueryParams.IdealTime));
+  const [scoreIdealTime, setScoreIdealTime] = useState<boolean>(getBoolQueryParam(QueryParams.IdealTime));
   const [idealTime, setIdealTime] = useState<number>(getNumberQueryParam(QueryParams.IdealTime) || idealTimeDefault);
   const [baseRating, setBaseRating] = useState<BaseRating>(getTypedStringQueryParam<BaseRating>(QueryParams.BaseRating));
   const [fallBackTo, setFallBackTo] = useState<FallBackTo>(getTypedStringQueryParam<FallBackTo>(QueryParams.FallBackTo));
@@ -304,8 +304,8 @@ function App() {
     [QueryParams.GameIdFilter]: gameIdFilter,
     [QueryParams.ScorePlayerCount]: scorePlayerCount,
     [QueryParams.PlayerCountRange]: `${playerCountRange[0]} ${playerCountRange[1]}`,
-    [QueryParams.IdealWieght]: includeIdealWeight ? idealWeight : undefined,
-    [QueryParams.IdealTime]: includeIdealTime ? idealTime : undefined,
+    [QueryParams.IdealWieght]: scoreIdealWeight ? idealWeight : undefined,
+    [QueryParams.IdealTime]: scoreIdealTime ? idealTime : undefined,
     [QueryParams.BaseRating]: baseRating,
     [QueryParams.FallBackTo]: fallBackTo,
   }
@@ -441,14 +441,17 @@ function App() {
     let numerator = 1;
     let denominator = 1;
 
-    if (baseRating === "user-rating" && usernames.length) {
+    if (baseRating === 'user-rating' && usernames.length) {
+      console.log("scoring user-rating");
       const userRatings = usernames.map(username => getGameUserRating(username, game, fallBackTo, false)[0]);
       const avgUserRating = (userRatings.reduce((a, b) => a + b) / userRatings.length);
 
       numerator *= avgUserRating;
-    } else if (baseRating === "player-rating" || (baseRating === "user-rating" && !usernames.length && fallBackTo === "player-rating")) {
+    } else if (baseRating !== 'geek-rating' && (baseRating !== 'user-rating' || fallBackTo === 'player-rating')) {
+      console.log("scoring player-rating");
       numerator *= game.avgPlayerRating;
     } else {
+      console.log("scoring geek-rating");
       numerator *= game.geekRating;
     }
 
@@ -465,12 +468,12 @@ function App() {
       denominator *= 10;
     }
 
-    if (includeIdealWeight) {
+    if (scoreIdealWeight) {
       numerator *= 5 - Math.abs(game.avgWeight - idealWeight);
       denominator *= 5;
     }
 
-    if (includeIdealTime) {
+    if (scoreIdealTime) {
       numerator *= Math.max(150 - Math.abs(game.maxPlayTime - idealTime), 0);
       denominator *= 150;
     }
@@ -683,7 +686,7 @@ function App() {
   useMemo(() => {
     updateAllCalculatedScores();
     updateAllRanks();
-  }, [scorePlayerCount, includeIdealWeight, includeIdealTime, idealWeight, idealTime, playerCountRange, fallBackTo])
+  }, [scorePlayerCount, scoreIdealWeight, scoreIdealTime, idealWeight, idealTime, playerCountRange, baseRating, fallBackTo])
 
   useMemo(() => {
     updateAllRanks();
@@ -911,8 +914,13 @@ function App() {
           screenWidth={screenWidth}
           fallBackTo={fallBackTo}
           games={getSortedGames()}
-          includeIdealTime={includeIdealTime}
+          scoreIdealTime={scoreIdealTime}
+          setScoreIdealTime={setScoreIdealTime}
           idealTime={idealTime}
+          scorePlayerCount={scorePlayerCount}
+          setScorePlayerCount={setScorePlayerCount}
+          baseRating={baseRating}
+          setBaseRating={setBaseRating}
           sort={sort}
           setSort={setSort}
           showGameId={getShowGameId()}
@@ -927,7 +935,8 @@ function App() {
           showTime={showTime}
           showIndividualUserRatings={showIndividualUserRatings}
           idealWeight={idealWeight}
-          includeIdealWeight={includeIdealWeight}
+          scoreIdealWeight={scoreIdealWeight}
+          setScoreIdealWeight={setScoreIdealWeight}
           playerCountArray={getPlayerCountArray()}
           gamesPerPage={gamesPerPage}
           setGamesPerPage={setGamesPerPage}
@@ -1024,15 +1033,15 @@ function App() {
             </SettingsHeader>
             <SettingsContent>
               {toggle(scorePlayerCount, setScorePlayerCount, "Player Count")}
-              {toggle(includeIdealWeight, setIncludeIdealWeight, "Ideal Weight")}
+              {toggle(scoreIdealWeight, setScoreIdealWeight, "Ideal Weight")}
               <SliderContainer>
-                <SliderValue style={{ color: (includeIdealWeight ? "" : "#000"), opacity: (includeIdealWeight ? 1 : .38) }}>{idealWeight}</SliderValue>
-                <StyledSlider disabled={!includeIdealWeight} min={1} max={5} step={0.5} value={idealWeight} onChange={(event, value) => handleSliderChange(event, () => setIdealWeight(Number(value)))} />
+                <SliderValue style={{ color: (scoreIdealWeight ? "" : "#000"), opacity: (scoreIdealWeight ? 1 : .38) }}>{idealWeight}</SliderValue>
+                <StyledSlider disabled={!scoreIdealWeight} min={1} max={5} step={0.5} value={idealWeight} onChange={(event, value) => handleSliderChange(event, () => setIdealWeight(Number(value)))} />
               </SliderContainer>
-              {toggle(includeIdealTime, setIncludeIdealTime, "Ideal Time")}
+              {toggle(scoreIdealTime, setScoreIdealTime, "Ideal Time")}
               <SliderContainer>
-                <SliderValue style={{ color: (includeIdealTime ? "" : "#000"), opacity: (includeIdealTime ? 1 : .38) }}>{idealTime}</SliderValue>
-                <StyledSlider disabled={!includeIdealTime} min={30} max={240} step={30} value={idealTime} onChange={(event, value) => handleSliderChange(event, () => setIdealTime(Number(value)))} />
+                <SliderValue style={{ color: (scoreIdealTime ? "" : "#000"), opacity: (scoreIdealTime ? 1 : .38) }}>{idealTime}</SliderValue>
+                <StyledSlider disabled={!scoreIdealTime} min={30} max={240} step={30} value={idealTime} onChange={(event, value) => handleSliderChange(event, () => setIdealTime(Number(value)))} />
               </SliderContainer>
               {(tab === 'advanced') &&
                 <>

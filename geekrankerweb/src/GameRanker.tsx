@@ -5,7 +5,7 @@ import { ArrowDownward } from '@mui/icons-material';
 import { Tooltip, Switch, FormControlLabel, Pagination, Select, MenuItem } from '@mui/material';
 
 import styled from "styled-components"
-import { getSortLabel, DisplayMode, FallBackTo, SortOptions, getGameUserRating, getBggGameUrl, getGamePlayerCountStats, getShowCondensedFooter } from './Utilities';
+import { getSortLabel, DisplayMode, FallBackTo, SortOptions, getGameUserRating, getBggGameUrl, getGamePlayerCountStats, getShowCondensedFooter, BaseRating } from './Utilities';
 
 const GamesHeader = styled.div`
   display: inline-block;
@@ -147,10 +147,15 @@ const BarHeader = styled(RowCell)`
   display: inline-flex;
   align-items: center;
   justify-content: left;
-  cursor: pointer;
   flex-grow: 1;
   flex-basis: 200px;
   min-width: 200px;
+`;
+
+const BarHeaderSort = styled.div`
+  cursor: pointer;
+  display: flex;
+  align-items: center;
 `;
 
 const BarContainerBase = styled(RowCell)`
@@ -252,11 +257,17 @@ interface GameRankerProps {
   setGameIds: (gameId: number[]) => void,
   games: Game[],
   fallBackTo: FallBackTo,
-  includeIdealTime: boolean,
+  scoreIdealTime: boolean,
+  setScoreIdealTime: (value: boolean) => void,
   idealTime: number,
-  includeIdealWeight: boolean,
+  scoreIdealWeight: boolean,
+  setScoreIdealWeight: (value: boolean) => void,
   idealWeight: number,
+  scorePlayerCount: boolean,
+  setScorePlayerCount: (value: boolean) => void,
   playerCountArray: number[],
+  baseRating: BaseRating,
+  setBaseRating: (value: BaseRating) => void,
   sort: string,
   setSort: (value: string) => void,
   showGameId: boolean,
@@ -284,11 +295,17 @@ function GameRanker({
   setGameIds,
   games,
   fallBackTo,
-  includeIdealTime,
+  scoreIdealTime,
+  setScoreIdealTime,
   idealTime,
-  includeIdealWeight,
+  scoreIdealWeight,
+  setScoreIdealWeight,
   idealWeight,
+  scorePlayerCount,
+  setScorePlayerCount,
   playerCountArray,
+  baseRating,
+  setBaseRating,
   sort,
   setSort,
   showGameId,
@@ -377,10 +394,10 @@ function GameRanker({
   const timeBar = (min: number, max: number) =>
     displayMode === "horizontal" ?
       <BarContainerHorizontal>
-        {innerTimeBar(min, max, includeIdealTime && idealTime)}
+        {innerTimeBar(min, max, scoreIdealTime && idealTime)}
       </BarContainerHorizontal> :
       <BarContainerVertical>
-        {innerTimeBar(min, max, includeIdealTime && idealTime)}
+        {innerTimeBar(min, max, scoreIdealTime && idealTime)}
       </BarContainerVertical>
 
   const sortArrow = (thisSort: string) =>
@@ -388,8 +405,32 @@ function GameRanker({
 
   const barHeader = (thisSort: SortOptions) => barHeaderDynamic(thisSort);
 
+  const meeple = (isScored: boolean, setScore?: () => void) =>
+    <Tooltip title={setScore && `${isScored ? "Included in" : "Excluded from"} the GR Index`}>
+      <img
+        src={`/gr-meeple${isScored ? "" : "-inactive"}.png`}
+        style={{
+          height: 16,
+          paddingRight: 5,
+          cursor: setScore ? "pointer" : undefined,
+        }}
+        onClick={setScore && (() => setScore())}
+      />
+    </Tooltip>
+
   const barHeaderDynamic = (thisSort: string, label?: string) =>
-    <BarHeader key={`header-${thisSort}`} onClick={() => setSort(thisSort)}>{(label || getSortLabel(thisSort as SortOptions))}{sortArrow(thisSort)}</BarHeader>;
+    <BarHeader key={`header-${thisSort}`}>
+      <BarHeaderSort onClick={() => setSort(thisSort)}>
+        {thisSort === 'gr-index' && meeple(true)}
+        {(label || getSortLabel(thisSort as SortOptions))}{sortArrow(thisSort)}
+      </BarHeaderSort>
+      {thisSort.startsWith('playercount-') && meeple(scorePlayerCount, () => setScorePlayerCount(!scorePlayerCount))}
+      {thisSort === 'time' && meeple(scoreIdealTime, () => setScoreIdealTime(!scoreIdealTime))}
+      {thisSort === 'weight' && meeple(scoreIdealWeight, () => setScoreIdealWeight(!scoreIdealWeight))}
+      {thisSort.startsWith('user-') && meeple(baseRating === 'user-rating', () => setBaseRating('user-rating'))}
+      {thisSort === 'geek-rating' && meeple(baseRating === 'geek-rating', () => setBaseRating('geek-rating'))}
+      {thisSort === 'player-rating' && meeple(baseRating === 'player-rating', () => setBaseRating('player-rating'))}
+    </BarHeader>;
 
   const playerCountBar = (count: number, game: Game) => {
     const pcStats = getGamePlayerCountStats(count, game);
@@ -457,7 +498,7 @@ function GameRanker({
                 {showGameId && barHeader("id")}
                 {showThreadSequence && barHeader("thread")}
                 {showGeekListSequence && barHeader("geek-list")}
-                {showGrIndex && barHeader("gr-index")}
+                {showGrIndex && <Tooltip title="The score of all columns with orange meeples">{barHeader("gr-index")}</Tooltip>}
                 {showUserRating && (showIndividualUserRatings || usernames.length < 2 ? usernames.map(u => barHeaderDynamic(`user-${u}`, u.toUpperCase())) : barHeader(`user-rating`))}
                 {showPlayerRating && barHeader("player-rating")}
                 {showGeekRating && barHeader("geek-rating")}
@@ -523,7 +564,7 @@ function GameRanker({
             {showPlayerRating && <HorizontalCell>{bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank)}</HorizontalCell>}
             {showGeekRating && <HorizontalCell>{bar(g.geekRating, 10, g.geekRatingRank)}</HorizontalCell>}
             {showPlayerCount && playerCountArray.map(pc => <HorizontalCell key={`h-pc-${pc}`}>{playerCountBar(pc, g)}</HorizontalCell>)}
-            {showWeight && <HorizontalCell>{bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight)}</HorizontalCell>}
+            {showWeight && <HorizontalCell>{bar(g.avgWeight, 5, g.avgWeightRank, scoreIdealWeight && idealWeight)}</HorizontalCell>}
             {showTime && <HorizontalCell>{timeBar(g.minPlayTime, g.maxPlayTime)}</HorizontalCell>}
           </GameHorizontally> :
           <GameVertically key={`game-vertical-${g.gameId}`} style={{ width: screenWidth }}>
@@ -544,7 +585,7 @@ function GameRanker({
             {showPlayerRating && verticalCell(getSortLabel("player-rating"), bar(g.avgPlayerRating, 10, g.avgPlayerRatingRank))}
             {showGeekRating && verticalCell(getSortLabel("geek-rating"), bar(g.geekRating, 10, g.geekRatingRank))}
             {showPlayerCount && playerCountArray.map(pc => verticalCell(`${pc}-Player Rating`, playerCountBar(pc, g), pc))}
-            {showWeight && verticalCell(getSortLabel("weight"), bar(g.avgWeight, 5, g.avgWeightRank, includeIdealWeight && idealWeight))}
+            {showWeight && verticalCell(getSortLabel("weight"), bar(g.avgWeight, 5, g.avgWeightRank, scoreIdealWeight && idealWeight))}
             {showTime && verticalCell(getSortLabel("time"), timeBar(g.minPlayTime, g.maxPlayTime))}
           </GameVertically>
       )}
