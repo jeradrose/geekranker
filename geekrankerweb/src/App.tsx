@@ -840,7 +840,7 @@ function App() {
                     <MenuItem value="user">By Username</MenuItem>
                     <MenuItem value="game">By Game ID</MenuItem>
                     <MenuItem value="thread">By Thread</MenuItem>
-                    <MenuItem value="geeklist">By GeekList ID</MenuItem>
+                    <MenuItem value="geeklist">By GeekList</MenuItem>
                     <MenuItem value="advanced">Advanced</MenuItem>
                   </Select>
                 </FormControl>
@@ -849,7 +849,7 @@ function App() {
                   <Tab value="user" label="By Username" />
                   <Tab value="game" label="By Game ID" />
                   <Tab value="thread" label="By Thread" />
-                  <Tab value="geeklist" label="By GeekList ID" />
+                  <Tab value="geeklist" label="By GeekList" />
                   <Tab value="advanced" label="Advanced" />
                 </Tabs>
               }
@@ -857,7 +857,7 @@ function App() {
               {input('game', "BGG Game ID(s)", gameIdsInput, setGameIdsInput, gameIdsRef)}
               {input(
                 'thread',
-                "BGG Thread ID",
+                "BGG Thread - Enter the ID, or paste a link!",
                 threadIdInput,
                 setThreadIdInput,
                 threadIdRef,
@@ -867,7 +867,7 @@ function App() {
               )}
               {input(
                 'geeklist',
-                "BGG GeekList ID",
+                "BGG GeekList - Enter the ID, or paste a link!",
                 geekListIdInput,
                 setGeekListIdInput,
                 geekListIdRef,
