@@ -225,9 +225,6 @@ function App() {
   const [threadTitle, setThreadTitle] = useState<string>("");
   const [geekListTitle, setGeekListTitle] = useState<string>("");
 
-  const [hideThreadLink, setHideThreadLink] = useState<boolean>(false);
-  const [hideGeekListLink, setHideGeekListLink] = useState<boolean>(false);
-
   const [showDrawer, setShowDrawer] = useState<boolean>(false);
 
   // Standard options
@@ -385,7 +382,8 @@ function App() {
           )
         ) ||
         ((tab === 'advanced' || tab === 'thread') && g.threadSequence) ||
-        ((tab === 'advanced' || tab === 'geeklist') && g.geekListSequence)
+        ((tab === 'advanced' || tab === 'geeklist') && g.geekListSequence) ||
+        (tab === 'advanced' && gameIds.indexOf(g.gameId) > -1 && gameIdFilter !== "hide-selected")
       ) &&
       (
         (gameIdFilter === "all") ||
@@ -745,6 +743,15 @@ function App() {
     if (ref.current) {
       ref.current.value = "";
     }
+
+    if (ref === threadIdRef) {
+      setThreadTitle("");
+    }
+
+    if (ref === geekListIdRef) {
+      setGeekListTitle("");
+    }
+
     setTextFieldStateValues();
   }
 
@@ -768,12 +775,10 @@ function App() {
   const input = (
     inputTab: SelectedTab,
     placeholder: string,
-    queryParam: QueryParams,
+    value: string | undefined,
     ref: React.RefObject<HTMLInputElement>,
     linkUrl?: string,
     linkText?: string,
-    hideLink?: React.SetStateAction<boolean>,
-    setHideLinkCallback?: (value: React.SetStateAction<boolean>) => void,
     isNumber?: boolean,
   ) => {
     return (tab === inputTab || tab === 'advanced') && (
@@ -786,10 +791,8 @@ function App() {
           placeholder={tab !== 'advanced' ? placeholder : undefined}
           inputProps={{ autoCapitalize: "none" }}
           onKeyDown={e => inputKeyPress(ref, e.key)}
-          defaultValue={getQueryParam(queryParam) ?? ""}
+          value={value}
           inputRef={ref}
-          onFocus={() => setHideLinkCallback && setHideLinkCallback(true)}
-          onBlur={() => setHideLinkCallback && setHideLinkCallback(false)}
           onPaste={filterPaste}
           InputProps={{
             inputProps: {
@@ -804,7 +807,7 @@ function App() {
             )
           }}
         />
-        {linkText && !hideLink && <BggLink href={linkUrl} target="_blank" style={{ top: tab === 'advanced' ? 22.5 : 6.5 }}>{linkText}</BggLink>}
+        {linkText && <BggLink href={linkUrl} target="_blank" style={{ top: tab === 'advanced' ? 22.5 : 6.5 }}>{linkText}</BggLink>}
         {isNumber && <SpinButtonCover style={{ top: tab === 'advanced' ? 25 : 10 }} />}
       </InputContainer>
     );
@@ -849,28 +852,24 @@ function App() {
                   <Tab value="advanced" label="Advanced" />
                 </Tabs>
               }
-              {input('user', "BGG Username(s)", QueryParams.Usernames, usernamesRef)}
-              {input('game', "BGG Game ID(s)", QueryParams.GameIds, gameIdsRef)}
+              {input('user', "BGG Username(s)", usernames.join(' '), usernamesRef)}
+              {input('game', "BGG Game ID(s)", gameIds.join(' '), gameIdsRef)}
               {input(
                 'thread',
                 "BGG Thread ID",
-                QueryParams.ThreadId,
+                threadId?.toString(),
                 threadIdRef,
                 `https://boardgamegeek.com/thread/${threadId}`,
                 threadTitle,
-                hideThreadLink,
-                setHideThreadLink,
                 true,
               )}
               {input(
                 'geeklist',
                 "BGG GeekList ID",
-                QueryParams.GeekListId,
+                geekListId?.toString(),
                 geekListIdRef,
                 `https://boardgamegeek.com/geeklist/${geekListId}`,
                 geekListTitle,
-                hideGeekListLink,
-                setHideGeekListLink,
                 true,
               )}
               <Buttons>
