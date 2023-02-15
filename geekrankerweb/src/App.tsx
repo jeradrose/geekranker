@@ -42,6 +42,7 @@ const GlobalStyle = createGlobalStyle`
     background-color: #eee;
     display: inline-flex;
     margin-bottom: 50px;
+    overflow-y: scroll;
   }
 `;
 
@@ -201,10 +202,16 @@ const FallBackInfo = styled(Info)`
 type GameIdFilter = "all" | "only-selected" | "hide-selected";
 
 function App() {
+  const [usernamesInput, setUsernamesInput] = useState<string>(getQueryParam(QueryParams.Usernames) || "");
+  const [gameIdsInput, setGameIdsInput] = useState<string>(getQueryParam(QueryParams.GameIds) || "");
+  const [threadIdInput, setThreadIdInput] = useState<string>(getQueryParam(QueryParams.ThreadId) || "");
+  const [geekListIdInput, setGeekListIdInput] = useState<string>(getQueryParam(QueryParams.GeekListId) || "");
+
   const usernamesRef = useRef<HTMLInputElement>(null);
   const gameIdsRef = useRef<HTMLInputElement>(null);
   const threadIdRef = useRef<HTMLInputElement>(null);
   const geekListIdRef = useRef<HTMLInputElement>(null);
+
   const renderCount = useRef<number>(0);
 
   // User option nullable defaults
@@ -683,21 +690,19 @@ function App() {
   }, [tab, includeOwned, includeWishlisted, includeRated, includeBase, includeExpansion, gameIdFilter])
 
   useEffect(() => {
-    if (gameIdsRef.current) {
-      gameIdsRef.current.value = gameIds.join(' ');
-    }
+    setGameIdsInput(usernames.join(' '));
+  }, [usernames]);
+
+  useEffect(() => {
+    setGameIdsInput(gameIds.join(' '));
   }, [gameIds]);
 
   useEffect(() => {
-    if (threadIdRef.current) {
-      threadIdRef.current.value = threadId?.toString() || threadIdRef.current.value;
-    }
+    setThreadIdInput(threadId?.toString() || "");
   }, [threadId]);
 
   useEffect(() => {
-    if (geekListIdRef.current) {
-      geekListIdRef.current.value = geekListId?.toString() || geekListIdRef.current.value;
-    }
+    setGeekListIdInput(geekListId?.toString() || "");
   }, [geekListId]);
 
   useEffect(() => {
@@ -726,33 +731,17 @@ function App() {
   }, [gamesPerPage])
 
   const setTextFieldStateValues = () => {
-    usernamesRef.current && setUsernames(getUsernamesFromString(usernamesRef.current.value));
-    gameIdsRef.current && setGameIds(getGameIdsFromString(gameIdsRef.current.value))
-    threadIdRef.current && setThreadId(getIdFromString(threadIdRef.current.value));
-    geekListIdRef.current && setGeekListId(getIdFromString(geekListIdRef.current.value));
+    setUsernames(getUsernamesFromString(usernamesInput));
+    setGameIds(getGameIdsFromString(gameIdsInput))
+    setThreadId(getIdFromString(threadIdInput));
+    setGeekListId(getIdFromString(geekListIdInput));
   };
 
-  const inputKeyPress = (ref: React.RefObject<HTMLInputElement>, key: string) => {
-    if (key === "Enter") {
+  const inputKeyPress = (e: React.KeyboardEvent, ref: React.RefObject<HTMLInputElement>) => {
+    if (e.key === "Enter") {
       ref.current?.blur();
       setTextFieldStateValues();
     }
-  }
-
-  const handleClear = (ref: React.RefObject<HTMLInputElement>) => {
-    if (ref.current) {
-      ref.current.value = "";
-    }
-
-    if (ref === threadIdRef) {
-      setThreadTitle("");
-    }
-
-    if (ref === geekListIdRef) {
-      setGeekListTitle("");
-    }
-
-    setTextFieldStateValues();
   }
 
   const filterPaste = (e: React.ClipboardEvent) => {
@@ -776,6 +765,7 @@ function App() {
     inputTab: SelectedTab,
     placeholder: string,
     value: string | undefined,
+    setValue: (value: any) => void,
     ref: React.RefObject<HTMLInputElement>,
     linkUrl?: string,
     linkText?: string,
@@ -790,7 +780,8 @@ function App() {
           label={tab === 'advanced' ? placeholder : undefined}
           placeholder={tab !== 'advanced' ? placeholder : undefined}
           inputProps={{ autoCapitalize: "none" }}
-          onKeyDown={e => inputKeyPress(ref, e.key)}
+          onKeyDown={e => inputKeyPress(e, ref)}
+          onChange={e => setValue(e.target.value)}
           value={value}
           inputRef={ref}
           onPaste={filterPaste}
@@ -801,7 +792,7 @@ function App() {
             },
             style: { paddingRight: 0 },
             endAdornment: (
-              <IconButton disabled={!ref.current?.value} onClick={() => handleClear(ref)}>
+              <IconButton disabled={!value} onClick={() => setValue && setValue("")}>
                 <ClearIcon />
               </IconButton>
             )
@@ -852,12 +843,13 @@ function App() {
                   <Tab value="advanced" label="Advanced" />
                 </Tabs>
               }
-              {input('user', "BGG Username(s)", usernames.join(' '), usernamesRef)}
-              {input('game', "BGG Game ID(s)", gameIds.join(' '), gameIdsRef)}
+              {input('user', "BGG Username(s)", usernamesInput, setUsernamesInput, usernamesRef)}
+              {input('game', "BGG Game ID(s)", gameIdsInput, setGameIdsInput, gameIdsRef)}
               {input(
                 'thread',
                 "BGG Thread ID",
-                threadId?.toString(),
+                threadIdInput,
+                setThreadIdInput,
                 threadIdRef,
                 `https://boardgamegeek.com/thread/${threadId}`,
                 threadTitle,
@@ -866,7 +858,8 @@ function App() {
               {input(
                 'geeklist',
                 "BGG GeekList ID",
-                geekListId?.toString(),
+                geekListIdInput,
+                setGeekListIdInput,
                 geekListIdRef,
                 `https://boardgamegeek.com/geeklist/${geekListId}`,
                 geekListTitle,
