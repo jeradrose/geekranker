@@ -762,13 +762,13 @@ function App() {
 
     if (text.match(threadRegexp) != null) {
       setThreadId(parseInt(text.match(threadRegexp)![1]));
+      e.preventDefault();
     }
 
     if (text.match(geeklistRegexp)) {
       setGeekListId(parseInt(text.match(geeklistRegexp)![1]));
+      e.preventDefault();
     }
-
-    e.preventDefault();
   }
 
   const input = (
