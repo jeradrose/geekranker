@@ -730,6 +730,10 @@ function App() {
     localStorage.setItem("gamesPerPage", gamesPerPage.toString());
   }, [gamesPerPage])
 
+  useEffect(() => {
+    setTextFieldStateValues();
+  }, [usernamesInput, gameIdsInput, threadIdInput, geekListIdInput])
+
   const setTextFieldStateValues = () => {
     setUsernames(getUsernamesFromString(usernamesInput));
     setGameIds(getGameIdsFromString(gameIdsInput))
