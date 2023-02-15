@@ -40,7 +40,7 @@ const FooterRow = styled.div`
   left: 0;
   background-color: #eee;
   z-index: 20;
-  height: 50px;
+  height: 40px;
   gap: 40px;
   box-sizing: border-box;
   padding: 0 10px;
@@ -548,21 +548,25 @@ function GameRanker({
             {showTime && verticalCell(getSortLabel("time"), timeBar(g.minPlayTime, g.maxPlayTime))}
           </GameVertically>
       )}
-      <FooterRow style={{ width: screenWidth }}>
+      <FooterRow style={{ width: screenWidth, fontSize: 13 }}>
         <div style={{ width: !getShowCondensedFooter(screenWidth) ? 200 : undefined, textAlign: "left" }}>
-          {!getShowCondensedFooter(screenWidth) ?
-            <>{startGame} - {endGame} (of {games.length})</>
-            :
-            <>{games.length} games</>
+          {!games.length ?
+            <>No games</> :
+            !getShowCondensedFooter(screenWidth) ?
+              <>{startGame} - {endGame} (of {games.length})</>
+              :
+              <>{games.length} games</>
           }
         </div>
-        <Pagination
-          count={Math.trunc(games.length / gamesPerPage) + 1}
-          color="primary"
-          page={page}
-          onChange={(_, value) => setPage(value)}
-          size="small"
-        />
+        {games.length > 0 &&
+          <Pagination
+            count={Math.trunc(games.length / gamesPerPage) + 1}
+            color="primary"
+            page={page}
+            onChange={(_, value) => setPage(value)}
+            size="small"
+          />
+        }
         {!getShowCondensedFooter(screenWidth) &&
           <div style={{ width: 200, textAlign: "right" }}>
             <Select

@@ -41,7 +41,7 @@ const GlobalStyle = createGlobalStyle`
     padding: 0;
     background-color: #eee;
     display: inline-flex;
-    margin-bottom: 50px;
+    margin-bottom: 40px;
     overflow-y: scroll;
   }
 `;
