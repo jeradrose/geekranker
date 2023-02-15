@@ -903,7 +903,7 @@ function App() {
                 </ButtonsList>
               </Buttons>
             </Form>
-            <Logo src="/logo-only.png" alt="logo" />
+            <Logo src="/logo.png" alt="logo" />
           </PageHeader>
         </PageHeaderContainer>
         <GameRanker
