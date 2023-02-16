@@ -345,6 +345,7 @@ function App() {
   const [gamesPerPage, setGamesPerPage] = useState<number>(parseInt(localStorage.getItem("gamesPerPage") || "100"));
   const [page, setPage] = useState<number>(1);
   const [showTips, setShowTips] = useState<boolean>(false);
+  const [showSlowNotice, setShowSlowNotice] = useState<boolean>(false);
 
   // Snackbar states
   const [openSnackbar, setOpenSnackbar] = useState<boolean>(false);
@@ -657,7 +658,7 @@ function App() {
     setLoadingGames(true);
 
     try {
-      const rankings = await getRankings(usernames, gameIds, threadId, geekListId);
+      const rankings = await getRankings(usernames, gameIds, threadId, geekListId, setShowSlowNotice);
 
       updateAllCalculatedScores(rankings.games);
       updateAllRanks(rankings.games);
@@ -665,8 +666,10 @@ function App() {
       setGeekListTitle(rankings.geekListTitle);
       setThreadTitle(rankings.threadTitle);
     } catch (ex) {
-      console.log(ex);
+      setSnackbarMessage("BGG is still processing your request. Try again in 5 minutes.");
+      setOpenSnackbar(true);
     } finally {
+      setShowSlowNotice(false);
       setLoadingGames(false);
     }
   };
@@ -1206,6 +1209,11 @@ function App() {
           </EmptyState>
         }
       </ThemeProvider>
+      <Snackbar
+        message="Request for data has been sent to BGG. Sometimes this takes a few minutes for BGG to respond with data. If this fails, wait 5 or so minutes and try again."
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        open={showSlowNotice}
+      />
       <Snackbar
         message={snackbarMessage}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}

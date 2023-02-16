@@ -8,6 +8,7 @@ export const getRankings = async (
   gameIds: number[],
   threadId: number | undefined,
   geekListId: number | undefined,
+  setShowSlowNotice: (value: boolean) => void,
 ): Promise<GetRankingsResponse> => {
   const response: GetRankingsResponse = {
     games: [],
@@ -17,14 +18,14 @@ export const getRankings = async (
 
   usernames = [...new Set(usernames)].sort();
 
-  const stats = await getUsers(usernames, getGameExpirations());
+  const stats = await getUsers(usernames, getGameExpirations(), setShowSlowNotice);
 
   const userGameIds: number[] = stats.map(s => s.gameId);
 
   const threadGameIds: number[] = [];
 
   if (threadId) {
-    const thread = await getBggThread(threadId);
+    const thread = await getBggThread(threadId, setShowSlowNotice);
     if (thread) {
       response.threadTitle = thread.subject;
       const regexp = /boardgamegeek\.com\/boardgame\/([0-9]*)/g;
@@ -41,7 +42,7 @@ export const getRankings = async (
   const geekListGameIds: number[] = [];
 
   if (geekListId) {
-    const geekList = await getBggGeekList(geekListId);
+    const geekList = await getBggGeekList(geekListId, setShowSlowNotice);
     if (geekList) {
       response.geekListTitle = geekList.title;
 
@@ -62,7 +63,7 @@ export const getRankings = async (
     ...geekListGameIds,
   ])];
 
-  const games = await getGames(gameIdsToLoad);
+  const games = await getGames(gameIdsToLoad, setShowSlowNotice);
 
   games.map(g => {
     g.userStats = stats.filter(s => s.gameId === g.gameId);
@@ -78,7 +79,7 @@ export const getRankings = async (
 const getGameExpirations = (): GameExpiration[] =>
   JSON.parse(localStorage.getItem('game-expirations') || '[]');
 
-export const getGames = async (gameIds: number[]): Promise<Game[]> => {
+export const getGames = async (gameIds: number[], setShowSlowNotice: (value: boolean) => void): Promise<Game[]> => {
   const games: Game[] = gameIds
     .map(id => localStorage.getItem(`game-${id}`))
     .filter((s): s is string => Boolean(s))
@@ -97,7 +98,7 @@ export const getGames = async (gameIds: number[]): Promise<Game[]> => {
       const endGame = Math.min(((page + 1) * gamesPerPage), missingGameIds.length);
       const gameIdsToLoad = missingGameIds.slice(startGame, endGame);
 
-      const bggGames = await getBggGames(gameIdsToLoad);
+      const bggGames = await getBggGames(gameIdsToLoad, setShowSlowNotice);
 
       const newGames = bggGames.map(bggGameToGrGame);
 
@@ -157,7 +158,7 @@ const getDateHasExpired = (cacheDate: Date): boolean => {
   return now.getTime() - expirationDate.getTime() > 0;
 }
 
-export const getUsers = async (usernames: string[], gameExpirations: GameExpiration[]): Promise<UserStats[]> => {
+export const getUsers = async (usernames: string[], gameExpirations: GameExpiration[], setShowSlowNotice: (value: boolean) => void): Promise<UserStats[]> => {
   const userStats: UserStats[] = usernames
     .map(u => localStorage.getItem(`user-${u}`))
     .filter((s): s is string => Boolean(s))
@@ -168,7 +169,7 @@ export const getUsers = async (usernames: string[], gameExpirations: GameExpirat
   if (missingUsernames.length) {
     const newUserStats = (await Promise.all(
       missingUsernames.map(async (u) =>
-        bggCollectionToUserStats(await getBggCollection(u), u)
+        bggCollectionToUserStats(await getBggCollection(u, setShowSlowNotice), u)
       )
     )).flat();
 
