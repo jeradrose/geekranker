@@ -5,7 +5,7 @@ import { ArrowDownward } from '@mui/icons-material';
 import { Tooltip, Switch, FormControlLabel, Pagination, Select, MenuItem } from '@mui/material';
 
 import styled from "styled-components"
-import { getSortLabel, DisplayMode, FallBackTo, SortOptions, getGameUserRating, getBggGameUrl, getGamePlayerCountStats, getShowCondensedFooter, BaseRating } from './Utilities';
+import { getSortLabel, DisplayMode, SortOptions, getGameUserRating, getBggGameUrl, getGamePlayerCountStats, getShowCondensedFooter } from './Utilities';
 
 const GamesHeader = styled.div`
   display: inline-block;
@@ -174,16 +174,6 @@ const BarContainerVertical = styled(BarContainerBase)`
   width: 200px;
 `;
 
-const BarContainerFadedHorizontal = styled(BarContainerHorizontal)`
-  opacity: 50%;
-  filter: grayscale();
-`;
-
-const BarContainerFadedVertical = styled(BarContainerVertical)`
-  opacity: 50%;
-  filter: grayscale();
-`;
-
 const Bar = styled.div`
   width: 150px;
   height: 20px;
@@ -257,7 +247,6 @@ interface GameRankerProps {
   gameIds: number[],
   setGameIds: (gameId: number[]) => void,
   games: Game[],
-  fallBackTo: FallBackTo,
   scoreIdealTime: boolean,
   setScoreIdealTime: (value: boolean) => void,
   idealTime: number,
@@ -267,8 +256,12 @@ interface GameRankerProps {
   scorePlayerCount: boolean,
   setScorePlayerCount: (value: boolean) => void,
   playerCountArray: number[],
-  baseRating: BaseRating,
-  setBaseRating: (value: BaseRating) => void,
+  scoreUserRating: boolean,
+  setScoreUserRating: (value: boolean) => void,
+  scorePlayerRating: boolean,
+  setScorePlayerRating: (value: boolean) => void,
+  scoreGeekRating: boolean,
+  setScoreGeekRating: (value: boolean) => void,
   sort: string,
   setSort: (value: string) => void,
   showGameId: boolean,
@@ -295,7 +288,6 @@ function GameRanker({
   gameIds,
   setGameIds,
   games,
-  fallBackTo,
   scoreIdealTime,
   setScoreIdealTime,
   idealTime,
@@ -305,8 +297,12 @@ function GameRanker({
   scorePlayerCount,
   setScorePlayerCount,
   playerCountArray,
-  baseRating,
-  setBaseRating,
+  scoreUserRating,
+  setScoreUserRating,
+  scorePlayerRating,
+  setScorePlayerRating,
+  scoreGeekRating,
+  setScoreGeekRating,
   sort,
   setSort,
   showGameId,
@@ -347,25 +343,14 @@ function GameRanker({
 
   const bar = (value: number, maxValue: number, rank: number, idealValue?: number | false) =>
     value === 0 ? displayMode === "horizontal" ? <BarContainerHorizontal /> : <BarContainerVertical /> :
-      rank === 0 ?
-        <Tooltip title={rank === 0 && `Not rated; Falling back to ${fallBackTo === 'player-rating' ? "avg. player rating" : "Geek rating"}`}>
-          {displayMode === "horizontal" ?
-            <BarContainerFadedHorizontal>
-              {innerBar(value, maxValue, rank, idealValue)}
-            </BarContainerFadedHorizontal> :
-            <BarContainerFadedVertical>
-              {innerBar(value, maxValue, rank, idealValue)}
-            </BarContainerFadedVertical>
-          }
-        </Tooltip> :
-        (displayMode === "horizontal" ?
-          <BarContainerHorizontal>
-            {innerBar(value, maxValue, rank, idealValue)}
-          </BarContainerHorizontal> :
-          <BarContainerVertical>
-            {innerBar(value, maxValue, rank, idealValue)}
-          </BarContainerVertical>
-        )
+      (displayMode === "horizontal" ?
+        <BarContainerHorizontal>
+          {innerBar(value, maxValue, rank, idealValue)}
+        </BarContainerHorizontal> :
+        <BarContainerVertical>
+          {innerBar(value, maxValue, rank, idealValue)}
+        </BarContainerVertical>
+      )
 
   const timeBarMax = 240;
   const innerTimeBar = (min: number, max: number, idealValue: number | false) => {
@@ -428,9 +413,9 @@ function GameRanker({
       {thisSort.startsWith('playercount-') && meeple(scorePlayerCount, () => setScorePlayerCount(!scorePlayerCount))}
       {thisSort === 'time' && meeple(scoreIdealTime, () => setScoreIdealTime(!scoreIdealTime))}
       {thisSort === 'weight' && meeple(scoreIdealWeight, () => setScoreIdealWeight(!scoreIdealWeight))}
-      {thisSort.startsWith('user-') && meeple(baseRating === 'user-rating', () => setBaseRating('user-rating'))}
-      {thisSort === 'geek-rating' && meeple(baseRating === 'geek-rating', () => setBaseRating('geek-rating'))}
-      {thisSort === 'player-rating' && meeple(baseRating === 'player-rating', () => setBaseRating('player-rating'))}
+      {thisSort.startsWith('user-') && meeple(scoreUserRating, () => setScoreUserRating(!scoreUserRating))}
+      {thisSort === 'geek-rating' && meeple(scoreGeekRating, () => setScoreGeekRating(!scoreGeekRating))}
+      {thisSort === 'player-rating' && meeple(scorePlayerRating, () => setScorePlayerRating(!scorePlayerRating))}
     </BarHeader>;
 
   const playerCountBar = (count: number, game: Game) => {
@@ -444,13 +429,13 @@ function GameRanker({
 
   const userRatingBar = (username: string, game: Game) => {
     if (!username) {
-      return bar(game.avgUserRating, 10, game.avgUserRatingRank);
+      return bar(game.avgUserRating || 0, 10, game.avgUserRatingRank);
     }
 
-    const [rating, hasUserRating] = getGameUserRating(username, game, fallBackTo, false);
+    const rating = getGameUserRating(username, game);
     const ratings = game.userStats.filter(r => r.username === username);
 
-    return bar(rating, 10, hasUserRating ? ratings[0].rank ?? 0 : 0);
+    return bar(rating || 0, 10, rating ? ratings[0].rank ?? 0 : 0);
   }
 
   const toggleGameId = (gameId: number) => {

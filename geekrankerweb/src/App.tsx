@@ -3,12 +3,12 @@ import styled, { createGlobalStyle } from "styled-components"
 
 import "typeface-open-sans";
 
-import { Cached, Clear, Close, Download, Info, Link, Settings as SettingsIcon } from '@mui/icons-material';
+import { Cached, Clear, Close, Download, Link, Settings as SettingsIcon } from '@mui/icons-material';
 import { TextField, Button, IconButton, Tabs, Tab, FormControl, Select, MenuItem, Drawer, Slider, InputLabel, FormControlLabel, Switch, RadioGroup, Radio, Tooltip, Snackbar } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material';
 
 import { Game, PlayerCountStats, UserStats } from './models';
-import { getStringQueryParam, getQueryParam, QueryParams, SelectedTab, getBoolQueryParam, getNumberArrayQueryParam, getTypedStringQueryParam, getNumberQueryParam, defaultQueryValues, sortOptions, getSortLabel, DisplayMode, FallBackTo, BaseRating, SortOptions, getUsernamesFromString, getGameIdsFromString, getIdFromString, updateRanks, getGameUserRating, getBggGameUrl, getGamePlayerCountStats, getIsMobileView } from './Utilities';
+import { getStringQueryParam, getQueryParam, QueryParams, SelectedTab, getBoolQueryParam, getNumberArrayQueryParam, getTypedStringQueryParam, getNumberQueryParam, defaultQueryValues, sortOptions, getSortLabel, DisplayMode, SortOptions, getUsernamesFromString, getGameIdsFromString, getIdFromString, updateRanks, getGameUserRating, getBggGameUrl, getGamePlayerCountStats, getIsMobileView } from './Utilities';
 import GameRanker from './GameRanker';
 import { getRankings } from './GrApi';
 
@@ -194,11 +194,6 @@ const SliderValue = styled.div`
   color: #348CE9;
 `;
 
-const FallBackInfo = styled(Info)`
- size: 14px;
- color: #348CE9;
-`;
-
 type GameIdFilter = "all" | "only-selected" | "hide-selected";
 
 function App() {
@@ -265,9 +260,9 @@ function App() {
   const [idealWeight, setIdealWeight] = useState<number>(getNumberQueryParam(QueryParams.IdealWieght) || idealWeightDefault);
   const [scoreIdealTime, setScoreIdealTime] = useState<boolean>(getBoolQueryParam(QueryParams.IdealTime));
   const [idealTime, setIdealTime] = useState<number>(getNumberQueryParam(QueryParams.IdealTime) || idealTimeDefault);
-  const [baseRating, setBaseRating] = useState<BaseRating>(getTypedStringQueryParam<BaseRating>(QueryParams.BaseRating));
-  const [fallBackTo, setFallBackTo] = useState<FallBackTo>(getTypedStringQueryParam<FallBackTo>(QueryParams.FallBackTo));
-
+  const [scoreUserRating, setScoreUserRating] = useState<boolean>(getBoolQueryParam(QueryParams.ScoreUserRating));
+  const [scorePlayerRating, setScorePlayerRating] = useState<boolean>(getBoolQueryParam(QueryParams.ScorePlayerRating));
+  const [scoreGeekRating, setScoreGeekRating] = useState<boolean>(getBoolQueryParam(QueryParams.ScoreGeekRating));
 
   // UI options
   const [singleColumnView, setSingleColumnView] = useState<boolean>(localStorage.getItem("singleColumnView") === "true");
@@ -306,17 +301,15 @@ function App() {
     [QueryParams.PlayerCountRange]: `${playerCountRange[0]} ${playerCountRange[1]}`,
     [QueryParams.IdealWieght]: scoreIdealWeight ? idealWeight : undefined,
     [QueryParams.IdealTime]: scoreIdealTime ? idealTime : undefined,
-    [QueryParams.BaseRating]: baseRating,
-    [QueryParams.FallBackTo]: fallBackTo,
+    [QueryParams.ScoreUserRating]: scoreUserRating,
+    [QueryParams.ScorePlayerRating]: scorePlayerRating,
+    [QueryParams.ScoreGeekRating]: scoreGeekRating,
   }
 
   const getShowGameId = () => (tab === 'advanced' && showGameId);
   const getShowThreadSequence = () => ((tab === 'advanced' && showThreadSequence) || tab === 'thread');
   const getShowGeekListSequence = () => ((tab === 'advanced' && showGeekListSequence) || tab === 'geeklist');
   const getShowGrIndex = () => (tab !== 'advanced' || showGrIndex);
-  const getShowUserRating = () => ((tab === 'advanced' && showUserRating) || tab === 'user');
-  const getShowPlayerRating = () => ((tab === 'advanced' && showPlayerRating) || tab !== 'user');
-  const getShowGeekRating = () => (tab === 'advanced' && showGeekRating);
 
   const getShouldIncludeQueryParam = (queryParam: QueryParams): boolean => {
     if (tab === 'advanced') return true;
@@ -349,8 +342,9 @@ function App() {
       case QueryParams.PlayerCountRange: return true;
       case QueryParams.IdealWieght: return true;
       case QueryParams.IdealTime: return true;
-      case QueryParams.BaseRating: return false;
-      case QueryParams.FallBackTo: return false;
+      case QueryParams.ScoreUserRating: return true;
+      case QueryParams.ScorePlayerRating: return true;
+      case QueryParams.ScoreGeekRating: return false;
     }
   }
 
@@ -441,21 +435,28 @@ function App() {
     let numerator = 1;
     let denominator = 1;
 
-    if (baseRating === 'user-rating' && usernames.length) {
-      console.log("scoring user-rating");
-      const userRatings = usernames.map(username => getGameUserRating(username, game, fallBackTo, false)[0]);
-      const avgUserRating = (userRatings.reduce((a, b) => a + b) / userRatings.length);
+    if (scoreUserRating && usernames.length) {
+      const userRatings = usernames
+        .filter(u => game.userStats.find(us => us.username === u && us.rating))
+        .map(username => getGameUserRating(username, game) || 0);
 
-      numerator *= avgUserRating;
-    } else if (baseRating !== 'geek-rating' && (baseRating !== 'user-rating' || fallBackTo === 'player-rating')) {
-      console.log("scoring player-rating");
-      numerator *= game.avgPlayerRating;
-    } else {
-      console.log("scoring geek-rating");
-      numerator *= game.geekRating;
+      if (userRatings.length) {
+        const avgUserRating = userRatings.reduce((a, b) => a + b) / userRatings.length;
+
+        numerator *= avgUserRating;
+        denominator *= 10;
+      }
     }
 
-    denominator *= 10;
+    if (scorePlayerRating) {
+      numerator *= game.avgPlayerRating;
+      denominator *= 10;
+    }
+
+    if (scoreGeekRating) {
+      numerator *= game.geekRating;
+      denominator *= 10;
+    }
 
     if (scorePlayerCount) {
       const playerCountStats = game.playerCountStats.filter(s => s.playerCount >= playerCountRange[0] && s.playerCount <= playerCountRange[1]);
@@ -494,10 +495,17 @@ function App() {
   };
 
   const getGamesSortedByUserRatings = (username: string): Game[] =>
-    getFilteredGames().sort((a, b) => getGameUserRating(username, b, fallBackTo, true)[0] - getGameUserRating(username, a, fallBackTo, true)[0]);
+    getFilteredGames().sort((a, b) => (getGameUserRating(username, b) || 10) - (getGameUserRating(username, a) || 10));
 
-  const getAvgUserRatings = (game: Game): number =>
-    (usernames.length && (usernames.map(u => getGameUserRating(u, game, fallBackTo, false)[0]).reduce((a, b) => a + b) / usernames.length)) ?? 0;
+  const getAvgUserRatings = (game: Game): number | undefined => {
+    const totalRatings = game.userStats.filter(us => us.rating).length;
+    return totalRatings && (
+      usernames
+        .filter(u => game.userStats.find(us => us.username === u))
+        .map(u => getGameUserRating(u, game) || 0)
+        .reduce((a, b) => a + b) / totalRatings
+    );
+  }
 
   const getSortedGames = () =>
     (sort === 'game') ? getFilteredGames().sort((a, b) => a.name.localeCompare(b.name)) :
@@ -510,18 +518,12 @@ function App() {
                   ((sort as string).startsWith('playercount-')) ? getGamesSortedByPlayerCount(parseInt(sort.split("-")[1])) :
                     (sort === 'time') ? getFilteredGames().sort((a, b) => b.maxPlayTime - a.maxPlayTime) :
                       (sort === 'gr-index') ? getFilteredGames().sort((a, b) => b.grIndex - a.grIndex) :
-                        (sort === 'user-rating') ? getFilteredGames().sort((a, b) => getAvgUserRatings(b) - getAvgUserRatings(a)) :
+                        (sort === 'user-rating') ? getFilteredGames().sort((a, b) => (getAvgUserRatings(b) || 10) - (getAvgUserRatings(a) || 10)) :
                           (sort as string).startsWith('user-') ? getGamesSortedByUserRatings(sort.split("-")[1]) :
                             getFilteredGames();
 
   const handleGameIdFilterChange = (event: React.ChangeEvent<HTMLInputElement>) =>
     setGameIdFilter((event.target as HTMLInputElement).value as GameIdFilter);
-
-  const handleFallBackToChange = (event: React.ChangeEvent<HTMLInputElement>) =>
-    setFallBackTo((event.target as HTMLInputElement).value as FallBackTo);
-
-  const handleBaseRatingChange = (event: React.ChangeEvent<HTMLInputElement>) =>
-    setBaseRating((event.target as HTMLInputElement).value as BaseRating);
 
   const isIos = () => {
     return [
@@ -615,9 +617,9 @@ function App() {
       (getShowThreadSequence() && getSortLabel("thread")) || null,
       (getShowGeekListSequence() && getSortLabel("geek-list")) || null,
       (getShowGrIndex() && getSortLabel("gr-index")) || null,
-      ...((getShowUserRating() && userRatingsHeader) || [null]),
-      (getShowPlayerRating() && getSortLabel("player-rating")) || null,
-      (getShowGeekRating() && getSortLabel("geek-rating")) || null,
+      ...((showUserRating && userRatingsHeader) || [null]),
+      (showPlayerRating && getSortLabel("player-rating")) || null,
+      (showGeekRating && getSortLabel("geek-rating")) || null,
       ...(showPlayerCount && getPlayerCountArray().map(pc => `${pc}-Player`) || [null]),
       (showWeight && getSortLabel("weight")) || null,
       (showTime && "Min Playtime") || null,
@@ -631,12 +633,12 @@ function App() {
       (getShowThreadSequence() && g.threadSequence.toString()) || null,
       (getShowGeekListSequence() && g.geekListSequence.toString()) || null,
       (getShowGrIndex() && g.grIndex.toString()) || null,
-      ...(getShowUserRating() &&
+      ...(showUserRating &&
         (showIndividualUserRatings || usernames.length < 2 ?
-          usernames.map(u => getGameUserRating(u, g, fallBackTo, true)[0].toString()) :
-          g.avgUserRating.toString()) || [null]),
-      (getShowPlayerRating() && g.avgPlayerRating.toString()) || null,
-      (getShowGeekRating() && g.geekRating.toString()) || null,
+          usernames.map(u => (getGameUserRating(u, g) || "").toString()) :
+          (g.avgUserRating || "").toString()) || [null]),
+      (showPlayerRating && g.avgPlayerRating.toString()) || null,
+      (showGeekRating && g.geekRating.toString()) || null,
       ...((showPlayerCount &&
         getPlayerCountArray().map(pc => getGamePlayerCountStats(pc, g)?.score.toString() || " "))
         || [null]),
@@ -686,7 +688,17 @@ function App() {
   useMemo(() => {
     updateAllCalculatedScores();
     updateAllRanks();
-  }, [scorePlayerCount, scoreIdealWeight, scoreIdealTime, idealWeight, idealTime, playerCountRange, baseRating, fallBackTo])
+  }, [
+    scorePlayerCount,
+    scoreIdealWeight,
+    scoreIdealTime,
+    idealWeight,
+    idealTime,
+    playerCountRange,
+    scoreUserRating,
+    scorePlayerRating,
+    scoreGeekRating
+  ])
 
   useMemo(() => {
     updateAllRanks();
@@ -912,24 +924,27 @@ function App() {
           setGameIds={setGameIds}
           displayMode={displayMode}
           screenWidth={screenWidth}
-          fallBackTo={fallBackTo}
           games={getSortedGames()}
           scoreIdealTime={scoreIdealTime}
           setScoreIdealTime={setScoreIdealTime}
           idealTime={idealTime}
           scorePlayerCount={scorePlayerCount}
           setScorePlayerCount={setScorePlayerCount}
-          baseRating={baseRating}
-          setBaseRating={setBaseRating}
+          scoreUserRating={scoreUserRating}
+          setScoreUserRating={setScoreUserRating}
+          scorePlayerRating={scorePlayerRating}
+          setScorePlayerRating={setScorePlayerRating}
+          scoreGeekRating={scoreGeekRating}
+          setScoreGeekRating={setScoreGeekRating}
           sort={sort}
           setSort={setSort}
           showGameId={getShowGameId()}
           showThreadSequence={getShowThreadSequence()}
           showGeekListSequence={getShowGeekListSequence()}
           showGrIndex={getShowGrIndex()}
-          showUserRating={getShowUserRating()}
-          showPlayerRating={getShowPlayerRating()}
-          showGeekRating={getShowGeekRating()}
+          showUserRating={showUserRating}
+          showPlayerRating={showPlayerRating}
+          showGeekRating={showGeekRating}
           showPlayerCount={showPlayerCount}
           showWeight={showWeight}
           showTime={showTime}
@@ -984,10 +999,10 @@ function App() {
                 {toggle(showThreadSequence, setShowThreadSequence, "Thread #")}
                 {toggle(showGeekListSequence, setShowGeekListSequence, "GeekList #")}
                 {toggle(showGrIndex, setShowGrIndex, "GR Index")}
-                {toggle(showUserRating, setShowUserRating, "User Rating")}
-                {toggle(showPlayerRating, setShowPlayerRating, "Average Rating")}
-                {toggle(showGeekRating, setShowGeekRating, "Geek Rating")}
               </>}
+              {toggle(showUserRating, setShowUserRating, "User Rating")}
+              {toggle(showPlayerRating, setShowPlayerRating, "Average Rating")}
+              {toggle(showGeekRating, setShowGeekRating, "Geek Rating")}
               {toggle(showPlayerCount, setShowPlayerCount, `Player Count Rating(s)`)}
               <SliderContainer>
                 <SliderValue style={{ color: (showPlayerCount ? "" : "#000"), opacity: (showPlayerCount ? 1 : .38) }}>{playerCountRange[0]}</SliderValue>
@@ -1032,6 +1047,9 @@ function App() {
               Scoring
             </SettingsHeader>
             <SettingsContent>
+              {toggle(scoreUserRating, setScoreUserRating, "User Rating")}
+              {toggle(scorePlayerRating, setScorePlayerRating, "Avg. Player Rating")}
+              {toggle(scoreGeekRating, setScoreGeekRating, "Geek Rating")}
               {toggle(scorePlayerCount, setScorePlayerCount, "Player Count")}
               {toggle(scoreIdealWeight, setScoreIdealWeight, "Ideal Weight")}
               <SliderContainer>
@@ -1043,25 +1061,6 @@ function App() {
                 <SliderValue style={{ color: (scoreIdealTime ? "" : "#000"), opacity: (scoreIdealTime ? 1 : .38) }}>{idealTime}</SliderValue>
                 <StyledSlider disabled={!scoreIdealTime} min={30} max={240} step={30} value={idealTime} onChange={(event, value) => handleSliderChange(event, () => setIdealTime(Number(value)))} />
               </SliderContainer>
-              {(tab === 'advanced') &&
-                <>
-                  <FilterLabel>Base Rating:</FilterLabel>
-                  <RadioGroup value={baseRating} onChange={handleBaseRatingChange}>
-                    <FormControlLabel value="user-rating" control={<Radio />} label="User" />
-                    <FormControlLabel value="player-rating" control={<Radio />} label="Average" />
-                    <FormControlLabel value="geek-rating" control={<Radio />} label="Geek" />
-                  </RadioGroup>
-                </>
-              }
-              {(tab === 'advanced') &&
-                <>
-                  <FilterLabel>Fallback Rating: <Tooltip title="When a user rating isn't set, use this instead."><FallBackInfo /></Tooltip></FilterLabel>
-                  <RadioGroup value={fallBackTo} onChange={handleFallBackToChange}>
-                    <FormControlLabel value="player-rating" control={<Radio />} label="Average" />
-                    <FormControlLabel value="geek-rating" control={<Radio />} label="Geek" />
-                  </RadioGroup>
-                </>
-              }
             </SettingsContent>
             {getIsMobileView(screenWidth) &&
               <>

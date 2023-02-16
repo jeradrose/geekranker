@@ -6,8 +6,6 @@ export const sortOptions = ["game", "id", "gr-index", "user-rating", "player-rat
 export type SortOptions = typeof sortOptions[number];
 
 export type DisplayMode = "vertical" | "horizontal";
-export type FallBackTo = "player-rating" | "geek-rating";
-export type BaseRating = FallBackTo | "user-rating";
 
 export enum QueryParams {
   SelectedTab = "tab",
@@ -36,8 +34,9 @@ export enum QueryParams {
   PlayerCountRange = "pc",
   IdealWieght = "iw",
   IdealTime = "it",
-  BaseRating = "br",
-  FallBackTo = "fb",
+  ScoreUserRating = "scur",
+  ScorePlayerRating = "scpr",
+  ScoreGeekRating = "scgr",
   GameIds = "g",
 }
 
@@ -53,7 +52,7 @@ export const defaultQueryValues: { [key in QueryParams]: number | string | boole
   [QueryParams.ShowGeekListSequence]: false,
   [QueryParams.ShowGrIndex]: true,
   [QueryParams.ShowUserRating]: true,
-  [QueryParams.ShowPlayerRating]: false,
+  [QueryParams.ShowPlayerRating]: true,
   [QueryParams.ShowGeekRating]: false,
   [QueryParams.ShowPlayerCount]: true,
   [QueryParams.ShowWeight]: true,
@@ -69,8 +68,9 @@ export const defaultQueryValues: { [key in QueryParams]: number | string | boole
   [QueryParams.PlayerCountRange]: "2 4",
   [QueryParams.IdealWieght]: undefined,
   [QueryParams.IdealTime]: undefined,
-  [QueryParams.BaseRating]: "user-rating",
-  [QueryParams.FallBackTo]: "player-rating",
+  [QueryParams.ScoreUserRating]: true,
+  [QueryParams.ScorePlayerRating]: true,
+  [QueryParams.ScoreGeekRating]: false,
 }
 
 export const getQueryParam = (queryParam: QueryParams) =>
@@ -146,12 +146,12 @@ export const updateRanks = <T>(
   list.map(i => rankSetter(i, scoreGetter(i) && ranks.indexOf(idGetter(i)) + 1));
 }
 
-export const getGameUserRating = (username: string, game: Game, fallBackTo: FallBackTo, unratedLast: boolean): [number, boolean] => {
+export const getGameUserRating = (username: string, game: Game): number | undefined => {
   const filteredPlayerRating = game.userStats.filter(r => r.username === username);
 
   const hasUserRating = filteredPlayerRating.length === 1;
 
-  return [(hasUserRating && filteredPlayerRating[0].rating) || (fallBackTo === "geek-rating" ? game.geekRating : game.avgPlayerRating) - (unratedLast ? 10 : 0), hasUserRating];
+  return hasUserRating && filteredPlayerRating[0].rating || undefined;
 }
 
 export const getGamePlayerCountStats = (count: number, game: Game): PlayerCountStats | undefined =>

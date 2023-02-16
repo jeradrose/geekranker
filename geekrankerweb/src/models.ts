@@ -16,7 +16,7 @@ export interface Game {
   avgWeightRank: number;
   avgPlayerRating: number;
   avgPlayerRatingRank: number;
-  avgUserRating: number;
+  avgUserRating: number | undefined;
   avgUserRatingRank: number;
   geekRating: number;
   geekRatingRank: number;
