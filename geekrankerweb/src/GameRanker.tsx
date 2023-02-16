@@ -150,6 +150,7 @@ const BarHeader = styled(RowCell)`
   flex-grow: 1;
   flex-basis: 200px;
   min-width: 200px;
+  white-space: nowrap;
 `;
 
 const BarHeaderSort = styled.div`
