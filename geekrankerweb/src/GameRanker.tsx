@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Game } from './models';
 import "typeface-open-sans";
 import { ArrowDownward } from '@mui/icons-material';
@@ -201,47 +201,6 @@ const BarRank = styled.span`
   padding-left: 6px;
 `;
 
-const EmptyState = styled.div`
-  display: inline-flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  position: sticky;
-  left: 0;
-  justify-content: center;
-  align-items: center;
-  margin: -5px;
-`;
-
-const Intro = styled.div`
-  background-color: #fcfcfc;
-  padding: 15px;
-  margin: 15px;
-  border: 2px solid #F25D07;
-  border-radius: 20px;
-  max-width: 700px;
-`;
-
-const IntroHeader = styled.div`
-  font-weight: bold;
-`;
-
-const IntroList = styled.ul`
-
-`;
-
-const IntroListItem = styled.li`
-  margin: 10px 0;
-`;
-
-const IntroTip = styled.div`
-  padding-top: 4px;
-  color: #348CE9;
-`
-
-const IntroTipLink = styled(IntroTip)`
-  cursor: pointer;
-`
-
 interface GameRankerProps {
   usernames: string[],
   gameIds: number[],
@@ -324,7 +283,6 @@ function GameRanker({
   setPage,
 }: GameRankerProps) {
   const renderCount = useRef<number>(0);
-  const [showTips, setShowTips] = useState<boolean>(false);
 
   const innerBar = (value: number, maxValue: number, rank: number, idealValue?: number | false) =>
     value > 0 &&
@@ -495,38 +453,6 @@ function GameRanker({
             }
           </HeaderRow>
         </GamesHeader>
-      }
-      {games.length === 0 &&
-        <EmptyState style={{ width: screenWidth }}>
-          <Intro>
-            <IntroHeader>Geek Ranker can be used to:</IntroHeader>
-            <IntroList>
-              <IntroListItem>
-                View your BGG collection alongside data like Player Count Ratings, Geek Ratings, and many more.
-                {showTips && <IntroTip>Just type your BGG username above and click "Load Games".</IntroTip>}
-              </IntroListItem>
-              <IntroListItem>
-                View your collection with other BGG users' collections -- see how your games stack against others that share your interests.
-                {showTips && <IntroTip>Enter yours and others' BGG usernames (separated by space) and click "Load Games".</IntroTip>}
-              </IntroListItem>
-              <IntroListItem>
-                Rank your games using the Geek Ranker Index (GR Index) that combines many stats into one score.
-                {showTips && <IntroTip>After loading your games, click "Advanced Options" to toggle columns, and play around with different filters and scoring options.</IntroTip>}
-              </IntroListItem>
-              <IntroListItem>
-                Use the GR Index with your wishlist to figure out which games are best in different scenarios (e.g. 2 player, mid-light weight, 30 minutes), to help narrow down the next game to add to your collection.
-                {showTips && <IntroTip>Under "Advanced Options", toggle "Wishlisted Games" and try different scenarios to find the best fit for the games you have your eye on.</IntroTip>}
-              </IntroListItem>
-              <IntroListItem>
-                Share your list with others on BGG or social media.
-                {showTips && <IntroTip>Just copy the URL -- it is updated as you make changes, so they'll see what you see just by visiting the URL you share.</IntroTip>}
-              </IntroListItem>
-              <IntroListItem>
-                <IntroTipLink onClick={() => setShowTips(!showTips)}>Click here to toggle tips!</IntroTipLink>
-              </IntroListItem>
-            </IntroList>
-          </Intro>
-        </EmptyState>
       }
       {games.slice(startGame - 1, endGame).map(g =>
         displayMode === "horizontal" ?

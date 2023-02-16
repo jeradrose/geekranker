@@ -103,6 +103,7 @@ const BggLink = styled.a`
   text-decoration: none;
   cursor: pointer;
   right: 45px;
+  margin-top: 3px;
   max-width: calc(100% - 150px);
   white-space: nowrap;
   overflow: hidden;
@@ -130,6 +131,7 @@ const Logo = styled.img`
   width: 400px;
   object-fit: contain;
   padding: 5px 0;
+  cursor: pointer;
 `;
 
 const Settings = styled.div`
@@ -193,6 +195,80 @@ const SliderValue = styled.div`
   font-weight: bold;
   color: #348CE9;
 `;
+
+const EmptyState = styled.div`
+  display: inline-flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  position: sticky;
+  left: 0;
+  justify-content: center;
+  align-items: center;
+  margin: -5px;
+`;
+
+const Intro = styled.div`
+  font-weight: 400;
+  max-width: 700px;
+  margin: 15px;
+`;
+
+const IntroHeader = styled.div`
+  background-color: #348CE9;
+  color: #fff;
+  font-weight: 400;
+  border-color: #348CE9;
+  border-style: solid;
+  border-width: 3px;
+  border-radius: 17px 17px 0 0;
+  padding: 15px 15px 0 15px;
+`;
+
+const IntroHeaderParagraph = styled.div`
+  font-weight: bold;
+`
+
+const IntroParagraph = styled.div`
+  margin-bottom: 10px;
+`
+
+const IntroEmphasis = styled.div`
+  display: inline;
+  font-weight: bold;
+`
+
+const IntroContentBase = styled.div`
+  background-color: #fcfcfc;
+  border-color: #348CE9;
+  border-style: solid;
+  border-width: 3px;
+  padding: 15px;
+`;
+
+const IntroContent = styled(IntroContentBase)`
+  border-radius: 0 0 20px 20px;
+`;
+
+const IntroContentOnly = styled(IntroContentBase)`
+  border-radius: 20px;
+`;
+
+const IntroList = styled.ul`
+
+`;
+
+const IntroListItem = styled.li`
+  margin: 10px 15px 10px 0;
+`;
+
+const IntroTip = styled.div`
+  padding-top: 4px;
+  color: #348CE9;
+`
+
+const IntroTipLink = styled(IntroTip)`
+  cursor: pointer;
+`
 
 type GameIdFilter = "all" | "only-selected" | "hide-selected";
 
@@ -268,6 +344,7 @@ function App() {
   const [singleColumnView, setSingleColumnView] = useState<boolean>(localStorage.getItem("singleColumnView") === "true");
   const [gamesPerPage, setGamesPerPage] = useState<number>(parseInt(localStorage.getItem("gamesPerPage") || "100"));
   const [page, setPage] = useState<number>(1);
+  const [showTips, setShowTips] = useState<boolean>(false);
 
   // Snackbar states
   const [openSnackbar, setOpenSnackbar] = useState<boolean>(false);
@@ -754,10 +831,18 @@ function App() {
 
   const setTextFieldStateValues = () => {
     setUsernames(getUsernamesFromString(usernamesInput));
-    setGameIds(getGameIdsFromString(gameIdsInput))
+    setGameIds(getGameIdsFromString(gameIdsInput));
     setThreadId(getIdFromString(threadIdInput));
     setGeekListId(getIdFromString(geekListIdInput));
   };
+
+  const resetInputs = () => {
+    setTab('user');
+    setUsernamesInput("");
+    setGameIdsInput("");
+    setThreadIdInput("");
+    setGeekListIdInput("");
+  }
 
   const inputKeyPress = (e: React.KeyboardEvent, ref: React.RefObject<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -766,19 +851,25 @@ function App() {
     }
   }
 
-  const filterPaste = (e: React.ClipboardEvent) => {
+  const filterPaste = (e: React.ClipboardEvent, ref: React.RefObject<HTMLInputElement>) => {
     const text = e.clipboardData.getData('Text');
 
     const threadRegexp = /https:\/\/boardgamegeek.com\/thread\/([0-9]*)\//;
     const geeklistRegexp = /https:\/\/boardgamegeek.com\/geeklist\/([0-9]*)\//;
+    const gameIdRegexp = /[0-9]*/g;
 
-    if (text.match(threadRegexp) != null) {
-      setThreadId(parseInt(text.match(threadRegexp)![1]));
+    if (ref === threadIdRef && text.match(threadRegexp) != null) {
+      setThreadIdInput(text.match(threadRegexp)![1]);
       e.preventDefault();
     }
 
-    if (text.match(geeklistRegexp)) {
-      setGeekListId(parseInt(text.match(geeklistRegexp)![1]));
+    if (ref === geekListIdRef && text.match(geeklistRegexp)) {
+      setGeekListIdInput(text.match(geeklistRegexp)![1]);
+      e.preventDefault();
+    }
+
+    if (ref === gameIdsRef && text.match(gameIdRegexp)) {
+      setGameIdsInput(text.match(gameIdRegexp)!.filter(m => m).join(' '));
       e.preventDefault();
     }
   }
@@ -806,7 +897,8 @@ function App() {
           onChange={e => setValue(e.target.value)}
           value={value}
           inputRef={ref}
-          onPaste={filterPaste}
+          onPaste={e => filterPaste(e, ref)}
+          multiline
           InputProps={{
             inputProps: {
               autoCapitalize: 'none',
@@ -837,6 +929,12 @@ function App() {
       }
       label={label} />
 
+  const tipIconStyle: React.CSSProperties = {
+    marginBottom: -6
+  }
+
+  const inlineMeeple = <img src="/gr-meeple.png" height="15px" style={{ marginBottom: -1, marginRight: 2, marginLeft: 2 }} />;
+
   renderCount.current++;
 
   return (
@@ -850,18 +948,18 @@ function App() {
                 <FormControl variant="standard">
                   <Select value={tab} onChange={e => setTab(e.target.value as SelectedTab)}>
                     <MenuItem value="user">By Username</MenuItem>
-                    <MenuItem value="game">By Game ID</MenuItem>
                     <MenuItem value="thread">By Thread</MenuItem>
                     <MenuItem value="geeklist">By GeekList</MenuItem>
+                    <MenuItem value="game">By Game ID</MenuItem>
                     <MenuItem value="advanced">Advanced</MenuItem>
                   </Select>
                 </FormControl>
                 :
                 <Tabs value={tab} onChange={(_, value) => setTab(value)} scrollButtons="auto">
                   <Tab value="user" label="By Username" />
-                  <Tab value="game" label="By Game ID" />
                   <Tab value="thread" label="By Thread" />
                   <Tab value="geeklist" label="By GeekList" />
+                  <Tab value="game" label="By Game ID" />
                   <Tab value="advanced" label="Advanced" />
                 </Tabs>
               }
@@ -915,7 +1013,7 @@ function App() {
                 </ButtonsList>
               </Buttons>
             </Form>
-            <Logo src="/logo.png" alt="logo" />
+            <Logo src="/logo.png" alt="logo" onClick={() => resetInputs()} />
           </PageHeader>
         </PageHeaderContainer>
         <GameRanker
@@ -958,6 +1056,155 @@ function App() {
           page={page}
           setPage={setPage}
         />
+        {getSortedGames().length === 0 &&
+          <EmptyState style={{ width: screenWidth }}>
+            {tab === 'user' &&
+              <Intro>
+                <IntroHeader>
+                  <IntroHeaderParagraph>Welcome to Geek Ranker --</IntroHeaderParagraph>
+                  <IntroParagraph>A new way to view, filter, sort -- and rank! -- collections and lists of BGG board games.</IntroParagraph>
+                </IntroHeader>
+                <IntroContent>
+                  <IntroParagraph>This is the <IntroEmphasis>Username tab</IntroEmphasis>, where you can load games from your collection -- or any other user's collection.</IntroParagraph>
+                  <IntroList>
+                    <IntroListItem>
+                      Easily load games from <IntroEmphasis>your own collection</IntroEmphasis>.
+                      {showTips && <IntroTip>Just type your BGG username above and click "Load Games". You can sort by any column simply by clicking the column header.</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      View your collection merged with <IntroEmphasis>other BGG users' collections</IntroEmphasis> -- see how your games stack against others that share your interests.
+                      {showTips && <IntroTip>Enter yours and others' BGG usernames (separated by space, or anything really) and click "Load Games".</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      <IntroEmphasis>Rank your games using the Geek Ranker Index</IntroEmphasis> ({inlineMeeple}GR Index) that combines many stats into one score.
+                      {showTips && <IntroTip>After loading your games, click the <SettingsIcon style={tipIconStyle} />Settings button to toggle columns, and play around with different filters and scoring options.</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      Use the {inlineMeeple}GR Index to <IntroEmphasis>rank your wishlist</IntroEmphasis> and figure out which games are best in different scenarios (e.g. 2 player, mid-light weight, 30 minutes), to help narrow down the next game to add to your collection.
+                      {showTips && <IntroTip>Under <SettingsIcon style={tipIconStyle} />Settings, toggle "Wishlisted Games" and try different scenarios to find the best fit for the games you have your eye on.</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      <IntroEmphasis>Share your list</IntroEmphasis> with others on BGG or social media.
+                      {showTips && <IntroTip>Click the <Link style={tipIconStyle} />Link button to copy the URL, then simply paste it to any platform to share with others.</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      <IntroTipLink onClick={() => setShowTips(!showTips)}><IntroEmphasis>Click here to toggle tips for each of the above!</IntroEmphasis></IntroTipLink>
+                    </IntroListItem>
+                  </IntroList>
+                </IntroContent>
+              </Intro>
+            }
+            {tab === 'thread' &&
+              <Intro>
+                <IntroContentOnly>
+                  <IntroParagraph>This is the <IntroEmphasis>Thread tab</IntroEmphasis>, a great place to compare games mentioned in a BGG thread.</IntroParagraph>
+                  <IntroList>
+                    <IntroListItem>
+                      <IntroEmphasis>Load all games mentioned in a thread</IntroEmphasis>, as long as they are linked in the thread (sorry, games mentioned by name without a link won't be loaded).
+                      {showTips && <IntroTip>Enter the thread ID above -- or just copy and paste the URL of the thread -- and click "Load Games".</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      A great way to <IntroEmphasis>compare games in a Recommendations thread</IntroEmphasis>. Especially if someone has provided specific criteria, such as player count, weight, time.
+                      {showTips && <IntroTip>After you've loaded games, click the <SettingsIcon style={tipIconStyle} />Settings button, and tweak any of the various settings. The {inlineMeeple}GR Index will calculate the best games based on the scoring settings entered.</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      <IntroEmphasis>Share a link in a recommendations thread!</IntroEmphasis> BGG users can click the BGG link, and instantly see all the games and the various stats to see which games fit their playstyle the best.
+                      {showTips && <IntroTip>After tweaking the settings for the recommendation, click the <Link style={tipIconStyle} />Link button to copy the URL, then paste it into the BGG thread.</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      <IntroEmphasis>Also great for looking for recommendations.</IntroEmphasis> Just figure out what type of game you're lookign for, by player count, weight, and time, and share the link when you start a recommendation thread.
+                      {showTips && <IntroTip>After tweaking the settings for what you're looking for, click the <Link style={tipIconStyle} />Link button to copy the URL, then paste it into the BGG thread.</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      <IntroTipLink onClick={() => setShowTips(!showTips)}><IntroEmphasis>Click here to toggle tips for each of the above!</IntroEmphasis></IntroTipLink>
+                    </IntroListItem>
+                  </IntroList>
+                </IntroContentOnly>
+              </Intro>
+            }
+            {tab === 'geeklist' &&
+              <Intro>
+                <IntroContentOnly>
+                  <IntroParagraph>This is the <IntroEmphasis>GeekList tab</IntroEmphasis>, where you can finally view all games in a GeekList alongside data like ratings, weight, and player count recommendations.</IntroParagraph>
+                  <IntroList>
+                    <IntroListItem>
+                      <IntroEmphasis>Load all games from a GeekList</IntroEmphasis> just by knowing the ID or URL.
+                      {showTips && <IntroTip>Enter the thread ID above -- or just copy and paste the URL of the GeekList -- and click "Load Games".</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      A great way to <IntroEmphasis>compare games in a GeekList</IntroEmphasis>. Some GeekLists are even taylored to certain playstyles, so you can now see exactly how they score across the various scoring criterie.
+                      {showTips && <IntroTip>After you've loaded games, click the <SettingsIcon style={tipIconStyle} />Settings button, and tweak any of the various settings. The {inlineMeeple}GR Index will calculate the best games based on the scoring settings entered.</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      <IntroEmphasis>Provide the GR link when creating a GeekList</IntroEmphasis> to give viewers a great way to view and score the games on your GeekList.
+                      {showTips && <IntroTip>Use the <SettingsIcon style={tipIconStyle} />Settings to enable any specific stats, filters, or scoring criteria you want to highlight in your GeekList, then click the <pre onClick={() => copyThingLinkListToClipboard()} style={{ color: '#348CE9', cursor: 'pointer' }} >[thing]</pre> button which will copy Thing links into the clipboard. Then just paste these in the recommendation thread, and they'll automatically show up when others load the Geek Ranker list for the thread.</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      <IntroTipLink onClick={() => setShowTips(!showTips)}><IntroEmphasis>Click here to toggle tips for each of the above!</IntroEmphasis></IntroTipLink>
+                    </IntroListItem>
+                  </IntroList>
+                </IntroContentOnly>
+              </Intro>
+            }
+            {tab === 'game' &&
+              <Intro>
+                <IntroContentOnly>
+                  <IntroParagraph>This is the <IntroEmphasis>Game ID tab</IntroEmphasis>, where you can load any BGG simply by entering its ID.</IntroParagraph>
+                  <IntroList>
+                    <IntroListItem>
+                      <IntroEmphasis>Load any game</IntroEmphasis>, it doesn't have to be in your collection or a list.
+                      {showTips && <IntroTip>Grab any number of Game IDs from BGG, and enter them above and click "Load Games".</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      Useful if you're looking at a <IntroEmphasis>list of game IDs that someone has shared</IntroEmphasis> (e.g. in a spreadsheet), and want to compare them on Geek Ranker.
+                      {showTips && <IntroTip>Just copy the list of IDs, and past them above -- Geek Ranker will parse the list for you, and enter them separated by spaces (other characters work, too).</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      <IntroEmphasis>Rank games using the {inlineMeeple}GR Index</IntroEmphasis>, just like you can with any other list.
+                      {showTips && <IntroTip>After loading your games, click the <SettingsIcon style={tipIconStyle} />Settings button to toggle columns, and play around with different filters and scoring options.</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      <IntroTipLink onClick={() => setShowTips(!showTips)}><IntroEmphasis>Click here to toggle tips for each of the above!</IntroEmphasis></IntroTipLink>
+                    </IntroListItem>
+                  </IntroList>
+                </IntroContentOnly>
+              </Intro>
+            }
+            {tab === 'advanced' &&
+              <Intro>
+                <IntroContentOnly>
+                  <IntroParagraph>This is the <IntroEmphasis>Advanced tab</IntroEmphasis>: basically everything you can do on Geek Ranker can be done here</IntroParagraph>
+                  <IntroParagraph><IntroEmphasis>Warning:</IntroEmphasis> this tab may be a bit overwhelming for new members -- play around with the other tabs until you get more familiar with how Geek Ranker works before exploring the Advanced tab.</IntroParagraph>
+                  <IntroList>
+                    <IntroListItem>
+                      <IntroEmphasis>Combine multiple lists</IntroEmphasis> to see games from many lists merged into one big Geek Ranker list.
+                      {showTips && <IntroTip>Enter any combindation of username(s), a thread, a GeekList, and/or any game IDs, then click "Load Games". Warning: Geek Ranker has to load data from BGG, so be aware that loading too many games at once may take a while and/or cause other issues.</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      <IntroEmphasis>Experiment with the many settings</IntroEmphasis> that are all unlocked on the advanced tab.
+                      {showTips && <IntroTip>Click the <SettingsIcon style={tipIconStyle} />Settings button and you'll see all of the columns you can enable, and the various filters and scoring criteria you can use.</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      Use Geek Ranker to look for games and <IntroEmphasis>share them in recommendation threads</IntroEmphasis>.
+                      {showTips && <IntroTip>Click the <SettingsIcon style={tipIconStyle} />Settings button to make sure the "Game ID" column is visible. Use the toggle on the Game ID column to select any games you'd like to share. Then click the <Link style={tipIconStyle} />Link button to copy the URL, then paste it into the BGG thread.</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      <IntroEmphasis>Download a CSV of your Geek Ranker list!</IntroEmphasis>
+                      {showTips && <IntroTip>Click the <Download style={tipIconStyle} />Download button to download all games in the current Geek Ranker list. Great for playing with all the different bits of data, or even sharing with friends (e.g. import it as a Google Sheets doc).</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      <IntroEmphasis>Having trouble?</IntroEmphasis> Try clearing the cache.
+                      {showTips && <IntroTip>If you run into any issues, the first thing to try is clearning the cache. Click the <SettingsIcon style={tipIconStyle} />Settings button from the Advanced tab (this is not available on the other tabs), and scroll all the way to the bottom of the list, and click the <IntroEmphasis>"Clear Cache" button</IntroEmphasis>. Cache is used to make Geek Ranker super speedy, but if it gets out of sorts, you may experience issues. Clearning it should get you going again.</IntroTip>}
+                    </IntroListItem>
+                    <IntroListItem>
+                      <IntroTipLink onClick={() => setShowTips(!showTips)}><IntroEmphasis>Click here to toggle tips for each of the above!</IntroEmphasis></IntroTipLink>
+                    </IntroListItem>
+                  </IntroList>
+                </IntroContentOnly>
+              </Intro>
+            }
+          </EmptyState>
+        }
       </ThemeProvider>
       <Snackbar
         message={snackbarMessage}
