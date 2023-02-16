@@ -522,8 +522,10 @@ function App() {
         const avgUserRating = userRatings.reduce((a, b) => a + b) / userRatings.length;
 
         numerator *= avgUserRating;
-        denominator *= 10;
+      } else {
+        numerator *= 0;
       }
+      denominator *= 10;
     }
 
     if (scorePlayerRating) {
