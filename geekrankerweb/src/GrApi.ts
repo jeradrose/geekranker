@@ -11,6 +11,9 @@ export const getRankings = async (
   geekListId: number | undefined,
   apiState: ApiState,
   setApiState: (value: ApiState) => void,
+  includeOwned: boolean,
+  includeRated: boolean,
+  includeWishlisted: boolean,
 ): Promise<GetRankingsResponse> => {
   const response: GetRankingsResponse = {
     games: [],
@@ -22,7 +25,13 @@ export const getRankings = async (
 
   const stats = await getUsers(usernames, getGameExpirations(), apiState, setApiState);
 
-  const userGameIds: number[] = stats.map(s => s.gameId);
+  const userGameIds: number[] = stats
+    .filter(s =>
+      (s.isOwned && includeOwned) ||
+      (s.isWishlisted && includeWishlisted) ||
+      (!s.isOwned && !s.isWishlisted && includeRated)
+    )
+    .map(s => s.gameId);
 
   const threadGameIds: number[] = [];
 

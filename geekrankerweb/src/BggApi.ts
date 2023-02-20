@@ -71,7 +71,7 @@ const fetchFromBgg = async <T>(url: string, apiState: ApiState, setApiState: (va
           ...apiState,
           isRequestPending: true,
         });
-        await delay(1000 * (tries + 1));
+        await delay(2000 * (tries + 1));
         return await fetchFromBgg(url, apiState, setApiState, tries + 1);
       }
       const parser = new xml2js.Parser();

@@ -745,7 +745,7 @@ function App() {
       return;
     }
 
-    const rankings = await getRankings(usernames, gameIds, threadId, geekListId, apiState, setApiState);
+    const rankings = await getRankings(usernames, gameIds, threadId, geekListId, apiState, setApiState, includeOwned, includeRated, includeWishlisted);
 
     updateAllCalculatedScores(rankings.games);
     updateAllRanks(rankings.games);
@@ -888,7 +888,7 @@ function App() {
 
   useEffect(() => {
     getApiData();
-  }, [usernames, gameIds, threadId, geekListId]);
+  }, [usernames, gameIds, threadId, geekListId, includeOwned, includeWishlisted, includeRated]);
 
   useEffect(() => {
     const maxPage = Math.trunc(getFilteredGames().length / gamesPerPage) + 1;
