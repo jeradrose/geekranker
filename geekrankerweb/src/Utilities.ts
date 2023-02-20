@@ -134,8 +134,11 @@ export const getSortLabel = (sortOption: SortOptions) => {
   }
 }
 
-export const getUsernamesFromString = (usernamesString: string | undefined | null): string[] =>
-  usernamesString?.split(/[^a-zA-Z0-9_]/).filter(u => u.length) ?? [];
+export const getUsernamesFromString = (usernamesString: string | undefined | null): string[] => {
+  const spacesWithQuotesRegex = /[^a-zA-Z0-9_\-"](?=(?:[^"]*"[^"]*")*[^"]*$)/;
+  const usernames = usernamesString?.split(spacesWithQuotesRegex).map(u => u.replaceAll('"', ''));
+  return usernames?.filter(u => u.length) ?? [];
+}
 
 export const getGameIdsFromString = (gameIdsString: string | undefined | null): number[] =>
   gameIdsString?.split(/[^0-9]/).filter(id => id.length).map(id => parseInt(id)) ?? [];

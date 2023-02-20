@@ -439,7 +439,7 @@ function App() {
 
   const queryValues: { [key in QueryParams]: SelectedTab | string | number | string[] | boolean | undefined } = {
     [QueryParams.SelectedTab]: tab,
-    [QueryParams.Usernames]: usernames.length ? usernames.join(' ') : undefined,
+    [QueryParams.Usernames]: usernames.length ? usernames.map(u => u.indexOf(' ') >= 0 ? `"${u}"` : u).join(' ') : undefined,
     [QueryParams.GameIds]: gameIds.length ? gameIds.join(' ') : undefined,
     [QueryParams.ThreadId]: threadId,
     [QueryParams.GeekListId]: geekListId,
