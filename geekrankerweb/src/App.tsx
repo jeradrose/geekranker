@@ -597,8 +597,7 @@ function App() {
   };
 
   const getGrIndex = (game: Game): number => {
-    let numerator = 1;
-    let denominator = 1;
+    let score = 1
 
     if (scoreUserRating && usernames.length) {
       const userRatings = usernames
@@ -608,21 +607,18 @@ function App() {
       if (userRatings.length) {
         const avgUserRating = userRatings.reduce((a, b) => a + b) / userRatings.length;
 
-        numerator *= avgUserRating;
+        score *= avgUserRating / 10;
       } else {
-        numerator *= 0;
+        score *= 0;
       }
-      denominator *= 10;
     }
 
     if (scorePlayerRating) {
-      numerator *= game.avgPlayerRating;
-      denominator *= 10;
+      score *= game.avgPlayerRating / 10;
     }
 
     if (scoreGeekRating) {
-      numerator *= game.geekRating;
-      denominator *= 10;
+      score *= game.geekRating / 10;
     }
 
     if (scorePlayerCount) {
@@ -632,21 +628,22 @@ function App() {
         return 0;
       }
 
-      numerator *= playerCountStats.map(s => s.score).reduce((a, b) => a + b) / (playerCountRange[1] - playerCountRange[0] + 1);
-      denominator *= 10;
+      score *= (playerCountStats.map(s => s.score).reduce((a, b) => a + b) / (playerCountRange[1] - playerCountRange[0] + 1)) / 10;
     }
 
     if (scoreIdealWeight) {
-      numerator *= 5 - Math.abs(game.avgWeight - idealWeight);
-      denominator *= 5;
+      score *= (5 - Math.abs(game.avgWeight - idealWeight)) / 5;
     }
 
     if (scoreIdealTime) {
-      numerator *= Math.max(150 - Math.abs(game.maxPlayTime - idealTime), 0);
-      denominator *= 150;
+      if (idealTime < game.maxPlayTime) {
+        score *= idealTime / game.maxPlayTime;
+      } else {
+        score *= game.maxPlayTime / idealTime;
+      }
     }
 
-    return 10 * numerator / denominator;
+    return 10 * score;
   }
 
   const getGamesSortedByPlayerCount = (playerCount: number): Game[] => {
