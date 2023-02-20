@@ -2,13 +2,15 @@ import { getBggGames, getBggCollection, getBggThread, getBggGeekList } from "./B
 import { BggGame } from "./BggApiGames";
 import { BggCollection } from "./BggApiCollection";
 import { Game, GameExpiration, GetRankingsResponse, PlayerCountStats, UserStats } from "./models";
+import { ApiState } from "./Utilities";
 
 export const getRankings = async (
   usernames: string[],
   gameIds: number[],
   threadId: number | undefined,
   geekListId: number | undefined,
-  setShowSlowNotice: (value: boolean) => void,
+  apiState: ApiState,
+  setApiState: (value: ApiState) => void,
 ): Promise<GetRankingsResponse> => {
   const response: GetRankingsResponse = {
     games: [],
@@ -18,14 +20,16 @@ export const getRankings = async (
 
   usernames = [...new Set(usernames)].sort();
 
-  const stats = await getUsers(usernames, getGameExpirations(), setShowSlowNotice);
+  const stats = await getUsers(usernames, getGameExpirations(), apiState, setApiState);
 
   const userGameIds: number[] = stats.map(s => s.gameId);
 
   const threadGameIds: number[] = [];
 
   if (threadId) {
-    const thread = await getBggThread(threadId, setShowSlowNotice);
+    setApiState({ currentlyLoading: 'thread' });
+
+    const thread = await getBggThread(threadId, apiState, setApiState);
     if (thread) {
       response.threadTitle = thread.subject;
       const regexp = /boardgamegeek\.com\/boardgame\/([0-9]*)/g;
@@ -42,7 +46,8 @@ export const getRankings = async (
   const geekListGameIds: number[] = [];
 
   if (geekListId) {
-    const geekList = await getBggGeekList(geekListId, setShowSlowNotice);
+    setApiState({ currentlyLoading: 'geeklist' });
+    const geekList = await getBggGeekList(geekListId, apiState, setApiState);
     if (geekList) {
       response.geekListTitle = geekList.title;
 
@@ -63,7 +68,7 @@ export const getRankings = async (
     ...geekListGameIds,
   ])];
 
-  const games = await getGames(gameIdsToLoad, setShowSlowNotice);
+  const games = await getGames(gameIdsToLoad, apiState, setApiState);
 
   games.map(g => {
     g.userStats = stats.filter(s => s.gameId === g.gameId);
@@ -73,13 +78,15 @@ export const getRankings = async (
 
   response.games = games;
 
+  setApiState({});
+
   return response;
 }
 
 const getGameExpirations = (): GameExpiration[] =>
   JSON.parse(localStorage.getItem('game-expirations') || '[]');
 
-export const getGames = async (gameIds: number[], setShowSlowNotice: (value: boolean) => void): Promise<Game[]> => {
+export const getGames = async (gameIds: number[], apiState: ApiState, setApiState: (value: ApiState) => void): Promise<Game[]> => {
   const games: Game[] = gameIds
     .map(id => localStorage.getItem(`game-${id}`))
     .filter((s): s is string => Boolean(s))
@@ -94,11 +101,17 @@ export const getGames = async (gameIds: number[], setShowSlowNotice: (value: boo
     const gameExpirations = getGameExpirations();
 
     for (let page = 0; page < totalPages; page++) {
+      setApiState({
+        currentlyLoading: 'games',
+        currentItem: page,
+        maxItem: totalPages,
+      });
+
       const startGame = (page * gamesPerPage);
       const endGame = Math.min(((page + 1) * gamesPerPage), missingGameIds.length);
       const gameIdsToLoad = missingGameIds.slice(startGame, endGame);
 
-      const bggGames = await getBggGames(gameIdsToLoad, setShowSlowNotice);
+      const bggGames = await getBggGames(gameIdsToLoad, apiState, setApiState);
 
       const newGames = bggGames.map(bggGameToGrGame);
 
@@ -158,7 +171,7 @@ const getDateHasExpired = (cacheDate: Date): boolean => {
   return now.getTime() - expirationDate.getTime() > 0;
 }
 
-export const getUsers = async (usernames: string[], gameExpirations: GameExpiration[], setShowSlowNotice: (value: boolean) => void): Promise<UserStats[]> => {
+export const getUsers = async (usernames: string[], gameExpirations: GameExpiration[], apiState: ApiState, setApiState: (value: ApiState) => void): Promise<UserStats[]> => {
   const userStats: UserStats[] = usernames
     .map(u => localStorage.getItem(`user-${u}`))
     .filter((s): s is string => Boolean(s))
@@ -168,9 +181,18 @@ export const getUsers = async (usernames: string[], gameExpirations: GameExpirat
 
   if (missingUsernames.length) {
     const newUserStats = (await Promise.all(
-      missingUsernames.map(async (u) =>
-        bggCollectionToUserStats(await getBggCollection(u, setShowSlowNotice), u)
-      )
+      missingUsernames.map(async (u) => {
+        setApiState({ currentlyLoading: 'users' });
+        const response = await getBggCollection(u, apiState, setApiState);
+
+        if (!response.item || !response.item.length) {
+
+          setApiState({ ...apiState, usernamesNotFound: [...apiState.usernamesNotFound || [], u] });
+          return [];
+        } else {
+          return bggCollectionToUserStats(response, u);
+        }
+      })
     )).flat();
 
     missingUsernames.map(u => setLocalStorageSafely(`user-${u}`, newUserStats.filter(us => us.username === u), gameExpirations))

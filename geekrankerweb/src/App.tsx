@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import styled, { createGlobalStyle } from "styled-components"
+import styled, { createGlobalStyle, keyframes } from "styled-components"
 
 import "typeface-open-sans";
 
@@ -8,7 +8,7 @@ import { TextField, Button, IconButton, Tabs, Tab, FormControl, Select, MenuItem
 import { createTheme, ThemeProvider } from '@mui/material';
 
 import { Game, PlayerCountStats, UserStats } from './models';
-import { getStringQueryParam, getQueryParam, QueryParams, SelectedTab, getBoolQueryParam, getNumberArrayQueryParam, getTypedStringQueryParam, getNumberQueryParam, defaultQueryValues, sortOptions, getSortLabel, DisplayMode, SortOptions, getUsernamesFromString, getGameIdsFromString, getIdFromString, updateRanks, getGameUserRating, getBggGameUrl, getGamePlayerCountStats, getIsMobileView } from './Utilities';
+import { getStringQueryParam, getQueryParam, QueryParams, SelectedTab, getBoolQueryParam, getNumberArrayQueryParam, getTypedStringQueryParam, getNumberQueryParam, defaultQueryValues, sortOptions, getSortLabel, DisplayMode, SortOptions, getUsernamesFromString, getGameIdsFromString, getIdFromString, updateRanks, getGameUserRating, getBggGameUrl, getGamePlayerCountStats, getIsMobileView, ApiState } from './Utilities';
 import GameRanker from './GameRanker';
 import { getRankings } from './GrApi';
 
@@ -124,7 +124,7 @@ const ButtonsList = styled.div`
   display: flex;
   align-items: center;
   gap: 20px;
-`
+`;
 
 const Logo = styled.img`
   max-width: 100%;
@@ -226,16 +226,16 @@ const IntroHeader = styled.div`
 
 const IntroHeaderParagraph = styled.div`
   font-weight: bold;
-`
+`;
 
 const IntroParagraph = styled.div`
   margin-bottom: 10px;
-`
+`;
 
 const IntroEmphasis = styled.div`
   display: inline;
   font-weight: bold;
-`
+`;
 
 const IntroContentBase = styled.div`
   background-color: #fcfcfc;
@@ -264,11 +264,96 @@ const IntroListItem = styled.li`
 const IntroTip = styled.div`
   padding-top: 4px;
   color: #348CE9;
-`
+`;
 
 const IntroTipLink = styled(IntroTip)`
   cursor: pointer;
-`
+`;
+
+const LoadingState = styled.div`
+  display: inline-flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  position: sticky;
+  left: 0;
+  align-items: center;
+  width: 300px;
+  height: 100px;
+
+  border-radius: 20px;
+  background-color: #fcfcfc;
+  border-color: #348CE9;
+  border-style: solid;
+  border-width: 3px;
+  padding: 15px;
+  margin: 15px;
+`;
+
+const GameProgress = styled.div`
+  display: inline-flex;
+  align-items: center;
+  width: 250px;
+`;
+
+const GameProgressLoaderAnimation = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
+
+const GameProgressLoaderContainer = styled.div`
+  width: 30px;
+  height: 30px;
+  margin: 10px;
+`;
+
+const GameProgressMeeple = styled.div`
+  position: absolute;
+  padding: 6px 8px;
+`;
+
+const GameProgressLoader = styled.div`
+  position: absolute;
+  border: 3px solid #eee;
+  border-top: 3px solid #348CE9;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  animation: ${GameProgressLoaderAnimation} 1s linear infinite;
+`;
+
+const GameProgressBar = styled.div`
+  height: 20px;
+  background-color: #F25D07;
+  transition: width 0.25s;
+`;
+
+const GameProgressScore = styled.div`
+  padding-right: 7px;
+  padding-left: 2px;
+`;
+
+const GameProgressRank = styled.div`
+  color: #348CE9;
+`;
+
+const ErrorState = styled.div`
+  color: #F25D07;
+  display: inline-flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  position: sticky;
+  left: 0;
+  align-items: center;
+  max-width: 500px;
+
+  border-radius: 20px;
+  background-color: #fcfcfc;
+  border-color: #348CE9;
+  border-style: solid;
+  border-width: 3px;
+  padding: 15px;
+  margin: 15px;
+`;
 
 type GameIdFilter = "all" | "only-selected" | "hide-selected";
 
@@ -291,7 +376,6 @@ function App() {
 
   const [tab, setTab] = useState<SelectedTab>(getStringQueryParam(QueryParams.SelectedTab) as SelectedTab);
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
-  const [loadingGames, setLoadingGames] = useState<boolean>(false);
   const [allGames, setAllGames] = useState<Game[]>([]);
 
   // Standard options
@@ -345,7 +429,9 @@ function App() {
   const [gamesPerPage, setGamesPerPage] = useState<number>(parseInt(localStorage.getItem("gamesPerPage") || "100"));
   const [page, setPage] = useState<number>(1);
   const [showTips, setShowTips] = useState<boolean>(false);
-  const [showSlowNotice, setShowSlowNotice] = useState<boolean>(false);
+
+  // Loading state
+  const [apiState, setApiState] = useState<ApiState>({});
 
   // Snackbar states
   const [openSnackbar, setOpenSnackbar] = useState<boolean>(false);
@@ -426,6 +512,7 @@ function App() {
     }
   }
 
+  // Update URL query params
   useEffect(() => {
     const params = new URLSearchParams();
 
@@ -650,30 +737,21 @@ function App() {
   const displayMode: DisplayMode = columnWidths + 35 > screenWidth && singleColumnView && getIsMobileView(screenWidth) ? "vertical" : "horizontal";
 
   const getApiData = async () => {
+    setAllGames([]);
+    setGeekListTitle("");
+    setThreadTitle("");
+
     if (!usernames.length && !gameIds.length && !threadId && !geekListId) {
-      setAllGames([]);
-      setGeekListTitle("");
-      setThreadTitle("");
       return;
     }
 
-    setLoadingGames(true);
+    const rankings = await getRankings(usernames, gameIds, threadId, geekListId, apiState, setApiState);
 
-    try {
-      const rankings = await getRankings(usernames, gameIds, threadId, geekListId, setShowSlowNotice);
-
-      updateAllCalculatedScores(rankings.games);
-      updateAllRanks(rankings.games);
-      setAllGames(rankings.games);
-      setGeekListTitle(rankings.geekListTitle);
-      setThreadTitle(rankings.threadTitle);
-    } catch (ex) {
-      setSnackbarMessage("BGG is still processing your request. Try again in 5 minutes.");
-      setOpenSnackbar(true);
-    } finally {
-      setShowSlowNotice(false);
-      setLoadingGames(false);
-    }
+    updateAllCalculatedScores(rankings.games);
+    updateAllRanks(rankings.games);
+    setAllGames(rankings.games);
+    setGeekListTitle(rankings.geekListTitle);
+    setThreadTitle(rankings.threadTitle);
   };
 
   const updateAllCalculatedScores = (games: Game[] = allGames) => {
@@ -833,6 +911,14 @@ function App() {
     if (!threadIdInput && threadId) setThreadId(undefined);
     if (!geekListIdInput && geekListId) setGeekListId(undefined);
   }, [usernamesInput, gameIdsInput, threadIdInput, geekListIdInput])
+
+  useEffect(() => {
+    if (apiState.usernamesNotFound) {
+      setSnackbarMessage(`Could not find user${apiState.usernamesNotFound.length > 1 ? "s" : ""} ${apiState.usernamesNotFound.map(u => `"${u}"`).join(', ')}, or no games were found.`);
+      setOpenSnackbar(true);
+      setApiState({ ...apiState, usernamesNotFound: undefined });
+    }
+  }, [apiState])
 
   const setTextFieldStateValues = () => {
     setUsernames(getUsernamesFromString(usernamesInput));
@@ -996,10 +1082,10 @@ function App() {
                     size='small'
                     variant='contained'
                     onClick={() => setTextFieldStateValues()}
-                    disabled={loadingGames}
+                    disabled={!!apiState.currentlyLoading}
                     sx={{ width: 160 }}
                   >
-                    {loadingGames ? "Loading Games..." : "Load Games"}
+                    {apiState.currentlyLoading ? "Loading Games..." : "Load Games"}
                   </Button>
                   <Tooltip title="Change column visibility, game filters, scoring options, and other settings">
                     <SettingsIcon onClick={() => setShowDrawer(true)} style={{ color: '#348CE9', cursor: 'pointer' }} />
@@ -1061,7 +1147,36 @@ function App() {
           page={page}
           setPage={setPage}
         />
-        {getSortedGames().length === 0 &&
+        {apiState.isTooManyRetries &&
+          <EmptyState style={{ width: screenWidth }}>
+            <ErrorState>
+              The BGG API responded with "too many requests". Please wait a minute or two and try again.
+            </ErrorState>
+          </EmptyState>
+        }
+        {apiState.currentlyLoading &&
+          <EmptyState style={{ width: screenWidth }}>
+            <LoadingState>
+              Loading {apiState.currentlyLoading === "geeklist" ? "GeekList" : apiState.currentlyLoading}...
+              <GameProgress>
+                <GameProgressLoaderContainer>
+                  <GameProgressLoader />
+                  <GameProgressMeeple>
+                    <img src="/gr-meeple.png" style={{ height: 16 }} />
+                  </GameProgressMeeple>
+                </GameProgressLoaderContainer>
+                {(apiState.maxItem || 0) > 1 &&
+                  <>
+                    <GameProgressBar style={{ width: (((apiState.currentItem || 0) / (apiState.maxItem || 1)) * 140) }} />
+                    <GameProgressScore>{(((apiState.currentItem || 0) / (apiState.maxItem || 1)) * 10).toFixed(2)}</GameProgressScore>
+                    <GameProgressRank>#{(apiState.maxItem || 1) - (apiState.currentItem || 0)}</GameProgressRank>
+                  </>
+                }
+              </GameProgress>
+            </LoadingState>
+          </EmptyState>
+        }
+        {getSortedGames().length === 0 && !apiState.currentlyLoading && !apiState.isTooManyRetries &&
           <EmptyState style={{ width: screenWidth }}>
             {tab === 'user' &&
               <Intro>
@@ -1211,11 +1326,6 @@ function App() {
           </EmptyState>
         }
       </ThemeProvider>
-      <Snackbar
-        message="Request for data has been sent to BGG. Sometimes this takes a few minutes for BGG to respond with data. If this fails, wait 5 or so minutes and try again."
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-        open={showSlowNotice}
-      />
       <Snackbar
         message={snackbarMessage}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}

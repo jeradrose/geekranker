@@ -7,6 +7,18 @@ export type SortOptions = typeof sortOptions[number];
 
 export type DisplayMode = "vertical" | "horizontal";
 
+export type CurrentlyLoading = "users" | "games" | "thread" | "geeklist";
+
+export interface ApiState {
+  currentlyLoading?: CurrentlyLoading;
+  currentItem?: number,
+  maxItem?: number,
+  isRequestPending?: boolean,
+  isTooManyRetries?: boolean,
+  isNotFound?: boolean,
+  usernamesNotFound?: string[],
+}
+
 export enum QueryParams {
   SelectedTab = "tab",
   Usernames = "u",
