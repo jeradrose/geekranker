@@ -373,6 +373,7 @@ function App() {
   // User option nullable defaults
   const idealTimeDefault = 60;
   const idealWeightDefault = 3;
+  const idealYearDefault = new Date().getFullYear();
 
   const [tab, setTab] = useState<SelectedTab>(getStringQueryParam(QueryParams.SelectedTab) as SelectedTab);
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
@@ -403,6 +404,7 @@ function App() {
   const [showTime, setShowTime] = useState<boolean>(getBoolQueryParam(QueryParams.ShowTime));
   const [showWeight, setShowWeight] = useState<boolean>(getBoolQueryParam(QueryParams.ShowWeight));
   const [showPlayerCount, setShowPlayerCount] = useState<boolean>(getBoolQueryParam(QueryParams.ShowPlayerCount));
+  const [showYear, setShowYear] = useState<boolean>(getBoolQueryParam(QueryParams.ShowYear));
   const [showIndividualUserRatings, setShowIndividualUserRatings] = useState<boolean>(getBoolQueryParam(QueryParams.ShowIndividualUserRatings));
   const [playerCountRange, setPlayerCountRange] = useState<number[]>(getNumberArrayQueryParam(QueryParams.PlayerCountRange));
 
@@ -420,6 +422,8 @@ function App() {
   const [idealWeight, setIdealWeight] = useState<number>(getNumberQueryParam(QueryParams.IdealWieght) || idealWeightDefault);
   const [scoreIdealTime, setScoreIdealTime] = useState<boolean>(getBoolQueryParam(QueryParams.IdealTime));
   const [idealTime, setIdealTime] = useState<number>(getNumberQueryParam(QueryParams.IdealTime) || idealTimeDefault);
+  const [scoreIdealYear, setScoreIdealYear] = useState<boolean>(getBoolQueryParam(QueryParams.IdealYear));
+  const [idealYear, setIdealYear] = useState<number>(getNumberQueryParam(QueryParams.IdealYear) || idealYearDefault);
   const [scoreUserRating, setScoreUserRating] = useState<boolean>(getBoolQueryParam(QueryParams.ScoreUserRating));
   const [scorePlayerRating, setScorePlayerRating] = useState<boolean>(getBoolQueryParam(QueryParams.ScorePlayerRating));
   const [scoreGeekRating, setScoreGeekRating] = useState<boolean>(getBoolQueryParam(QueryParams.ScoreGeekRating));
@@ -454,6 +458,7 @@ function App() {
     [QueryParams.ShowPlayerCount]: showPlayerCount,
     [QueryParams.ShowWeight]: showWeight,
     [QueryParams.ShowTime]: showTime,
+    [QueryParams.ShowYear]: showYear,
     [QueryParams.ShowIndividualUserRatings]: showIndividualUserRatings,
     [QueryParams.IncludeOwned]: includeOwned,
     [QueryParams.IncludeWishlisted]: includeWishlisted,
@@ -465,6 +470,7 @@ function App() {
     [QueryParams.PlayerCountRange]: `${playerCountRange[0]} ${playerCountRange[1]}`,
     [QueryParams.IdealWieght]: scoreIdealWeight ? idealWeight : undefined,
     [QueryParams.IdealTime]: scoreIdealTime ? idealTime : undefined,
+    [QueryParams.IdealYear]: scoreIdealYear ? idealYear : undefined,
     [QueryParams.ScoreUserRating]: scoreUserRating,
     [QueryParams.ScorePlayerRating]: scorePlayerRating,
     [QueryParams.ScoreGeekRating]: scoreGeekRating,
@@ -495,6 +501,7 @@ function App() {
       case QueryParams.ShowPlayerCount: return true;
       case QueryParams.ShowWeight: return true;
       case QueryParams.ShowTime: return true;
+      case QueryParams.ShowYear: return true;
       case QueryParams.ShowIndividualUserRatings: return false;
       case QueryParams.IncludeOwned: return tab === 'user';
       case QueryParams.IncludeWishlisted: return tab === 'user';
@@ -506,6 +513,7 @@ function App() {
       case QueryParams.PlayerCountRange: return true;
       case QueryParams.IdealWieght: return true;
       case QueryParams.IdealTime: return true;
+      case QueryParams.IdealYear: return true;
       case QueryParams.ScoreUserRating: return true;
       case QueryParams.ScorePlayerRating: return true;
       case QueryParams.ScoreGeekRating: return false;
@@ -621,6 +629,10 @@ function App() {
       score *= game.geekRating / 10;
     }
 
+    if (scoreIdealYear) {
+      score *= 1 / (1 + ((Math.abs(idealYear - game.yearPublished)) * 0.05));
+    }
+
     if (scorePlayerCount) {
       const playerCountStats = game.playerCountStats.filter(s => s.playerCount >= playerCountRange[0] && s.playerCount <= playerCountRange[1]);
 
@@ -681,10 +693,11 @@ function App() {
                 (sort === 'weight') ? getFilteredGames().sort((a, b) => b.avgWeight - a.avgWeight) :
                   ((sort as string).startsWith('playercount-')) ? getGamesSortedByPlayerCount(parseInt(sort.split("-")[1])) :
                     (sort === 'time') ? getFilteredGames().sort((a, b) => b.maxPlayTime - a.maxPlayTime) :
-                      (sort === 'gr-index') ? getFilteredGames().sort((a, b) => b.grIndex - a.grIndex) :
-                        (sort === 'user-rating') ? getFilteredGames().sort((a, b) => (getAvgUserRatings(b) || 10) - (getAvgUserRatings(a) || 10)) :
-                          (sort as string).startsWith('user-') ? getGamesSortedByUserRatings(sort.split("-")[1]) :
-                            getFilteredGames();
+                      (sort === 'year') ? getFilteredGames().sort((a, b) => b.yearPublished - a.yearPublished) :
+                        (sort === 'gr-index') ? getFilteredGames().sort((a, b) => b.grIndex - a.grIndex) :
+                          (sort === 'user-rating') ? getFilteredGames().sort((a, b) => (getAvgUserRatings(b) || 10) - (getAvgUserRatings(a) || 10)) :
+                            (sort as string).startsWith('user-') ? getGamesSortedByUserRatings(sort.split("-")[1]) :
+                              getFilteredGames();
 
   const handleGameIdFilterChange = (event: React.ChangeEvent<HTMLInputElement>) =>
     setGameIdFilter((event.target as HTMLInputElement).value as GameIdFilter);
@@ -780,7 +793,8 @@ function App() {
       ...(showPlayerCount && getPlayerCountArray().map(pc => `${pc}-Player`) || [null]),
       (showWeight && getSortLabel("weight")) || null,
       (showTime && "Min Playtime") || null,
-      (showTime && "Min Playtime") || null,
+      (showTime && "Max Playtime") || null,
+      (showYear && "Year Published") || null,
     ].filter(v => v));
 
     getFilteredGames().map(g => rows.push([
@@ -802,6 +816,7 @@ function App() {
       (showWeight && g.avgWeight.toString()) || null,
       (showTime && g.minPlayTime.toString()) || null,
       (showTime && g.maxPlayTime.toString()) || null,
+      (showYear && g.yearPublished.toString()) || null,
     ].filter(v => v)));
 
     const csv = rows.map(r => r.join(',')).join('\n');
@@ -851,10 +866,12 @@ function App() {
     scoreIdealTime,
     idealWeight,
     idealTime,
+    idealYear,
     playerCountRange,
     scoreUserRating,
     scorePlayerRating,
-    scoreGeekRating
+    scoreGeekRating,
+    scoreIdealYear,
   ])
 
   useMemo(() => {
@@ -1134,10 +1151,13 @@ function App() {
           showPlayerCount={showPlayerCount}
           showWeight={showWeight}
           showTime={showTime}
+          showYear={showYear}
           showIndividualUserRatings={showIndividualUserRatings}
           idealWeight={idealWeight}
           scoreIdealWeight={scoreIdealWeight}
           setScoreIdealWeight={setScoreIdealWeight}
+          scoreIdealYear={scoreIdealYear}
+          setScoreIdealYear={setScoreIdealYear}
           playerCountArray={getPlayerCountArray()}
           gamesPerPage={gamesPerPage}
           setGamesPerPage={setGamesPerPage}
@@ -1375,6 +1395,7 @@ function App() {
               </SliderContainer>
               {toggle(showWeight, setShowWeight, "Weight")}
               {toggle(showTime, setShowTime, "Time")}
+              {toggle(showYear, setShowYear, "Year Published")}
               {(tab === 'advanced' || tab === 'user') && toggle(showIndividualUserRatings, setShowIndividualUserRatings, "Individual Users Ratings", usernames.length < 2)}
             </SettingsContent>
             {(tab === 'advanced' || tab === 'user') &&
@@ -1424,6 +1445,11 @@ function App() {
               <SliderContainer>
                 <SliderValue style={{ color: (scoreIdealTime ? "" : "#000"), opacity: (scoreIdealTime ? 1 : .38) }}>{idealTime}</SliderValue>
                 <StyledSlider disabled={!scoreIdealTime} min={30} max={240} step={30} value={idealTime} onChange={(event, value) => handleSliderChange(event, () => setIdealTime(Number(value)))} />
+              </SliderContainer>
+              {toggle(scoreIdealYear, setScoreIdealYear, "Ideal Year Published")}
+              <SliderContainer>
+                <SliderValue style={{ color: (scoreIdealYear ? "" : "#000"), opacity: (scoreIdealYear ? 1 : .38) }}>{idealYear}</SliderValue>
+                <StyledSlider disabled={!scoreIdealYear} min={1980} max={idealYearDefault} step={1} value={idealYear} onChange={(event, value) => handleSliderChange(event, () => setIdealYear(Number(value)))} />
               </SliderContainer>
             </SettingsContent>
             {getIsMobileView(screenWidth) &&

@@ -14,6 +14,7 @@ export interface BggGame {
   maxplaytime: StringValue[],
   poll: BggGamePoll[],
   statistics: BggGameStatistics[],
+  yearpublished: StringValue[],
 }
 
 export interface BggGameAttributes {

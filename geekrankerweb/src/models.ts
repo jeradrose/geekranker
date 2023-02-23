@@ -25,6 +25,7 @@ export interface Game {
   isExpansion: boolean;
   threadSequence: number;
   geekListSequence: number;
+  yearPublished: number;
 }
 
 export interface PlayerCountStats {
