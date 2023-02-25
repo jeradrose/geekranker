@@ -358,6 +358,8 @@ const ErrorState = styled.div`
 type GameIdFilter = "all" | "only-selected" | "hide-selected";
 
 function App() {
+  const maxRetries = 10;
+
   const [usernamesInput, setUsernamesInput] = useState<string>(getQueryParam(QueryParams.Usernames) || "");
   const [gameIdsInput, setGameIdsInput] = useState<string>(getQueryParam(QueryParams.GameIds) || "");
   const [threadIdInput, setThreadIdInput] = useState<string>(getQueryParam(QueryParams.ThreadId) || "");
@@ -436,6 +438,7 @@ function App() {
 
   // Loading state
   const [apiState, setApiState] = useState<ApiState>({});
+  const [tries, setTries] = useState<number>(0);
 
   // Snackbar states
   const [openSnackbar, setOpenSnackbar] = useState<boolean>(false);
@@ -926,7 +929,21 @@ function App() {
     if (!geekListIdInput && geekListId) setGeekListId(undefined);
   }, [usernamesInput, gameIdsInput, threadIdInput, geekListIdInput])
 
-  useEffect(() => {
+  useMemo(() => {
+    const maxRetries = 10;
+    if (apiState.isRequestPending) {
+      if (tries || 0 < maxRetries) {
+        setTimeout(() => {
+          console.log("retrying...");
+          console.log(apiState);
+          console.log(tries);
+
+          getApiData();
+          setTries(tries + 1);
+        }, 2000 * ((tries || 0) + 1))
+      }
+    }
+
     if (apiState.usernamesNotFound) {
       setSnackbarMessage(`Could not find user${apiState.usernamesNotFound.length > 1 ? "s" : ""} ${apiState.usernamesNotFound.map(u => `"${u}"`).join(', ')}, or no games were found.`);
       setOpenSnackbar(true);
@@ -1164,7 +1181,7 @@ function App() {
           page={page}
           setPage={setPage}
         />
-        {apiState.isTooManyRetries &&
+        {(tries || 0) >= maxRetries &&
           <EmptyState style={{ width: screenWidth }}>
             <ErrorState>
               The BGG API responded with "too many requests". Please wait a minute or two and try again.
@@ -1193,7 +1210,7 @@ function App() {
             </LoadingState>
           </EmptyState>
         }
-        {getSortedGames().length === 0 && !apiState.currentlyLoading && !apiState.isTooManyRetries &&
+        {getSortedGames().length === 0 && !apiState.currentlyLoading && ((tries || 0) < maxRetries) &&
           <EmptyState style={{ width: screenWidth }}>
             {tab === 'user' &&
               <Intro>

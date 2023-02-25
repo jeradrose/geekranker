@@ -14,7 +14,6 @@ export interface ApiState {
   currentItem?: number,
   maxItem?: number,
   isRequestPending?: boolean,
-  isTooManyRetries?: boolean,
   isNotFound?: boolean,
   usernamesNotFound?: string[],
 }
