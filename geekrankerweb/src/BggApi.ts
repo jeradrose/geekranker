@@ -41,31 +41,45 @@ export const getBggGeekList = async (geekListId: number, apiState: ApiState, set
   return (await fetchFromBgg<BggGeekListResult>(url, apiState, setApiState)).geeklist;
 }
 
-const fetchFromBgg = async <T>(url: string, apiState: ApiState, setApiState: (value: ApiState) => void): Promise<T> => {
-  const response = await fetch(url);
+const delay = (t: number): Promise<void> =>
+  new Promise(resolve => setTimeout(resolve, t));
 
-  if (response.ok) {
-    const responseText = await response.text();
-
-    if (responseText.toLowerCase().indexOf("error message") >= 0 && responseText.toLowerCase().indexOf("not found")) {
-      setApiState({
-        ...apiState,
-        isNotFound: true,
-      });
-    }
-
-    const a = 1;
-
-    if (a === 1) {
-      // if (responseText.indexOf("Please try again later for access.") >= 0) {
-      setApiState({
-        ...apiState,
-        isRequestPending: true,
-      });
-      throw new Error("retrying");
-    }
-    const parser = new xml2js.Parser();
-    return await parser.parseStringPromise(responseText);
+const fetchFromBgg = async <T>(url: string, apiState: ApiState, setApiState: (value: ApiState) => void, tries = 1): Promise<T> => {
+  const maxRetries = 10;
+  if (tries >= maxRetries) {
+    setApiState({
+      ...apiState,
+      isTooManyRetries: true,
+    })
   }
-  throw new Error(response.statusText);
+
+  try {
+    const response = await fetch(url);
+
+    if (response.ok) {
+      const responseText = await response.text();
+
+      if (responseText.toLowerCase().indexOf("error message") >= 0 && responseText.toLowerCase().indexOf("not found")) {
+        setApiState({
+          ...apiState,
+          isNotFound: true,
+        });
+      }
+
+      if (responseText.indexOf("Please try again later for access.") >= 0 && tries < maxRetries) {
+        setApiState({
+          ...apiState,
+          isRequestPending: true,
+        });
+        await delay(2000 * (tries + 1));
+        return await fetchFromBgg(url, apiState, setApiState, tries + 1);
+      }
+      const parser = new xml2js.Parser();
+      return await parser.parseStringPromise(responseText);
+    }
+    throw new Error(response.statusText);
+  } catch (ex) {
+    setApiState({ isTooManyRetries: true });
+    throw ex;
+  }
 }
