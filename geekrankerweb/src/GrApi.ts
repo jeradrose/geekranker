@@ -104,7 +104,7 @@ export const getGames = async (gameIds: number[], apiState: ApiState, setApiStat
   const missingGameIds = gameIds.filter(id => !games.find(g => g.gameId === id));
 
   if (missingGameIds.length) {
-    const gamesPerPage = 250;
+    const gamesPerPage = 20;
     const totalPages = Math.trunc(missingGameIds.length / gamesPerPage) + 1;
 
     const gameExpirations = getGameExpirations();
