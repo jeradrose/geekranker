@@ -1,6 +1,7 @@
 {
   "name": "geekrankerweb",
   "version": "0.1.0",
+  "homepage": "https://jeradrose.github.io/geekranker",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.10.5",
@@ -26,6 +27,8 @@
     "xml2js": "^0.4.23"
   },
   "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",    
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
@@ -53,6 +56,7 @@
     "@types/styled-components": "^5.1.26",
     "@types/xml2js": "^0.4.11",
     "eslint-config-react-app": "^7.0.1",
+    "gh-pages": "^6.1.1",
     "jest-editor-support": "^30.3.1"
   },
   "proxy": "https://localhost:7032"
