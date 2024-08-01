@@ -1,7 +1,7 @@
 {
   "name": "geekrankerweb",
   "version": "0.1.0",
-  "homepage": "https://jeradrose.github.io/geekranker",
+  "homepage": "https://www.geekranker.com/",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.10.5",
