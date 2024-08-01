@@ -1,7 +1,8 @@
 {
   "files": {
     "main.css": "/geekranker/static/css/main.feaec392.css",
-    "main.js": "/geekranker/static/js/main.80259527.js",
+    "main.js": "/geekranker/static/js/main.0358eca9.js",
+    "static/media/logo.png": "/geekranker/static/media/logo.84325023ecedc511f6b3.png",
     "static/media/open-sans-latin-800.woff": "/geekranker/static/media/open-sans-latin-800.8ab0bbdd48f276f4ba56.woff",
     "static/media/open-sans-latin-700.woff": "/geekranker/static/media/open-sans-latin-700.f24f4bcef8a4a0eb6345.woff",
     "static/media/open-sans-latin-600.woff": "/geekranker/static/media/open-sans-latin-600.7e06644bbdc83069cec8.woff",
@@ -24,10 +25,10 @@
     "static/media/open-sans-latin-400italic.woff2": "/geekranker/static/media/open-sans-latin-400italic.bb915319f59c02c348a6.woff2",
     "index.html": "/geekranker/index.html",
     "main.feaec392.css.map": "/geekranker/static/css/main.feaec392.css.map",
-    "main.80259527.js.map": "/geekranker/static/js/main.80259527.js.map"
+    "main.0358eca9.js.map": "/geekranker/static/js/main.0358eca9.js.map"
   },
   "entrypoints": [
     "static/css/main.feaec392.css",
-    "static/js/main.80259527.js"
+    "static/js/main.0358eca9.js"
   ]
 }
