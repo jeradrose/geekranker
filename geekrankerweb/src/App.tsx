@@ -11,6 +11,8 @@ import { Game, PlayerCountStats, UserStats } from './models';
 import { getStringQueryParam, getQueryParam, QueryParams, SelectedTab, getBoolQueryParam, getNumberArrayQueryParam, getTypedStringQueryParam, getNumberQueryParam, defaultQueryValues, sortOptions, getSortLabel, DisplayMode, SortOptions, getUsernamesFromString, getGameIdsFromString, getIdFromString, updateRanks, getGameUserRating, getBggGameUrl, getGamePlayerCountStats, getIsMobileView, ApiState } from './Utilities';
 import GameRanker from './GameRanker';
 import { getRankings } from './GrApi';
+import logo from './images/logo.png';
+import grMeeple from './images/gr-meeple.png';
 
 const theme = createTheme({
   typography: {
@@ -1055,7 +1057,7 @@ function App() {
     marginBottom: -6
   }
 
-  const inlineMeeple = <img src="/gr-meeple.png" height="15px" style={{ marginBottom: -1, marginRight: 2, marginLeft: 2 }} />;
+  const inlineMeeple = <img src={grMeeple} height="15px" style={{ marginBottom: -1, marginRight: 2, marginLeft: 2 }} />;
 
   renderCount.current++;
 
@@ -1135,7 +1137,7 @@ function App() {
                 </ButtonsList>
               </Buttons>
             </Form>
-            <Logo src="/logo.png" alt="logo" onClick={() => resetInputs()} />
+            <Logo src={logo} alt="logo" onClick={() => resetInputs()} />
           </PageHeader>
         </PageHeaderContainer>
         <GameRanker
@@ -1196,7 +1198,7 @@ function App() {
                 <GameProgressLoaderContainer>
                   <GameProgressLoader />
                   <GameProgressMeeple>
-                    <img src="/gr-meeple.png" style={{ height: 16 }} />
+                    <img src={grMeeple} style={{ height: 16 }} />
                   </GameProgressMeeple>
                 </GameProgressLoaderContainer>
                 {(apiState.maxItem || 0) > 1 &&

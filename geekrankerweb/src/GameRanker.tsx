@@ -7,6 +7,9 @@ import { Tooltip, Switch, FormControlLabel, Pagination, Select, MenuItem } from 
 import styled from "styled-components"
 import { getSortLabel, DisplayMode, SortOptions, getGameUserRating, getBggGameUrl, getGamePlayerCountStats, getShowCondensedFooter } from './Utilities';
 
+import grMeeple from './images/gr-meeple.png'
+import grMeepleInactive from './images/gr-meeple-inactive.png'
+
 const GamesHeader = styled.div`
   display: inline-block;
   position: sticky;
@@ -358,7 +361,7 @@ function GameRanker({
   const meeple = (isScored: boolean, setScore?: () => void) =>
     <Tooltip title={setScore && `${isScored ? "Included in" : "Excluded from"} the GR Index`}>
       <img
-        src={`/gr-meeple${isScored ? "" : "-inactive"}.png`}
+        src={isScored ? grMeeple : grMeepleInactive}
         style={{
           height: 16,
           paddingRight: 5,

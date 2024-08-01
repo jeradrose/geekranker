@@ -42,7 +42,7 @@ export enum QueryParams {
   IncludeBase = "base",
   IncludeExpansion = "exp",
   GameIdFilter = "fid",
-  ScorePlayerCount = "spc",
+  ScorePlayerCount = "scpc",
   PlayerCountRange = "pc",
   IdealWieght = "iw",
   IdealTime = "it",
