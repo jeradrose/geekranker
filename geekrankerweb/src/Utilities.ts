@@ -2,7 +2,7 @@ import { Game, PlayerCountStats } from "./models";
 
 export type SelectedTab = "user" | "game" | "thread" | "geeklist" | "advanced";
 
-export const sortOptions = ["game", "id", "gr-index", "user-rating", "player-rating", "geek-rating", "weight", "time", "thread", "geek-list"] as const;
+export const sortOptions = ["game", "id", "gr-index", "user-rating", "player-rating", "geek-rating", "weight", "time", "thread", "geek-list", "year"] as const;
 export type SortOptions = typeof sortOptions[number];
 
 export type DisplayMode = "vertical" | "horizontal";
@@ -14,7 +14,6 @@ export interface ApiState {
   currentItem?: number,
   maxItem?: number,
   isRequestPending?: boolean,
-  isTooManyRetries?: boolean,
   isNotFound?: boolean,
   usernamesNotFound?: string[],
 }
@@ -35,6 +34,7 @@ export enum QueryParams {
   ShowPlayerCount = "spc",
   ShowWeight = "sw",
   ShowTime = "st",
+  ShowYear = "sy",
   ShowIndividualUserRatings = "sir",
   IncludeOwned = "own",
   IncludeWishlisted = "wish",
@@ -46,6 +46,7 @@ export enum QueryParams {
   PlayerCountRange = "pc",
   IdealWieght = "iw",
   IdealTime = "it",
+  IdealYear = "iy",
   ScoreUserRating = "scur",
   ScorePlayerRating = "scpr",
   ScoreGeekRating = "scgr",
@@ -69,6 +70,7 @@ export const defaultQueryValues: { [key in QueryParams]: number | string | boole
   [QueryParams.ShowPlayerCount]: true,
   [QueryParams.ShowWeight]: true,
   [QueryParams.ShowTime]: true,
+  [QueryParams.ShowYear]: false,
   [QueryParams.ShowIndividualUserRatings]: false,
   [QueryParams.IncludeOwned]: true,
   [QueryParams.IncludeWishlisted]: false,
@@ -80,6 +82,7 @@ export const defaultQueryValues: { [key in QueryParams]: number | string | boole
   [QueryParams.PlayerCountRange]: "2 4",
   [QueryParams.IdealWieght]: undefined,
   [QueryParams.IdealTime]: undefined,
+  [QueryParams.IdealYear]: undefined,
   [QueryParams.ScoreUserRating]: true,
   [QueryParams.ScorePlayerRating]: true,
   [QueryParams.ScoreGeekRating]: false,
@@ -131,6 +134,7 @@ export const getSortLabel = (sortOption: SortOptions) => {
     case "geek-rating": return "Geek Rating";
     case "weight": return "Weight";
     case "time": return "Time";
+    case "year": return "Year";
   }
 }
 

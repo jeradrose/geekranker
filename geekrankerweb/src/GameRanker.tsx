@@ -212,6 +212,8 @@ interface GameRankerProps {
   scoreIdealWeight: boolean,
   setScoreIdealWeight: (value: boolean) => void,
   idealWeight: number,
+  scoreIdealYear: boolean,
+  setScoreIdealYear: (value: boolean) => void,
   scorePlayerCount: boolean,
   setScorePlayerCount: (value: boolean) => void,
   playerCountArray: number[],
@@ -233,6 +235,7 @@ interface GameRankerProps {
   showPlayerCount: boolean,
   showWeight: boolean,
   showTime: boolean,
+  showYear: boolean,
   showIndividualUserRatings: boolean,
   displayMode: DisplayMode,
   screenWidth: number,
@@ -254,6 +257,8 @@ function GameRanker({
   setScoreIdealWeight,
   idealWeight,
   scorePlayerCount,
+  scoreIdealYear,
+  setScoreIdealYear,
   setScorePlayerCount,
   playerCountArray,
   scoreUserRating,
@@ -274,6 +279,7 @@ function GameRanker({
   showPlayerCount,
   showWeight,
   showTime,
+  showYear,
   showIndividualUserRatings,
   displayMode,
   screenWidth,
@@ -371,6 +377,7 @@ function GameRanker({
       {thisSort.startsWith('playercount-') && meeple(scorePlayerCount, () => setScorePlayerCount(!scorePlayerCount))}
       {thisSort === 'time' && meeple(scoreIdealTime, () => setScoreIdealTime(!scoreIdealTime))}
       {thisSort === 'weight' && meeple(scoreIdealWeight, () => setScoreIdealWeight(!scoreIdealWeight))}
+      {thisSort === 'year' && meeple(scoreIdealYear, () => setScoreIdealYear(!scoreIdealYear))}
       {thisSort.startsWith('user-') && meeple(scoreUserRating, () => setScoreUserRating(!scoreUserRating))}
       {thisSort === 'geek-rating' && meeple(scoreGeekRating, () => setScoreGeekRating(!scoreGeekRating))}
       {thisSort === 'player-rating' && meeple(scorePlayerRating, () => setScorePlayerRating(!scorePlayerRating))}
@@ -449,6 +456,7 @@ function GameRanker({
                 {showPlayerCount && playerCountArray.map(pc => barHeaderDynamic(`playercount-${pc}`, `${pc}-Player`))}
                 {showWeight && barHeader("weight")}
                 {showTime && barHeader("time")}
+                {showYear && barHeader("year")}
               </>
             }
           </HeaderRow>
@@ -478,6 +486,7 @@ function GameRanker({
             {showPlayerCount && playerCountArray.map(pc => <HorizontalCell key={`h-pc-${pc}`}>{playerCountBar(pc, g)}</HorizontalCell>)}
             {showWeight && <HorizontalCell>{bar(g.avgWeight, 5, g.avgWeightRank, scoreIdealWeight && idealWeight)}</HorizontalCell>}
             {showTime && <HorizontalCell>{timeBar(g.minPlayTime, g.maxPlayTime)}</HorizontalCell>}
+            {showYear && <HorizontalCell>{g.yearPublished}</HorizontalCell>}
           </GameHorizontally> :
           <GameVertically key={`game-vertical-${g.gameId}`} style={{ width: screenWidth }}>
             <ImageAndNameVertical href={getBggGameUrl(g.gameId)} target="_balnk">
@@ -499,6 +508,7 @@ function GameRanker({
             {showPlayerCount && playerCountArray.map(pc => verticalCell(`${pc}-Player Rating`, playerCountBar(pc, g), pc))}
             {showWeight && verticalCell(getSortLabel("weight"), bar(g.avgWeight, 5, g.avgWeightRank, scoreIdealWeight && idealWeight))}
             {showTime && verticalCell(getSortLabel("time"), timeBar(g.minPlayTime, g.maxPlayTime))}
+            {showYear && verticalCell(getSortLabel("year"), g.yearPublished)}
           </GameVertically>
       )}
       <FooterRow style={{ width: screenWidth, fontSize: 13 }}>

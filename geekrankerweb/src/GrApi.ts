@@ -262,6 +262,7 @@ const bggGameToGrGame = (bggGame: BggGame): Game => {
     userStats: [],
     threadSequence: 0,
     geekListSequence: 0,
+    yearPublished: parseInt(bggGame.yearpublished[0].$.value),
   };
 
   return game;
