@@ -1,46 +1,60 @@
-# Getting Started with Create React App
+# BGG Authorization Token Support
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+BGG now requires that API requests include an Authorization header containing a Bearer token. This project has been updated to optionally send this header on all BGG API requests made from the frontend.
 
-## Available Scripts
+Implementation details:
 
-In the project directory, you can run:
+- The helper in `src/BggApi.ts` reads `process.env.REACT_APP_BGG_TOKEN`.
+- If present, requests are sent with:
 
-### `npm start`
+  Authorization: Bearer <your-token>
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+- If not present, requests proceed without the header (useful during BGG's transition period).
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+Local development setup:
 
-### `npm test`
+1. Copy `.env.example` to `.env` in the project root.
+2. Add your token to `.env`:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+   REACT_APP_BGG_TOKEN=YOUR_TOKEN_HERE
 
-### `npm run build`
+3. Restart `npm start` after changing `.env` (CRA only reads env vars at startup).
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Production considerations (important):
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- Create React App inlines any `REACT_APP_*` env vars into the built JavaScript bundle, which means any token set this way becomes publicly visible to anyone who can access your site. If BGG associates tokens with a specific application and rate limits, exposing the token may be undesirable.
+- Short-term: you may build with the token set for expediency, understanding the exposure risk.
+- Recommended long-term: implement a lightweight server-side proxy that adds the Authorization header on behalf of the client (e.g., a Cloud Function/Run/AE service). The frontend would call your proxy, and the proxy would call BGG, injecting the token securely via server-side environment variables.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Deployment notes:
 
-### `npm run eject`
+- For Google App Engine static hosting (this repo's current `app.yaml` serves a static CRA build), there is no runtime environment for env vars. Any token must be provided at build time (and thus would be exposed). Prefer the proxy approach for production.
+- If you use a CI pipeline, add the token as a secret and inject it into the build environment as `REACT_APP_BGG_TOKEN` only if you accept exposure.
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+---
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+# Quick Start (Temporary - Option 3)
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+This is the fastest way to get back online before the deadline by sending the token directly from the client. Note: the token will be embedded in the built JS and publicly visible. Prefer the proxy approach below for long-term.
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+1. Create `.env` in the project root (or edit it if it exists):
 
-## Learn More
+   REACT_APP_BGG_TOKEN=YOUR_TOKEN_HERE
+   REACT_APP_BGG_PROXY_URL=
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+   Ensure `REACT_APP_BGG_PROXY_URL` is empty/unset so the app calls BGG directly.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+2. Run locally for verification:
+
+   npm install
+   npm start
+
+3. Deploy to GitHub Pages (if you already use the provided scripts):
+
+   npm run predeploy
+   npm run deploy
+
+   The `deploy` script uses `gh-pages` to publish the `build/` directory. Ensure `gh-pages` is installed in your environment if the script is not present as a dependency.
+
+If you encounter CORS failures after adding Authorization headers, switch to the proxy approach below immediately.
+
